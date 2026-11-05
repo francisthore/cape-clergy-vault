@@ -11,6 +11,13 @@ export function createLocalAuth(
   options: {
     secret: string;
     baseURL: string;
+    sendOnSignUp?: boolean;
+    sendResetPassword?: (data: {
+      user: { email: string };
+      url: string;
+      token: string;
+    }) => Promise<void>;
+    afterEmailVerification?: (user: { id: string; email: string }) => Promise<void>;
     sendVerificationEmail: (data: {
       user: { email: string };
       url: string;
@@ -19,11 +26,62 @@ export function createLocalAuth(
   },
 ) {
   if (options.secret.length < 32) throw new Error("Auth secret must have at least 32 characters");
+  const origin = new URL(options.baseURL);
+  if (
+    origin.origin !== options.baseURL ||
+    (origin.protocol !== "https:" &&
+      !(origin.protocol === "http:" && ["localhost", "127.0.0.1"].includes(origin.hostname)))
+  ) {
+    throw new Error("Use an explicit trusted HTTPS origin or local development origin");
+  }
   return betterAuth({
     ...authOptions,
     secret: options.secret,
     baseURL: options.baseURL,
-    database: drizzleAdapter(connection.db, { provider: "pg", schemaName: "auth", schema }),
-    emailVerification: { sendOnSignUp: true, sendVerificationEmail: options.sendVerificationEmail },
+    trustedOrigins: [options.baseURL],
+    advanced: {
+      useSecureCookies: origin.protocol === "https:",
+      defaultCookieAttributes: {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: origin.protocol === "https:",
+      },
+    },
+    logger: { disabled: true }, // Do not let library errors include emails, SQL or credentials.
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: 30,
+      storage: "memory",
+      customRules: {
+        "/sign-in/email": { window: 60, max: 5 },
+        "/send-verification-email": { window: 60, max: 2 },
+        "/request-password-reset": { window: 60, max: 2 },
+      },
+    },
+    database: drizzleAdapter(connection.db, {
+      provider: "pg",
+      schemaName: "auth",
+      schema,
+      transaction: true,
+    }),
+    emailAndPassword: {
+      ...authOptions.emailAndPassword,
+      autoSignIn: false,
+      minPasswordLength: 12,
+      maxPasswordLength: 128,
+      revokeSessionsOnPasswordReset: true,
+      ...(options.sendResetPassword ? { sendResetPassword: options.sendResetPassword } : {}),
+    },
+    emailVerification: {
+      sendOnSignUp: options.sendOnSignUp ?? true,
+      sendOnSignIn: false,
+      expiresIn: 3600,
+      autoSignInAfterVerification: false,
+      sendVerificationEmail: options.sendVerificationEmail,
+      ...(options.afterEmailVerification
+        ? { afterEmailVerification: options.afterEmailVerification }
+        : {}),
+    },
   });
 }

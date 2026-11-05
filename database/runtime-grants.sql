@@ -21,3 +21,4 @@ GRANT EXECUTE ON FUNCTION app.request_user_id(), app.is_active(), app.is_reviewe
 -- PostgreSQL otherwise grants function execution to PUBLIC by default.
 ALTER DEFAULT PRIVILEGES FOR ROLE cape_clergy_dev REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 -- New tables/functions require an explicit reviewed grant.
+GRANT EXECUTE ON FUNCTION app.provision_clergy(text,text,text,text,text,boolean,text) TO cape_clergy_runtime;

@@ -7,6 +7,7 @@ import * as schema from "./schema/index.ts";
 export async function connectLocalRuntime(value = process.env["CAPE_RUNTIME_DATABASE_URL"]) {
   const client = postgres(validateLocalUrl(value, true), {
     max: 2,
+    connection: { TimeZone: "UTC" },
     connect_timeout: 5,
     idle_timeout: 10,
   });

@@ -29,6 +29,20 @@
       "when": 1793884738010,
       "tag": "0003_authorization_boundary",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793886903354,
+      "tag": "0004_clergy_provisioning",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793887409266,
+      "tag": "0005_provisioning_audit_outcome",
+      "breakpoints": true
     }
   ]
 }

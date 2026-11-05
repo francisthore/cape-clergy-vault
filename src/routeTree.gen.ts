@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as OfflineRouteImport } from './routes/offline'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
@@ -18,6 +19,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRepositoryRouteImport } from './routes/_authenticated/repository'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
 import { Route as AuthenticatedVerifyReviewerRouteImport } from './routes/_authenticated/verify-reviewer'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -26,6 +28,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -64,9 +71,15 @@ const AuthenticatedVerifyReviewerRoute =
     path: '/verify-reviewer',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
   '/offline': typeof OfflineRoute
   '/chat': typeof AuthenticatedChatRoute
@@ -74,9 +87,11 @@ export interface FileRoutesByFullPath {
   '/repository': typeof AuthenticatedRepositoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
   '/offline': typeof OfflineRoute
   '/chat': typeof AuthenticatedChatRoute
@@ -84,11 +99,13 @@ export interface FileRoutesByTo {
   '/repository': typeof AuthenticatedRepositoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
   '/offline': typeof OfflineRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
@@ -96,11 +113,13 @@ export interface FileRoutesById {
   '/_authenticated/repository': typeof AuthenticatedRepositoryRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/auth'
     | '/offline'
     | '/chat'
@@ -108,9 +127,11 @@ export interface FileRouteTypes {
     | '/repository'
     | '/review'
     | '/verify-reviewer'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/auth'
     | '/offline'
     | '/chat'
@@ -118,10 +139,12 @@ export interface FileRouteTypes {
     | '/repository'
     | '/review'
     | '/verify-reviewer'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/account'
     | '/auth'
     | '/offline'
     | '/_authenticated/chat'
@@ -129,13 +152,16 @@ export interface FileRouteTypes {
     | '/_authenticated/repository'
     | '/_authenticated/review'
     | '/_authenticated/verify-reviewer'
+    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AccountRoute: typeof AccountRoute
   AuthRoute: typeof AuthRoute
   OfflineRoute: typeof OfflineRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +178,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -203,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVerifyReviewerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -228,8 +268,10 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AccountRoute: AccountRoute,
   AuthRoute: AuthRoute,
   OfflineRoute: OfflineRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

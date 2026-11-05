@@ -7,6 +7,8 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ command }) => ({
+  // Keep Better Auth's Zod 4 separate from legacy application Zod 3 in Node output.
+  ssr: { noExternal: ["zod"] },
   plugins: [
     tailwindcss(),
     tsconfigPaths(),

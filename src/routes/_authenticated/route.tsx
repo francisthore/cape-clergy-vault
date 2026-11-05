@@ -1,11 +1,8 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
-
+import { createFileRoute, redirect } from "@tanstack/react-router";
+// Legacy Supabase workflows are isolated until their later migration phases.
+// No legacy child loader/component runs under the new Better Auth identity.
 export const Route = createFileRoute("/_authenticated")({
-  ssr: false,
-  beforeLoad: async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
+  beforeLoad: () => {
+    throw redirect({ to: "/account" });
   },
-  component: () => <Outlet />,
 });

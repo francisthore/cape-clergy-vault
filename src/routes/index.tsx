@@ -40,7 +40,7 @@ function Index() {
           Preserve and share sermons, research, liturgical writing and new ideas across the Anglican Diocese of Cape Town — with care for every contributor's privacy under POPIA.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button asChild size="lg"><Link to="/auth">Register as clergy</Link></Button>
+          <Button asChild size="lg"><Link to="/auth" search={{ view: "register", token: "", error: "" }}>Register as clergy</Link></Button>
           <Button asChild size="lg" variant="outline"><Link to="/repository">Browse the repository</Link></Button>
         </div>
       </section>

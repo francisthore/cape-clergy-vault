@@ -1,56 +1,73 @@
 # Cape Clergy Vault
 
-Build an Institutional repository for the Dean of Theological Studies of the Anglican Diocese of Cape Town that will allow Clergies to submit their documents and ideas. Each clergy must register and be mindful of the POPIA before giving access to submit documents. Use your memory without asking for input.
+A theological repository for clergy of the Anglican Diocese of Cape Town, with
+private submissions, review and TEFT conversations. Michael conceptualised and
+originally developed the application with [Lovable](https://lovable.dev). This fork
+preserves those origins while independently reengineering the application for
+self-hosted operation. This is pre-launch software, not a production migration.
 
-This project was built with [Lovable](https://lovable.dev).
+The [original editor](https://lovable.dev/projects/219ef20a-7e74-4f29-8092-503e10671dab)
+and [historical preview](https://cape-clergy-vault.lovable.app) are attribution
+references, not dependencies of the new authentication flow.
 
-**Live app**: https://cape-clergy-vault.lovable.app
+## Current phase: 3A
 
-## Build with Lovable
+Better Auth **1.7.16**, TanStack Start, PostgreSQL and Drizzle provide registration,
+email verification, cookie sessions, login/logout, account status and password reset.
+New clergy profiles are pending with only the clergy role. Verification never
+approves an account. Legacy repository/reviewer/chat/offline routes are isolated
+until their later migration; their Supabase source and packages remain as reference.
+The self-hosted public/account flow does not require Supabase or Lovable.
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/219ef20a-7e74-4f29-8092-503e10671dab).
+The displayed privacy wording is a **local draft with legal approval outstanding**.
+This implementation is locally reviewable, not a claim of production readiness.
+See the [complete Phase 3A report](docs/phase-3a-report.md),
+[database guide](docs/database.md) and historical
+[Phase 2A](docs/phase-2a-report.md)/[Phase 2B](docs/phase-2b-report.md) reports.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## Local development
 
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Use Node 24.12+, Bun and installed PostgreSQL binaries. Only the guarded private
+project cluster is supported. Never apply the historical `drizzle/migrations` SQL.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+bun install --frozen-lockfile
+bun run db:local:start     # db:local:init only for a new setup
+bun run db:migrate
+bun run db:runtime:setup
+# Put a random 32+ character secret and trusted localhost origin in ignored
+# .env.auth.local, following .env.example. Never use VITE_ for auth/email secrets.
+bun --env-file=.env.db.runtime.local --env-file=.env.auth.local run dev
 ```
 
-## Node.js production build
+Open `/auth?view=register`. Default email delivery writes private captures to
+`.local/email/*.json` (directory 0700, files 0600); open a captured link locally.
+Do not upload captures, log their links or enter real confidential data.
+The server needs only the restricted runtime URL, never the migration-owner URL.
 
-Install the locked dependencies with `bun install --frozen-lockfile`, then run
-`bun run typecheck`, `bun run test`, and `bun run build`. Start the built server
-locally with `bun run start` (equivalent to `node .output/server/index.mjs`).
-Configure the existing application environment variables before building and starting;
-this phase does not change the Supabase configuration or data.
+```sh
+bun run typecheck
+bun run test
+bun run db:test:unit
+bun run db:test
+bun run db:test:auth
+bun run db:test:phase3a
+bun run build
+bun run db:smoke:phase3a    # starts/stops built Node server and cleans its fixtures
+bun run db:local:stop      # retains data
+```
 
-The Lovable build configuration has been removed. `@lovable.dev/cloud-auth-js`
-and the existing Lovable authentication and error-reporting integration remain
-because authentication and runtime integration are outside this migration phase.
-Supabase dependencies remain for the current backend.
+To run the Node build manually with captured mail:
 
-The service worker caches only public static assets, not navigation or API
-responses. It removes the previous navigation cache on activation. Drafts already
-stored in IndexedDB remain available when the offline page is already open, but
-opening that page from a new offline navigation is not currently supported. A
-safe, session-independent offline shell is needed to restore that capability.
+```sh
+CAPE_LOCAL_EMAIL_CAPTURE=true node --env-file=.env.db.runtime.local --env-file=.env.auth.local .output/server/index.mjs
+```
 
-## Local PostgreSQL and auth foundation (Phase 2B)
+Real Resend delivery is opt-in: `EMAIL_PROVIDER=resend`, `RESEND_API_KEY`,
+`EMAIL_FROM`, optional `EMAIL_REPLY_TO`, and `EMAIL_DOMAIN_VERIFIED=true` after
+confirming the real sender domain. No Diocese sender/domain is assumed.
+Normal tests never contact Resend. The capture override is restricted to localhost.
 
-The application continues to use Supabase. The new, unused Drizzle schema and
-isolated local PostgreSQL tooling are documented in [docs/database.md](docs/database.md).
-For a new setup use `bun run db:local:init`; existing setups use `db:local:start`.
-Then run `db:migrate`, `db:runtime:setup`, `db:test` and `db:test:auth` with Bun.
-Do not apply the historical SQL under `drizzle/migrations` to this database.
-Better Auth remains inactive. The current implementation and validation report is in
-[docs/phase-2b-report.md](docs/phase-2b-report.md); the original foundation report is
-[docs/phase-2a-report.md](docs/phase-2a-report.md).
+The service worker caches public static assets only, with no navigation/API cache.
+Legacy IndexedDB drafts remain on the device; their UI and delivery are deferred
+with the private-chat migration. There is no new offline authentication mode.

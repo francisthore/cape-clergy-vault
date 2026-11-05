@@ -2,8 +2,8 @@ import type { TransactionSql } from "postgres";
 import type { RuntimeConnection } from "./runtime.server.ts";
 
 // Server-only factory: verifier must call Better Auth's session API with request
-// headers, never accept a browser-supplied user ID/role. No route uses this yet.
-// Revalidation and account disabling/session revocation integration are Phase 3.
+// headers, never accept a browser-supplied user ID/role. Phase 3A wires this to
+// live Better Auth cookies; protected operations additionally check live approval.
 export function createRequestDatabaseBoundary(
   connection: RuntimeConnection,
   verifySession: (headers: Headers) => Promise<{ user: { id: string } } | null>,

@@ -1,40 +1,41 @@
-# Better Auth database foundation (inactive)
+# Better Auth integration (Phase 3A)
 
-Better Auth, `@better-auth/drizzle-adapter`, and the official `auth` CLI are pinned
-to **1.7.16**. Drizzle ORM 0.45.4 and Kit 0.31.11 satisfy their peer requirements.
-The selected versions are stable; the newer 1.7.17 was excluded by the package
-release-age safeguard. The Bun lockfile pins transitive dependencies.
+The existing `createLocalAuth` factory is now used by
+`src/lib/auth/service.server.ts`, lazily configured in `runtime.server.ts` and
+mounted at the TanStack Start `/api/auth/$` GET/POST route. Password/session/reset
+operations remain Better Auth **1.7.16**. The public handler allowlists operations,
+validates registration fields, preserves Set-Cookie, hides JSON session tokens,
+checks trusted origins, and enforces throttling. No server actions set cookies,
+so a `tanstackStartCookies` server-action plugin is unnecessary here.
 
-`generated.ts` is the unmodified official CLI output, including its relation names,
-text IDs, timestamp types, cascade FKs inside auth, constraints and indexes.
-`generate.server.ts` supplies offline adapter metadata with `schemaName: "auth"`;
-its deliberately unusable lazy PostgreSQL URL ignores environment credentials.
-Schema validation is disabled **only for that offline generator** because it has
-no existing table metadata. Runtime schema validation remains enabled.
+The adapter explicitly enables transactions for auth identities/accounts and
+password-reset/session revocation. In this pinned release, database after hooks
+are queued after the auth transaction; independent postgres.js application queries
+do not join its Drizzle transaction. Signup therefore commits auth first, then
+uses a scoped SECURITY DEFINER provisioner for an atomic pending profile/clergy
+role/explicit draft consent/history group. Failed provisioning is recoverable after
+verification and login through `/account`; missing approval always fails closed.
+
+Better Auth's email-verification JWTs are not inherently single-use. The delivery
+callback stores SHA-256 digests in `auth.verifications`. The HTTP verification gate
+atomically consumes one digest before Better Auth validates the JWT and updates
+verified state. Failure burns the link; resend is the recovery path. Reset tokens
+remain entirely Better Auth-managed. Callback URLs are fixed by the server.
+
+Only guarded local runtime connections are supported. The offline generator and
+official `generated.ts` remain unchanged. No Google OAuth or account migration.
+See [the complete implementation report](../../docs/phase-3a-report.md) and
+[database operations](../../docs/database.md). The offline
+schema generation command remains:
 
 ```sh
 bun run db:auth:generate
 bun run db:generate --name=describe_auth_change
 bun run db:check
-# Review SQL, then guarded db:migrate; never auth migrate or drizzle-kit push.
 ```
 
-`options.server.ts` shares naming/session/password options. `config.server.ts`
-requires the guarded runtime connection, an explicit secret, base URL and real
-verification-mail callback. It exports a factory, never a handler or singleton.
-No application route imports it. Email/password requires verification; sessions
-are database-backed with cookie caching disabled. No OAuth provider is configured.
-The mail callback in tests captures verification tokens locally without sending mail.
-
-`app.clergy_profiles.user_id` references `auth.users.id` with NO ACTION. This blocks
-hard deletion of auth users with profiles and retains application/history records.
-The auth library's own account/session cascades remain unchanged. Auth users may
-exist without profiles; RLS denies protected content in that case. Profile
-provisioning, approval, live account-disable/session revocation, reviewer mailbox
-challenges and application integration remain Phase 3 work. Authentication never
-implies application approval or reviewer privileges.
-
-See [database operations and trust limitations](../../docs/database.md).
-
-References: [official generator](https://better-auth.com/docs/concepts/cli),
-[official Drizzle adapter](https://better-auth.com/docs/adapters/drizzle).
+`generated.ts` remains the unmodified official CLI output. Its text keys, timestamp
+columns, indexes and internal auth cascade FKs are preserved. The app profile FK
+uses NO ACTION to retain application history. Generation uses deliberately unusable
+lazy credentials; runtime schema validation stays enabled. Do not use the Better
+Auth CLI migrator or Drizzle push against this database.
