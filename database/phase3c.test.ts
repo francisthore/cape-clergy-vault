@@ -300,9 +300,9 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
           "noConsent",
         ])
           assert.equal((await download(doc, key)).status, 403, key);
-        for (const key of ["other", "approver"])
+        for (const key of ["other", "approver", "reviewer"])
           assert.equal((await download(doc, key)).status, 404);
-        for (const key of ["owner", "reviewer"]) {
+        for (const key of ["owner"]) {
           const response = await download(doc, key);
           assert.equal(response.status, 200);
           assert.equal(response.headers.get("cache-control"), "private, no-store");
@@ -313,7 +313,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
         const events = await auditRows(doc);
         assert.ok(events.some((r) => r["action"] === "document.download.denied"));
         const starts = events.filter((r) => r["action"] === "document.download.started");
-        assert.equal(starts.length, 2);
+        assert.equal(starts.length, 1);
         for (const start of starts)
           assert.ok(
             events.some(
@@ -337,6 +337,10 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
           await response.arrayBuffer();
           assert.equal((await download(privateDoc, key)).status, 404);
         }
+        assert.equal((await download(privateDoc, "reviewer")).status, 404);
+        // Historical operator-only authorization fixture; the actual new invitation /
+        // assignment / decision flow is exercised in phase3e.test.ts.
+        await owner.client`insert into app.reviewer_assignments(submission_id,revision,reviewer_id,assigned_by) values(${confidential},1,${user("reviewer")},session_user)`;
         const reviewer = await download(privateDoc, "reviewer");
         assert.equal(reviewer.status, 200);
         await reviewer.arrayBuffer();
@@ -728,6 +732,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
       await tx`delete from app.audit_events where actor_id=any(${ids}) or submission_id=any(${submissions}) or document_id in (select id from app.documents where submission_id=any(${submissions}))`;
       await tx`delete from app.popia_consent_events where user_id=any(${ids})`;
       await tx`delete from app.documents where submission_id=any(${submissions})`;
+      await tx`delete from app.reviewer_assignments where submission_id=any(${submissions})`;
       await tx`delete from app.submissions where id=any(${submissions})`;
       await tx`delete from app.approval_notifications where user_id=any(${ids})`;
       await tx`delete from app.role_assignments where user_id=any(${ids})`;

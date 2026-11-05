@@ -61,6 +61,8 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
         const state = ["pending", "rejected", "suspended"].includes(key) ? key : "approved";
         await tx`insert into app.clergy_profiles(user_id,full_name,approval_status) values (${id},${key},${state})`;
         await tx`insert into app.role_assignments(user_id,role) values (${id},${["reviewer", "admin"].includes(key) ? key : "clergy"})`;
+        if (key === "reviewer")
+          await tx`insert into app.role_assignments(user_id,role) values (${id},'clergy')`;
         if (key !== "noConsent") {
           for (const purpose of ["repository", "private_chat"]) {
             const version =
@@ -179,9 +181,9 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
           (sp) =>
             sp`insert into app.review_decisions(submission_id,reviewer_id,outcome) values (${sharedId},${get("bob")},'accepted')`,
         );
-        assert.equal(
-          (await tx`update app.submissions set status = 'accepted' where id = ${privateId}`).count,
-          0,
+        await denied(
+          tx,
+          (sp) => sp`update app.submissions set status='accepted' where id=${privateId}`,
         );
         await denied(
           tx,
@@ -201,15 +203,18 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
     });
     await t.test("live reviewer access, explicit roles and revocation", async () => {
       await as("reviewer", async (tx) => {
-        assert.ok((await count(tx, "submissions")) >= 3);
+        assert.equal(await count(tx, "submissions"), 1); // Accepted non-confidential only.
         assert.equal(await count(tx, "chat_messages"), 1);
         assert.equal(await count(tx, "audit_events"), 0);
-        assert.equal(
-          (await tx`update app.submissions set status = 'under_review' where id = ${privateId}`)
-            .count,
-          1,
+        await denied(
+          tx,
+          (sp) => sp`update app.submissions set status='under_review' where id=${privateId}`,
         );
-        await tx`insert into app.review_decisions(submission_id,reviewer_id,outcome) values (${privateId},${get("reviewer")},'under_review')`;
+        await denied(
+          tx,
+          (sp) =>
+            sp`insert into app.review_decisions(submission_id,reviewer_id,outcome) values(${privateId},${get("reviewer")},'under_review')`,
+        );
         await tx`insert into app.chat_messages(id,owner_id,sender_id,body) values (${randomUUID()},${get("alice")},${get("reviewer")},'Reply')`;
         await denied(
           tx,
@@ -221,9 +226,9 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
       await owner.client`update app.role_assignments set revoked_at = now() where user_id = ${get("reviewer")}`;
       await as("reviewer", async (tx) => {
         assert.equal(await count(tx, "chat_messages"), 0);
-        assert.equal(
-          (await tx`update app.submissions set status = 'accepted' where id = ${privateId}`).count,
-          0,
+        await denied(
+          tx,
+          (sp) => sp`update app.submissions set status='accepted' where id=${privateId}`,
         );
       });
       await as("admin", async (tx) => {

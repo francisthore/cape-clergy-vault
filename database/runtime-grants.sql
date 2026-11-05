@@ -8,11 +8,9 @@ REVOKE ALL ON ALL SEQUENCES IN SCHEMA app, auth, cape_migrations FROM cape_clerg
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA auth TO cape_clergy_runtime;
 GRANT SELECT ON ALL TABLES IN SCHEMA app TO cape_clergy_runtime;
 GRANT INSERT ON app.submissions, app.documents, app.chat_notification_preferences TO cape_clergy_runtime;
-GRANT INSERT (submission_id, reviewer_id, outcome, notes) ON app.review_decisions TO cape_clergy_runtime;
 GRANT INSERT (id, owner_id, sender_id, body) ON app.chat_messages TO cape_clergy_runtime;
 GRANT INSERT (actor_id, target_user_id, submission_id, action, outcome, correlation_id) ON app.audit_events TO cape_clergy_runtime;
 GRANT INSERT (user_id, notice_version, purpose, action) ON app.popia_consent_events TO cape_clergy_runtime;
-GRANT UPDATE (status) ON app.submissions TO cape_clergy_runtime;
 GRANT UPDATE (muted) ON app.chat_notification_preferences TO cape_clergy_runtime;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA app TO cape_clergy_runtime;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA app FROM cape_clergy_runtime;
@@ -42,3 +40,13 @@ GRANT EXECUTE ON FUNCTION app.is_settings_manager(),app.require_settings_manager
 REVOKE INSERT ON app.submissions FROM cape_clergy_runtime;
 GRANT EXECUTE ON FUNCTION app.require_submission_account(),app.save_draft(uuid,integer,text,text,text,text,text[],boolean),
  app.transition_submission(uuid,integer,text),app.exclude_draft_document(uuid,integer) TO cape_clergy_runtime;
+
+REVOKE UPDATE(status) ON app.submissions FROM cape_clergy_runtime;
+-- Phase 3E: no direct review writes, and no admin substitution for assignment.
+REVOKE INSERT, UPDATE ON app.review_decisions, app.submissions FROM cape_clergy_runtime;
+REVOKE INSERT(submission_id,reviewer_id,outcome,notes) ON app.review_decisions FROM cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.can_review_submission(uuid) TO cape_clergy_runtime;
+-- Operator/outbox/history tables carry credentials or administration evidence.
+REVOKE ALL ON app.reviewer_invitations,app.reviewer_events,app.reviewer_notifications FROM cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.inspect_reviewer_invitation(text),app.accept_reviewer_invitation(text),
+ app.decide_review(uuid,integer,text,text,text,uuid),app.author_review_feedback(uuid),app.reviewer_author(uuid) TO cape_clergy_runtime;

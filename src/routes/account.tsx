@@ -8,6 +8,7 @@ export const Route = createFileRoute("/account")({ component: AccountPage });
 function AccountPage() {
   const [status, setStatus] = useState("loading");
   const [canManageSettings, setCanManageSettings] = useState(false);
+  const [canReview, setCanReview] = useState(false);
   const [canApprove, setCanApprove] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -17,6 +18,7 @@ function AccountPage() {
         .then((r) => {
           setStatus(r.status ?? "error");
           setCanApprove(r.canApprove === true);
+          setCanReview(r.canReview === true);
           setCanManageSettings(r.canManageSettings === true);
         })
         .catch(() => setStatus("error"));
@@ -71,6 +73,11 @@ function AccountPage() {
       {status === "approved" && (
         <a className="block text-primary underline" href="/repository">
           Browse repository
+        </a>
+      )}
+      {canReview && (
+        <a className="block text-primary underline" href="/reviewer">
+          Reviewer workspace
         </a>
       )}
       {canManageSettings && (

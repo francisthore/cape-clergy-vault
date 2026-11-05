@@ -132,3 +132,33 @@ ignored; use the ignored local files above. The former tracked root `.env` remai
 on disk but is removed from the current index. Historical commits still contain it;
 removing tracking does not erase history. Private captures, credentials and database
 files stay under ignored `.local/` and ignored environment files.
+
+## Phase 3E: assigned theological review
+
+Reviewer onboarding now requires an exact-identity trusted-operator invitation,
+one-time mailbox proof and explicit authenticated acceptance. Each resource revision
+needs its own revocable assignment; admin/approver/settings roles do not substitute.
+`/reviewer` provides server-paginated assignments and version-checked start/accept/
+return actions. Authors see intended feedback with revision history, while private
+notes remain assignment-protected. Status/history/audit/outbox changes are atomic;
+direct runtime review writes are revoked. Private downloads retain mandatory audits.
+
+Apply the forward migrations and runtime grants with the existing guarded local
+commands. Read [reviewer operations](docs/reviewer-operations.md) before using:
+
+```sh
+bun run db:reviewer:operator invite EXACT_ID
+bun run db:reviewer:operator assign EXACT_REVIEWER_ID SUBMISSION_UUID
+bun run db:reviewer:notifications
+bun run db:test:phase3e:boundary
+bun run db:test:phase3e
+bun run build
+bun run db:smoke:phase3e
+```
+
+[Phase 3E implementation/results](docs/phase-3e-report.md) document the exact boundary,
+file inventory and known limits. Only disposable local accounts/captured mail were
+used. Reviewed privacy/retention, malware quarantine, production roles/infrastructure,
+shared abuse limits, monitored workers, backups/restore drills, quotas, live email
+verification and browser/mobile/accessibility acceptance remain release prerequisites.
+No chat/OAuth/deployment or Phase 3F work is included.

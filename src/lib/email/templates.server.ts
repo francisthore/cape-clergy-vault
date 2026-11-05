@@ -1,4 +1,8 @@
 export type EmailKind =
+  | "reviewer_invitation"
+  | "review_assigned"
+  | "submission_accepted"
+  | "submission_returned"
   | "test"
   | "verification"
   | "reset"
@@ -8,6 +12,26 @@ export type EmailKind =
   | "suspended"
   | "reactivated";
 const content: Record<EmailKind, [string, string, string]> = {
+  reviewer_invitation: [
+    "Reviewer invitation",
+    "You have been invited to undertake assigned theological reviews. Sign in with your invited account, then open this one-time link and explicitly accept. It expires one hour after issue. Treat this link as private. Clergy approval and reviewer authorization are separate.",
+    "Review invitation",
+  ],
+  review_assigned: [
+    "Review assignment",
+    "A theological resource has been assigned to you. Sign in to view your current authorized assignments.",
+    "Open reviewer workspace",
+  ],
+  submission_accepted: [
+    "Submission accepted",
+    "A review has accepted your submission. Sign in to view its current status and intended feedback.",
+    "View submission",
+  ],
+  submission_returned: [
+    "Submission returned for amendment",
+    "A review has returned your submission for amendment. Sign in to read the feedback and prepare an amended revision.",
+    "View feedback",
+  ],
   test: [
     "Email configuration test",
     "This controlled test was requested by your settings manager account. Provider acceptance does not confirm recipient delivery.",

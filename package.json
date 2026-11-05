@@ -37,7 +37,13 @@
     "storage:inventory": "node --env-file=.env.db.local scripts/db/storage-inventory.ts",
     "db:test:phase3d": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3d.test.ts",
     "db:smoke:phase3d": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase3d-smoke.ts",
-    "db:settings:operator": "node --env-file=.env.db.local scripts/db/settings-operator.ts"
+    "db:settings:operator": "node --env-file=.env.db.local scripts/db/settings-operator.ts",
+    "db:reviewer:operator": "node --env-file=.env.db.local --env-file=.env.auth.local scripts/db/reviewer-operator.ts",
+    "db:reviewer:notifications": "node --env-file=.env.db.local --env-file=.env.auth.local scripts/db/reviewer-notifications.ts",
+    "db:test:phase3e:boundary": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3e-boundary.test.ts",
+    "db:test:phase3e": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3e.test.ts",
+    "db:smoke:phase3e": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3e.test.ts --http",
+    "db:audit:phase3e": "node --env-file=.env.db.local --env-file=.env.db.runtime.local --env-file=.env.auth.local scripts/db/phase3e-audit.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

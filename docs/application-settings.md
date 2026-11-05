@@ -129,3 +129,18 @@ existing sessions or restore a known-good settings backup via guarded operator
 maintenance; preserve history and append a recovery audit. Never disable authorization
 or overwrite the migration ledger. Keep an eligible manager and a tested protected
 operator recovery path; provider outages must not provoke broad privilege grants.
+
+## Phase 3E reviewer notification extension
+
+The separate `reviewer_notifications` outbox handles invitations, assignments and
+accepted/returned outcomes through the same EmailService, PostgreSQL settings and
+provider-credential fallback. `bun run db:reviewer:notifications` processes a bounded
+batch. No new provider or broadcast API exists. Both HTML/plain text omit private
+notes, document contents and feedback. Invitation proof has a one-hour lifetime,
+is AES-GCM encrypted for durable delivery, and is cleared on successful send,
+consumption or cancellation. Identity-bound digest redemption requires explicit
+verified approved session acceptance. Pending-envelope key rotation requires deliberate
+cancellation/reissue. See [reviewer operations](reviewer-operations.md) for proof links,
+leases, sender snapshots, safe retries and operational dependencies. The existing
+approval outbox and its worker remain unchanged. Both workers require scheduling,
+monitoring and ambiguity reconciliation before production use.

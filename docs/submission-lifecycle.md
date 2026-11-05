@@ -14,15 +14,17 @@ assertion of an authoritative diocesan taxonomy. Type is immutable after creatio
 create a different draft if a different type is needed. Ownership and IDs are
 server-generated, never accepted as claims from a form.
 
-| Transition         | Actor and requirements                                 | Result                                                                |
-| ------------------ | ------------------------------------------------------ | --------------------------------------------------------------------- |
-| Create             | Verified approved account, current repository consent  | Owned draft, version/revision 1, immutable initial snapshot           |
-| Save               | Own draft, matching version, valid metadata            | Version increases; immutable snapshot/audit                           |
-| Upload             | Own draft of kind document, current eligibility        | Original Phase 3C pending → available/failed lifecycle                |
-| Exclude attachment | Own draft, matching version, settled non-excluded file | Excluded flag, version increment, history/audit; bytes retained       |
-| Submit             | Own draft, matching version, complete requirements     | Submitted, version increment, timestamp, immutable submitted snapshot |
-| Start amendment    | Own returned item, matching version                    | Pre-amendment snapshot, new draft, revision/version increment         |
-| Review states      | Future independently authorized workflow               | No accept/return/review decision API in this phase                    |
+| Transition         | Actor and requirements                                       | Result                                                                         |
+| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Create             | Verified approved account, current repository consent        | Owned draft, version/revision 1, immutable initial snapshot                    |
+| Save               | Own draft, matching version, valid metadata                  | Version increases; immutable snapshot/audit                                    |
+| Upload             | Own draft of kind document, current eligibility              | Original Phase 3C pending → available/failed lifecycle                         |
+| Exclude attachment | Own draft, matching version, settled non-excluded file       | Excluded flag, version increment, history/audit; bytes retained                |
+| Submit             | Own draft, matching version, complete requirements           | Submitted, version increment, timestamp, immutable submitted snapshot          |
+| Start amendment    | Own returned item, matching version                          | Pre-amendment snapshot, new draft, revision/version increment                  |
+| Start review       | Eligible current-revision assigned reviewer                  | submitted → under_review, version increment, immutable decision/snapshot/audit |
+| Accept             | Same reviewer authorization, under_review, private rationale | accepted, immutable decision and durable author notification                   |
+| Return             | Same authorization, under_review, meaningful author feedback | returned, revision-linked feedback and durable author notification             |
 
 Final submission requires at least 20 characters of meaningful normalized description.
 Documents also require at least one available non-excluded PDF and no non-excluded
@@ -46,7 +48,7 @@ runtime cannot INSERT submissions directly: its only creation function explicitl
 creates a draft. Reviewers cannot review their own items or any draft. Existing
 review decisions remain immutable; private reviewer notes are RLS-restricted to
 eligible reviewers of another author's item. Authors receive separate lifecycle
-events and a clear future-review-interface notice.
+events and an explicit safe feedback projection.
 
 `/repository` and `/repository/{id}` require verified Better Auth identity, approved
 account and current repository consent. SQL applies accepted **and non-confidential**
@@ -70,3 +72,23 @@ Local testing must use disposable accounts and PDFs. The notice is an unapproved
 local draft. Signature/trailer checks are not malware scanning or a guarantee of PDF
 safety. Real confidential use requires reviewed privacy text, durable quarantine /
 malware validation, operational controls and browser/accessibility acceptance tests.
+
+## Phase 3E review integration
+
+The [reviewer runbook](reviewer-operations.md) defines invitation, assignment, review
+and commentary policy. Authors see review timestamps, status and feedback associated
+with each reviewed revision on their details page. The review decision table remains
+private: its legacy notes are never projected into author/repository responses.
+Acceptance requires at least 20 normalized characters of private rationale; returns
+require at least 20 characters of intended author guidance. Final actions require
+reviewer confirmation. Each action is version-checked, idempotent and atomic with
+history, security audit and any notification intent. Authors cannot invoke it.
+
+Starting an amendment increments revision and invalidates earlier assignment access.
+A trusted operator must assign the new submitted revision explicitly. Previously
+returned guidance remains visible to the author and is never overwritten. Current
+assignments may retain completed-revision review access until revocation or amendment;
+no cross-revision private-note access is implied. Accepted non-confidential resources
+appear automatically through existing repository predicates. Confidential resources
+remain outside shared discovery regardless of acceptance. There are no direct runtime
+status writes and no admin substitution for confidential assignment access.

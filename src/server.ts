@@ -53,6 +53,22 @@ export default {
         const denied = await authorizeApprovalPage(request.headers);
         if (denied) return denied;
       }
+      if (
+        (path === "/reviewer" || path.startsWith("/reviewer/")) &&
+        path !== "/reviewer/invitation"
+      ) {
+        const { authorizeReviewerPage } = await import("./lib/reviews/runtime.server");
+        const id = path.startsWith("/reviewer/submissions/")
+          ? path.slice("/reviewer/submissions/".length)
+          : undefined;
+        if (id && !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id))
+          return new Response("Item unavailable", {
+            status: 404,
+            headers: { "Cache-Control": "no-store" },
+          });
+        const denied = await authorizeReviewerPage(request.headers, id);
+        if (denied) return denied;
+      }
       if (path === "/admin/settings/email") {
         const { authorizeSettingsPage } = await import("./lib/settings/runtime.server");
         const denied = await authorizeSettingsPage(request.headers);
@@ -75,12 +91,13 @@ export default {
         ["/auth", "/account", "/documents"].includes(path) ||
         path.startsWith("/admin/") ||
         path.startsWith("/submissions") ||
-        path.startsWith("/repository")
+        path.startsWith("/repository") ||
+        path.startsWith("/reviewer")
       ) {
         const headers = new Headers(normalized.headers);
         headers.set("Cache-Control", "no-store");
         headers.set("Referrer-Policy", "no-referrer");
-        if (path.startsWith("/admin/")) headers.set("Vary", "Cookie");
+        headers.set("Vary", "Cookie");
         return new Response(normalized.body, { status: normalized.status, headers });
       }
       return normalized;

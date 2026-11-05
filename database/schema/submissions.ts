@@ -8,6 +8,7 @@ import {
   timestamp,
   text,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { app, createdAt } from "./common.ts";
@@ -87,6 +88,39 @@ export const documents = app
   )
   .enableRLS();
 
+// Explicit current-revision authorization; no global role substitutes for an assignment.
+export const reviewerAssignments = app
+  .table(
+    "reviewer_assignments",
+    {
+      id: uuid("id").primaryKey().defaultRandom(),
+      submissionId: uuid("submission_id")
+        .notNull()
+        .references(() => submissions.id),
+      revision: integer("revision").notNull(),
+      reviewerId: text("reviewer_id")
+        .notNull()
+        .references(() => profiles.userId),
+      assignedBy: text("assigned_by").notNull(),
+      createdAt: createdAt(),
+      status: text("status").notNull().default("active"),
+      revokedAt: timestamp("revoked_at", { withTimezone: true }),
+      correlationId: uuid("correlation_id").notNull().defaultRandom(),
+    },
+    (t) => [
+      uniqueIndex("reviewer_assignment_active_unique")
+        .on(t.submissionId, t.revision, t.reviewerId)
+        .where(sql`${t.status}='active'`),
+      index("reviewer_assignment_inbox_idx").on(t.reviewerId, t.submissionId, t.revision),
+      check("reviewer_assignment_revision_positive", sql`${t.revision}>0`),
+      check(
+        "reviewer_assignment_state",
+        sql`(${t.status}='active' and ${t.revokedAt} is null) or (${t.status}='revoked' and ${t.revokedAt} is not null and ${t.revokedAt}>=${t.createdAt})`,
+      ),
+    ],
+  )
+  .enableRLS();
+
 export const reviewDecisions = app
   .table(
     "review_decisions",
@@ -100,9 +134,20 @@ export const reviewDecisions = app
         .references(() => profiles.userId),
       outcome: reviewOutcome("outcome").notNull(),
       notes: text("notes").notNull().default(""),
+      authorFeedback: text("author_feedback").notNull().default(""),
+      revision: integer("revision"), // NULL denotes preserved pre-3E history.
+      expectedVersion: integer("expected_version"),
+      requestId: uuid("request_id").unique(),
+      assignmentId: uuid("assignment_id").references(() => reviewerAssignments.id),
       createdAt: createdAt(),
     },
-    (t) => [index("review_submission_created_idx").on(t.submissionId, t.createdAt)],
+    (t) => [
+      index("review_submission_created_idx").on(t.submissionId, t.createdAt),
+      check(
+        "review_decision_revision_fields",
+        sql`(${t.revision} is null and ${t.expectedVersion} is null and ${t.assignmentId} is null and ${t.requestId} is null) or (${t.revision} is not null and ${t.revision}>0 and ${t.expectedVersion} is not null and ${t.expectedVersion}>0 and ${t.assignmentId} is not null and ${t.requestId} is not null)`,
+      ),
+    ],
   )
   .enableRLS();
 

@@ -13,6 +13,13 @@ type Detail = {
     state: string;
     excluded: boolean;
   }[];
+  feedback: {
+    id: string;
+    outcome: string;
+    author_feedback: string;
+    revision: number;
+    created_at: string;
+  }[];
   history: { event: string; version: number; revision: number; created_at: string }[];
 };
 export function SubmissionDetail({ id, repository = false }: { id: string; repository?: boolean }) {
@@ -297,10 +304,21 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                   </li>
                 ))}
               </ul>
-              <p>
-                The theological review interface is planned for a later phase. Private reviewer
-                notes are not displayed here.
-              </p>
+              <h2 className="mt-6 text-xl">Review outcomes and feedback</h2>
+              {data.feedback.length === 0 && <p>No review outcomes yet.</p>}
+              <ul className="space-y-4">
+                {data.feedback.map((f) => (
+                  <li key={f.id} className="rounded border bg-card p-4">
+                    <p className="capitalize">
+                      {f.outcome.replaceAll("_", " ")} · Revision {f.revision} ·{" "}
+                      {new Date(f.created_at).toLocaleString()}
+                    </p>
+                    <p className="whitespace-pre-wrap">
+                      {f.author_feedback || "No author-facing feedback for this action."}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
           {message && <p role="status">{message}</p>}

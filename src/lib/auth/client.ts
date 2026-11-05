@@ -13,6 +13,7 @@ export async function accountRequest(path: string, body?: unknown) {
   const data = (await response.json()) as {
     status?: string;
     canApprove?: boolean;
+    canReview?: boolean;
     canManageSettings?: boolean;
     message?: string;
     ok?: boolean;

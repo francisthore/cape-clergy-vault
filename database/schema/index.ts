@@ -8,3 +8,4 @@ export * from "../auth/generated.ts";
 export * from "./approval.ts";
 
 export * from "./settings.ts";
+export * from "./reviewers.ts";

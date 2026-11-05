@@ -31,7 +31,15 @@ export function createSubmissionService(
               const history = repository
                 ? []
                 : await tx`select event,version,revision,created_at from app.submission_events where submission_id=${q.id} order by created_at desc,id desc limit 100`;
-              return { submission: rows[0], documents, history };
+              const [review] = repository
+                ? []
+                : await tx`select app.author_review_feedback(${q.id}) as feedback`;
+              return {
+                submission: rows[0],
+                documents,
+                history,
+                feedback: review?.["feedback"] ?? [],
+              };
             }
             // Explicit repository predicate applies before counts and pagination, even for reviewers.
             const [result] =

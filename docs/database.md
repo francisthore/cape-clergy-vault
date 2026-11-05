@@ -1,4 +1,42 @@
-# PostgreSQL, settings, submissions and private documents (Phase 3D)
+# PostgreSQL reviewer boundary (Phase 3E)
+
+The [Phase 3E report](phase-3e-report.md) and [reviewer runbook](reviewer-operations.md)
+supersede earlier role/content-access statements below. Apply forward migrations
+`0020`–`0025`, then `db:runtime:setup`. There are 26 ledger entries, 22 RLS application
+tables and four Better Auth tables. Historical migrations remain unchanged.
+
+The original runtime UPDATE(status) and review-decision INSERT privileges are revoked,
+including column grants. There is no submission UPDATE or review INSERT RLS policy.
+Author functions remain intact; only `decide_review` performs review transitions.
+Status, immutable decision/revision feedback, lifecycle evidence, audit and durable
+notification intent commit atomically. Runtime cannot change authorship/confidentiality.
+
+New tables: revision-scoped `reviewer_assignments`, mailbox/digest/expiry-bound
+`reviewer_invitations`, immutable `reviewer_events`, and separate retryable
+`reviewer_notifications` with encrypted invitation delivery envelopes. Runtime has
+RLS-limited assignment SELECT and **no privileges** on the other three. Runtime receives
+EXECUTE only on `can_review_submission`, invitation inspect/accept, `decide_review`,
+owner-safe feedback and minimal reviewer-author projection. Internal/operator/trigger
+functions have neither PUBLIC nor runtime EXECUTE. Runtime has no direct grants on
+new tables for mutations. Existing append-only review/audit history is retained.
+
+Admin no longer implies reviewer. Confidential material/private notes require an
+active exact-current-revision assignment and eligible live reviewer, except ordinary
+author access to their own resources. Accepted non-confidential clergy sharing is
+preserved. Document RLS follows that parent rule and `record_document_access` independently
+rechecks it before mandatory download audits. System-admin profile/role/audit reads
+remain explicit; they do not grant confidential submission/document/history access.
+Approver and settings-manager permissions remain independent. Chat migration is excluded;
+legacy chat remains isolated and is not a new reviewer endpoint.
+
+Operator commands require interactive confirmation and the guarded owner connection;
+web handlers use only restricted runtime credentials and verified Better Auth sessions.
+Invitation role activation and assignment administration append separate immutable
+evidence with operator/session-derived actors. See the runbook for mailbox proof,
+revision confirmation, revocation, encrypted-envelope recovery and notification leases.
+The original trusted-server/GUC and in-flight revocation limitations still apply.
+
+## Historical Phase 3D database boundary
 
 ## Phase 3D current boundary
 

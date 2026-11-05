@@ -1,4 +1,17 @@
-# Private documents: Phase 3D integration
+# Phase 3E storage authorization update
+
+The [reviewer runbook](reviewer-operations.md) supersedes historical broad reviewer/admin
+access below. Available, non-excluded confidential attachments require an eligible
+reviewer's active assignment to the exact current revision. Admin/approver/settings
+capabilities alone grant no confidential access. Owners retain their existing files;
+accepted non-confidential clergy access is preserved. The document SELECT parent
+policy and SECURITY DEFINER `record_document_access` use the same assignment predicate.
+Revocation/amendment removes new reviewer-only downloads. Existing mandatory
+committed pre-transfer audits, private streaming/storage protections and limitations
+for already-transferred bytes remain unchanged. No public/signed-bearer file URL is
+introduced. Reviewer detail links use `/api/documents/{id}/download` exclusively.
+
+## Historical Phase 3D storage integration
 
 This local implementation uses Better Auth, PostgreSQL RLS and private filesystem
 storage. It does not use Supabase Storage. The original Lovable workflow is retained

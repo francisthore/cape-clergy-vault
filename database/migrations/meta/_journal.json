@@ -141,6 +141,48 @@
       "when": 1793907252615,
       "tag": "0019_submission_text_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793909345458,
+      "tag": "0020_reviewer_assignments",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793909379035,
+      "tag": "0021_review_boundary",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793909461195,
+      "tag": "0022_reviewer_onboarding",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793909461596,
+      "tag": "0023_reviewer_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793910081623,
+      "tag": "0024_assignment_revision_confirmation",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793910139131,
+      "tag": "0025_review_state_constraints",
+      "breakpoints": true
     }
   ]
 }

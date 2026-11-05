@@ -296,14 +296,9 @@ test("Phase 3D restricted runtime", async (t) => {
           400,
         );
         assert.equal((await subRequest("manager", undefined, "?id=" + idea)).status, 404);
-        assert.equal(
-          (
-            await as(
-              "clergy",
-              (tx) => tx`update app.submissions set status='accepted' where id=${idea}`,
-            )
-          ).count,
-          0,
+        await assert.rejects(
+          as("clergy", (tx) => tx`update app.submissions set status='accepted' where id=${idea}`),
+          { code: "42501" },
         );
         const own = await (await subRequest("clergy")).json();
         assert.equal(own.total, 2);
@@ -333,14 +328,9 @@ test("Phase 3D restricted runtime", async (t) => {
         (await subRequest("reviewer", { action: "submit", id: target, version: 2 })).status,
         200,
       );
-      assert.equal(
-        (
-          await as(
-            "reviewer",
-            (tx) => tx`update app.submissions set status='accepted' where id=${target}`,
-          )
-        ).count,
-        0,
+      await assert.rejects(
+        as("reviewer", (tx) => tx`update app.submissions set status='accepted' where id=${target}`),
+        { code: "42501" },
       );
       await assert.rejects(
         as(
