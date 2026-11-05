@@ -44,10 +44,13 @@ stored in IndexedDB remain available when the offline page is already open, but
 opening that page from a new offline navigation is not currently supported. A
 safe, session-independent offline shell is needed to restore that capability.
 
-## Local PostgreSQL foundation (Phase 2A)
+## Local PostgreSQL and auth foundation (Phase 2B)
 
 The application continues to use Supabase. The new, unused Drizzle schema and
 isolated local PostgreSQL tooling are documented in [docs/database.md](docs/database.md).
-Start with `bun run db:local:init`, then `bun run db:migrate` and `bun run db:test`.
+For a new setup use `bun run db:local:init`; existing setups use `db:local:start`.
+Then run `db:migrate`, `db:runtime:setup`, `db:test` and `db:test:auth` with Bun.
 Do not apply the historical SQL under `drizzle/migrations` to this database.
-The implementation and validation report is in [docs/phase-2a-report.md](docs/phase-2a-report.md).
+Better Auth remains inactive. The current implementation and validation report is in
+[docs/phase-2b-report.md](docs/phase-2b-report.md); the original foundation report is
+[docs/phase-2a-report.md](docs/phase-2a-report.md).

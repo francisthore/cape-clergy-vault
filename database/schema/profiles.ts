@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { check, index, text, timestamp, uuid, uniqueIndex } from "drizzle-orm/pg-core";
+import { users } from "../auth/generated.ts";
 import { app, createdAt } from "./common.ts";
 
 export const approvalStatus = app.enum("approval_status", [
@@ -8,14 +9,16 @@ export const approvalStatus = app.enum("approval_status", [
   "rejected",
   "suspended",
 ]);
-export const appRole = app.enum("app_role", ["clergy", "admin"]);
+export const appRole = app.enum("app_role", ["clergy", "reviewer", "admin"]);
 
 export const profiles = app
   .table(
     "clergy_profiles",
     {
-      // Opaque Better Auth string ID; FK to its generated user table is deferred.
-      userId: text("user_id").primaryKey(),
+      // NO ACTION blocks auth deletion while application/history records remain.
+      userId: text("user_id")
+        .primaryKey()
+        .references(() => users.id),
       fullName: text("full_name").notNull(),
       title: text("title").notNull().default(""),
       parish: text("parish").notNull().default(""),

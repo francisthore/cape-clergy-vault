@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { validateLocalUrl, assertLocalDatabase } from "./safety.ts";
+import { validateLocalUrl, assertLocalDatabase, assertRuntimePrivileges } from "./safety.ts";
 import type { Sql } from "postgres";
 
 const safe = "postgresql://cape_clergy_dev:test-password@127.0.0.1:55432/cape_clergy_vault_dev";
@@ -53,4 +53,29 @@ test("database identity must match ownership, marker, endpoint and restricted pr
   ]) {
     await assert.rejects(assertLocalDatabase(fake({ ...identity, ...override })));
   }
+});
+
+test("runtime URL and ownership guards remain distinct from migration credentials", async () => {
+  const runtime = safe.replace("cape_clergy_dev:", "cape_clergy_runtime:");
+  assert.equal(validateLocalUrl(runtime, true), runtime);
+  assert.throws(() => validateLocalUrl(runtime));
+  assert.throws(() => validateLocalUrl(safe, true));
+  for (const candidate of [
+    runtime + "?host=remote",
+    runtime.replace("55432", "5432"),
+    runtime.replace("127.0.0.1", "example.com"),
+  ]) {
+    assert.throws(() => validateLocalUrl(candidate, true));
+  }
+  const flags = {
+    membership: false,
+    owns_relation: false,
+    owns_schema: false,
+    creates: false,
+    temporary: false,
+  };
+  const fake = (row: unknown) => (async () => [row]) as unknown as Sql;
+  await assertRuntimePrivileges(fake(flags));
+  for (const key of Object.keys(flags))
+    await assert.rejects(assertRuntimePrivileges(fake({ ...flags, [key]: true })));
 });

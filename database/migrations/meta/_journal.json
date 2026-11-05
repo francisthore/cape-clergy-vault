@@ -15,6 +15,20 @@
       "when": 1793882870512,
       "tag": "0001_append_only_history",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793884710920,
+      "tag": "0002_better_auth_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793884738010,
+      "tag": "0003_authorization_boundary",
+      "breakpoints": true
     }
   ]
 }

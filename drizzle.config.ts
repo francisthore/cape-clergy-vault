@@ -6,7 +6,7 @@ export default defineConfig({
   dialect: "postgresql",
   schema: "./database/schema/index.ts",
   out: "./database/migrations",
-  schemaFilter: ["app"],
+  schemaFilter: ["app", "auth"],
   strict: true,
   verbose: true,
 });

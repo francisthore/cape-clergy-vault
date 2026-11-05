@@ -1,24 +1,40 @@
-# Authentication schema boundary
+# Better Auth database foundation (inactive)
 
-Reserved for a future Better Auth CLI-generated Drizzle schema. Phase 2A deliberately
-contains no auth tables, adapter, registration routes, session handling or dependency.
+Better Auth, `@better-auth/drizzle-adapter`, and the official `auth` CLI are pinned
+to **1.7.16**. Drizzle ORM 0.45.4 and Kit 0.31.11 satisfy their peer requirements.
+The selected versions are stable; the newer 1.7.17 was excluded by the package
+release-age safeguard. The Bun lockfile pins transitive dependencies.
 
-The application uses opaque **text** user IDs matching Better Auth's default string
-IDs. Keep that configuration when generating auth tables; do not enable serial IDs
-or change application columns to PostgreSQL UUID. UUID-looking legacy Supabase IDs
-can be represented as text, but no import or identity matching is performed here.
+`generated.ts` is the unmodified official CLI output, including its relation names,
+text IDs, timestamp types, cascade FKs inside auth, constraints and indexes.
+`generate.server.ts` supplies offline adapter metadata with `schemaName: "auth"`;
+its deliberately unusable lazy PostgreSQL URL ignores environment credentials.
+Schema validation is disabled **only for that offline generator** because it has
+no existing table metadata. Runtime schema validation remains enabled.
 
-In Phase 2B, pin the selected Better Auth version, decide its plugins, generate its
-schema into this directory, and review it before including it in Drizzle's schema
-entrypoint. Keep auth tables in a separate PostgreSQL `auth` namespace (with the
-adapter explicitly mapped to generated tables), then add the FK from
-`app.clergy_profiles.user_id` to the generated user table's **text** primary key.
-Validate namespace/adapter compatibility against the pinned version. Do not create
-auth tables or a placeholder auth user table by hand.
+```sh
+bun run db:auth:generate
+bun run db:generate --name=describe_auth_change
+bun run db:check
+# Review SQL, then guarded db:migrate; never auth migrate or drizzle-kit push.
+```
 
-Application FKs currently reference clergy_profiles with text IDs. This is an
-application profile root, not an authentication authority; it cannot prove an
-identity until the generated auth FK and provisioning transaction exist.
+`options.server.ts` shares naming/session/password options. `config.server.ts`
+requires the guarded runtime connection, an explicit secret, base URL and real
+verification-mail callback. It exports a factory, never a handler or singleton.
+No application route imports it. Email/password requires verification; sessions
+are database-backed with cookie caching disabled. No OAuth provider is configured.
+The mail callback in tests captures verification tokens locally without sending mail.
 
-References: [Better Auth database concepts](https://better-auth.com/docs/concepts/database),
-[Drizzle adapter](https://better-auth.com/docs/adapters/drizzle).
+`app.clergy_profiles.user_id` references `auth.users.id` with NO ACTION. This blocks
+hard deletion of auth users with profiles and retains application/history records.
+The auth library's own account/session cascades remain unchanged. Auth users may
+exist without profiles; RLS denies protected content in that case. Profile
+provisioning, approval, live account-disable/session revocation, reviewer mailbox
+challenges and application integration remain Phase 3 work. Authentication never
+implies application approval or reviewer privileges.
+
+See [database operations and trust limitations](../../docs/database.md).
+
+References: [official generator](https://better-auth.com/docs/concepts/cli),
+[official Drizzle adapter](https://better-auth.com/docs/adapters/drizzle).
