@@ -10,19 +10,26 @@ The [original editor](https://lovable.dev/projects/219ef20a-7e74-4f29-8092-503e1
 and [historical preview](https://cape-clergy-vault.lovable.app) are attribution
 references, not dependencies of the new authentication flow.
 
-## Current phase: 3B
+## Current phase: 3C
 
 Better Auth **1.7.16**, TanStack Start, PostgreSQL and Drizzle provide registration,
 email verification, cookie sessions, login/logout, account status and password reset.
 New clergy profiles are pending with only the clergy role. Verification never
 approves an account. Legacy repository/reviewer/chat/offline routes are isolated
 until their later migration; their Supabase source and packages remain as reference.
-The self-hosted public/account and registration administration flows do not require Supabase or Lovable.
+The self-hosted public/account, registration administration and new document flows do not require Supabase or Lovable.
 
 Verified, approved holders of the separate `approver` role manage clergy registrations
 at `/admin/registrations`. Approval, rejection, suspension and reactivation have
 transactional immutable history, security audit and durable notification intents.
 The approval role grants no theological-review, private-chat or system-admin rights.
+
+Authorized clergy can attach PDFs (up to 20 MiB) to an existing submitted document
+submission at `/documents`. Files use private filesystem storage, PostgreSQL metadata,
+RLS and authenticated streaming downloads with mandatory pre-transfer auditing. This
+is a scoped local test workspace; submission creation, repository browsing and
+theological review are later phases. Read the [storage architecture and recovery
+runbook](docs/storage.md) and [Phase 3C report](docs/phase-3c-report.md).
 
 The displayed privacy wording is a **local draft with legal approval outstanding**.
 This implementation is locally reviewable, not a claim of production readiness.
@@ -59,9 +66,12 @@ bun run db:test
 bun run db:test:auth
 bun run db:test:phase3a
 bun run db:test:phase3b
+bun run db:test:phase3c
 bun run build
 bun run db:smoke:phase3a    # starts/stops built Node server and cleans its fixtures
 bun run db:smoke:phase3b    # admin page/API authorization and approval over HTTP
+bun run db:smoke:phase3c    # private document upload/download over real HTTP
+bun run storage:inventory --verify # read-only consistency and hash check
 bun run db:local:stop      # retains data
 ```
 

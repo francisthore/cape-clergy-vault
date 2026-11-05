@@ -13,16 +13,19 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as OfflineRouteImport } from './routes/offline'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedRepositoryRouteImport } from './routes/_authenticated/repository'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
 import { Route as AuthenticatedVerifyReviewerRouteImport } from './routes/_authenticated/verify-reviewer'
+import { Route as ApiDocumentsRouteImport } from './routes/api/documents'
 import { Route as ApiRegistrationsRouteImport } from './routes/api/registrations'
 import { Route as AdminRegistrationsIndexRouteImport } from './routes/admin.registrations.index'
 import { Route as AdminRegistrationsUserIdRouteImport } from './routes/admin.registrations.$userId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiDocumentsDocumentIdDownloadRouteImport } from './routes/api/documents.$documentId.download'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,6 +44,11 @@ const AccountRoute = AccountRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentsRoute = DocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OfflineRoute = OfflineRouteImport.update({
@@ -74,6 +82,11 @@ const AuthenticatedVerifyReviewerRoute =
     path: '/verify-reviewer',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiDocumentsRoute = ApiDocumentsRouteImport.update({
+  id: '/api/documents',
+  path: '/api/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRegistrationsRoute = ApiRegistrationsRouteImport.update({
   id: '/api/registrations',
   path: '/api/registrations',
@@ -95,36 +108,48 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDocumentsDocumentIdDownloadRoute =
+  ApiDocumentsDocumentIdDownloadRouteImport.update({
+    id: '/$documentId/download',
+    path: '/$documentId/download',
+    getParentRoute: () => ApiDocumentsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
+  '/documents': typeof DocumentsRoute
   '/offline': typeof OfflineRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/repository': typeof AuthenticatedRepositoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
   '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/registrations/': typeof AdminRegistrationsIndexRoute
+  '/api/documents/$documentId/download': typeof ApiDocumentsDocumentIdDownloadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
+  '/documents': typeof DocumentsRoute
   '/offline': typeof OfflineRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/repository': typeof AuthenticatedRepositoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
   '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/registrations': typeof AdminRegistrationsIndexRoute
+  '/api/documents/$documentId/download': typeof ApiDocumentsDocumentIdDownloadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -132,16 +157,19 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
+  '/documents': typeof DocumentsRoute
   '/offline': typeof OfflineRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/repository': typeof AuthenticatedRepositoryRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
   '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/registrations/': typeof AdminRegistrationsIndexRoute
+  '/api/documents/$documentId/download': typeof ApiDocumentsDocumentIdDownloadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -149,47 +177,56 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/auth'
+    | '/documents'
     | '/offline'
     | '/chat'
     | '/dashboard'
     | '/repository'
     | '/review'
     | '/verify-reviewer'
+    | '/api/documents'
     | '/api/registrations'
     | '/admin/registrations/$userId'
     | '/api/auth/$'
     | '/admin/registrations/'
+    | '/api/documents/$documentId/download'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account'
     | '/auth'
+    | '/documents'
     | '/offline'
     | '/chat'
     | '/dashboard'
     | '/repository'
     | '/review'
     | '/verify-reviewer'
+    | '/api/documents'
     | '/api/registrations'
     | '/admin/registrations/$userId'
     | '/api/auth/$'
     | '/admin/registrations'
+    | '/api/documents/$documentId/download'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/account'
     | '/auth'
+    | '/documents'
     | '/offline'
     | '/_authenticated/chat'
     | '/_authenticated/dashboard'
     | '/_authenticated/repository'
     | '/_authenticated/review'
     | '/_authenticated/verify-reviewer'
+    | '/api/documents'
     | '/api/registrations'
     | '/admin/registrations/$userId'
     | '/api/auth/$'
     | '/admin/registrations/'
+    | '/api/documents/$documentId/download'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,7 +234,9 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AccountRoute: typeof AccountRoute
   AuthRoute: typeof AuthRoute
+  DocumentsRoute: typeof DocumentsRoute
   OfflineRoute: typeof OfflineRoute
+  ApiDocumentsRoute: typeof ApiDocumentsRouteWithChildren
   ApiRegistrationsRoute: typeof ApiRegistrationsRoute
   AdminRegistrationsUserIdRoute: typeof AdminRegistrationsUserIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -232,6 +271,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documents': {
+      id: '/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof DocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/offline': {
@@ -276,6 +322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVerifyReviewerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/documents': {
+      id: '/api/documents'
+      path: '/api/documents'
+      fullPath: '/api/documents'
+      preLoaderRoute: typeof ApiDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/registrations': {
       id: '/api/registrations'
       path: '/api/registrations'
@@ -304,6 +357,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/documents/$documentId/download': {
+      id: '/api/documents/$documentId/download'
+      path: '/$documentId/download'
+      fullPath: '/api/documents/$documentId/download'
+      preLoaderRoute: typeof ApiDocumentsDocumentIdDownloadRouteImport
+      parentRoute: typeof ApiDocumentsRoute
+    }
   }
 }
 
@@ -326,12 +386,26 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ApiDocumentsRouteChildren {
+  ApiDocumentsDocumentIdDownloadRoute: typeof ApiDocumentsDocumentIdDownloadRoute
+}
+
+const ApiDocumentsRouteChildren: ApiDocumentsRouteChildren = {
+  ApiDocumentsDocumentIdDownloadRoute: ApiDocumentsDocumentIdDownloadRoute,
+}
+
+const ApiDocumentsRouteWithChildren = ApiDocumentsRoute._addFileChildren(
+  ApiDocumentsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AccountRoute: AccountRoute,
   AuthRoute: AuthRoute,
+  DocumentsRoute: DocumentsRoute,
   OfflineRoute: OfflineRoute,
+  ApiDocumentsRoute: ApiDocumentsRouteWithChildren,
   ApiRegistrationsRoute: ApiRegistrationsRoute,
   AdminRegistrationsUserIdRoute: AdminRegistrationsUserIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

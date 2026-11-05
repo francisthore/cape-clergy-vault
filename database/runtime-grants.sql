@@ -28,3 +28,7 @@ REVOKE ALL ON app.approval_notifications, app.approver_bootstrap FROM cape_clerg
 GRANT EXECUTE ON FUNCTION app.is_approver(), app.require_approver(),
  app.registration_list(text,text,integer), app.registration_detail(text),
  app.decide_registration(text,text,text,uuid) TO cape_clergy_runtime;
+
+-- Phase 3C: RLS reserves pending documents; only constrained functions finalize/fail.
+GRANT EXECUTE ON FUNCTION app.document_account_allowed(),app.finalize_document(uuid,bigint,text),
+ app.fail_document(uuid),app.record_document_access(uuid,text,uuid) TO cape_clergy_runtime;

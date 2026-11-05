@@ -12,6 +12,7 @@ export const auditEvents = app
       actorId: text("actor_id"),
       targetUserId: text("target_user_id"),
       submissionId: uuid("submission_id"),
+      documentId: uuid("document_id"),
       action: text("action").notNull(),
       outcome: auditOutcome("outcome").notNull(),
       correlationId: uuid("correlation_id"),

@@ -1,9 +1,46 @@
-# PostgreSQL, authentication and approvals (Phase 3B)
+# PostgreSQL, authentication, approvals and documents (Phase 3C)
 
 The self-hosted public/account application now uses Better Auth on the guarded
 local database. Legacy Supabase repository/review/chat/offline routes are isolated.
 No production connection, account import, deployment or push has been performed.
 See [Phase 3A implementation and local setup](phase-3a-report.md).
+
+## Phase 3C private documents
+
+See [Phase 3C report](phase-3c-report.md) and [storage architecture/recovery](storage.md).
+This section supersedes historical references below to future storage or audit work.
+
+- Additive `0008_document_lifecycle.sql` adds pending/available/failed state,
+  upload-request UUID uniqueness per parent, available size/checksum constraints,
+  and FK-free `audit_events.document_id`. Existing document rows remain pending;
+  no production or Supabase data is imported. Twelve app/four auth tables remain;
+  the ledger now has eleven entries.
+- `0009_document_security.sql` tightens document RLS, adds a verified-email/current
+  repository consent predicate and constrained finalize, fail and document-audit
+  functions. `0010_document_object_keys.sql` separates object keys from document
+  IDs using validated independent UUIDv4 keys; it is a forward refinement, with no
+  applied migration rewritten. Previous SQL/snapshots remain unchanged.
+- Runtime reserves only zero-size pending rows for its own submitted document
+  parents. No direct document UPDATE/DELETE is granted. `finalize_document` locks
+  the parent, rechecks permission/editability, and atomically publishes accurate
+  metadata. `fail_document` can fail only an authenticated owner's pending row,
+  even after approval/consent changes; available rows are never demoted on retry.
+- Metadata follows submission RLS: approved/verified/current-consent owners,
+  authorized live reviewer/admins, or accepted non-confidential sharing. Pending
+  and failed metadata is owner-only. Approvers gain no reviewer access.
+- Runtime gains EXECUTE on four fixed-purpose functions only. SECURITY DEFINER
+  functions have fixed pg_catalog search paths, qualified objects, validated inputs,
+  no dynamic SQL and no PUBLIC execution. Anonymous/inactive denial auditing uses
+  a session-derived optional identity and a constrained event append, not general
+  privileged inserts. Audit history remains append-only; actor/document/parent/
+  correlation IDs carry no file content or filesystem paths.
+- Short DB transactions bracket filesystem I/O. Uncertain finalization retains
+  files until a confirmed failed state permits deletion. No long upload/download
+  transaction or unrestricted owner connection is used in web requests. Private
+  storage and PostgreSQL backups must be restored as a matching pair.
+- `db:test:phase3c` runs with real restricted runtime and disposable fixtures;
+  `db:smoke:phase3c` exercises the built Node routes. `storage:inventory --verify`
+  is guarded owner-only read-only maintenance, never a destructive cleanup job.
 
 ## Phase 3B approval administration
 

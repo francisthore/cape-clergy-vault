@@ -57,6 +57,27 @@
       "when": 1793889998349,
       "tag": "0007_approval_security",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793892855770,
+      "tag": "0008_document_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793892856293,
+      "tag": "0009_document_security",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793893629361,
+      "tag": "0010_document_object_keys",
+      "breakpoints": true
     }
   ]
 }

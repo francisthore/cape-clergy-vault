@@ -78,8 +78,8 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
         (${sharedId},${get("alice")},'Shared','accepted',false),
         (${confidentialId},${get("alice")},'Confidential','accepted',true)`;
       for (const id of [privateId, sharedId, confidentialId]) {
-        await tx`insert into app.documents(submission_id,storage_key,file_name,media_type,byte_size) values
-          (${id},${get("alice") + "/" + id},'fixture.pdf','application/pdf',12)`;
+        await tx`insert into app.documents(submission_id,storage_key,file_name,media_type,byte_size,state,sha256) values
+          (${id},${get("alice") + "/" + id},'fixture.pdf','application/pdf',12,'available',${"0".repeat(64)})`;
       }
       await tx`insert into app.chat_messages(id,owner_id,sender_id,body) values (${messageId},${get("alice")},${get("alice")},'Private fixture')`;
       await tx`insert into app.audit_events(actor_id,action,outcome) values (${get("alice")},'fixture','ok')`;
@@ -138,7 +138,8 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
         assert.equal(await count(tx, "clergy_profiles"), 1);
         const [row] =
           await tx`insert into app.submissions(owner_id,title) values (${get("alice")},'New own') returning id`;
-        await tx`insert into app.documents(submission_id,storage_key,file_name,media_type,byte_size) values (${row!["id"]},${get("alice") + "/new"},'a','b',0)`;
+        const doc = randomUUID();
+        await tx`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size) values (${doc},${row!["id"]},${doc},'a.pdf','application/pdf',0)`;
         await denied(
           tx,
           (sp) =>

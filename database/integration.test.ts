@@ -13,7 +13,7 @@ test("isolated PostgreSQL foundation: integrity, immutability, RLS and migration
       await connection.client`select count(*)::int as count from app.clergy_profiles`;
     const ledger =
       await connection.client`select hash from cape_migrations.__drizzle_migrations order by id`;
-    assert.equal(ledger.length, 8);
+    assert.equal(ledger.length, 11);
     const tables = await connection.client`
       select c.relname, c.relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'app' and c.relkind = 'r'

@@ -31,7 +31,10 @@
     "db:bootstrap:approver": "node --env-file=.env.db.local scripts/db/bootstrap-approver.ts",
     "db:notifications": "node --env-file=.env.db.local --env-file=.env.auth.local scripts/db/approval-notifications.ts",
     "db:test:phase3b": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3b.test.ts",
-    "db:smoke:phase3b": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase3b-smoke.ts"
+    "db:smoke:phase3b": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase3b-smoke.ts",
+    "db:test:phase3c": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3c.test.ts",
+    "db:smoke:phase3c": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3c.test.ts --http",
+    "storage:inventory": "node --env-file=.env.db.local scripts/db/storage-inventory.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

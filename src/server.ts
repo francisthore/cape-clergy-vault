@@ -56,7 +56,7 @@ export default {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
-      if (["/auth", "/account"].includes(path) || path.startsWith("/admin/")) {
+      if (["/auth", "/account", "/documents"].includes(path) || path.startsWith("/admin/")) {
         const headers = new Headers(normalized.headers);
         headers.set("Cache-Control", "no-store");
         headers.set("Referrer-Policy", "no-referrer");

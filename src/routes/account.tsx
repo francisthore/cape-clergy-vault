@@ -48,7 +48,7 @@ function AccountPage() {
     pending:
       "Your registration is awaiting Diocese approval. You will be notified once your account has been approved.",
     approved:
-      "Your account is approved. Repository and chat features will be available after their migration.",
+      "Your account is approved. You can test document storage for an existing submission. Repository browsing, review and chat will follow in later phases.",
     rejected:
       "Your account is not eligible for application access. Contact the Diocese for assistance.",
     suspended: "Your account is unavailable. Contact the Diocese for assistance.",
@@ -61,6 +61,11 @@ function AccountPage() {
     <main className="mx-auto max-w-xl space-y-6 px-6 py-12">
       <h1 className="text-4xl font-semibold text-primary">Clergy account</h1>
       <p role="status">{messages[status] ?? messages["error"]}</p>
+      {status === "approved" && (
+        <a className="block text-primary underline" href="/documents">
+          Open submission documents
+        </a>
+      )}
       {status === "incomplete" && (
         <form onSubmit={complete} className="space-y-4 rounded-lg border bg-card p-6">
           <ProfileFields />

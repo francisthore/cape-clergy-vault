@@ -257,5 +257,17 @@ export function createAuthService(
       );
     }
   }
-  return { auth, handle, account, withApprovedDatabase };
+  // Denial auditing/recovery must also work for anonymous or newly inactive users.
+  // Only fixed-purpose document audit/recovery functions use this boundary.
+  async function withAuditDatabase<T>(
+    headers: Headers,
+    operation: (tx: import("postgres").TransactionSql) => Promise<T>,
+  ): Promise<T> {
+    const session = await auth.api.getSession({ headers, query: { disableCookieCache: true } });
+    return (await connection.client.begin(async (tx) => {
+      await tx`select set_config('cape.user_id', ${session?.user.id ?? ""}, true)`;
+      return operation(tx);
+    })) as T;
+  }
+  return { auth, handle, account, withApprovedDatabase, withAuditDatabase };
 }
