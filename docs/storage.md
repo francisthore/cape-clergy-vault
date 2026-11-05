@@ -1,4 +1,4 @@
-# Private documents: Phase 3C
+# Private documents: Phase 3D integration
 
 This local implementation uses Better Auth, PostgreSQL RLS and private filesystem
 storage. It does not use Supabase Storage. The original Lovable workflow is retained
@@ -17,24 +17,21 @@ may be tracked, including in nested directories.
 
 Run the established local database startup, migration and runtime-grant commands
 before starting the app. Migrations/startup never create real privileged users.
-For an existing approved test account and repository consent, the local operator
-may insert a **disposable** parent submission using the guarded owner tools:
+Use `/account` → **My submissions** → **Create a draft**. Save a document draft,
+open its details, attach a disposable PDF, inspect its state, then explicitly confirm
+submission. No operator-created parent or manually entered UUID is needed. Ideas
+can be submitted without a PDF. `/documents` is a navigation entry to this workflow.
+Only owned **draft** document submissions can accept uploads. Existing submitted
+rows remain locked; no old row is silently changed into a draft. Returned items use
+an explicit amendment action, retaining review and attachment history.
 
-```sql
--- Replace the ID with the exact verified disposable account, never a real user.
-INSERT INTO app.submissions(owner_id,title,kind)
-VALUES ('EXACT_DISPOSABLE_ACCOUNT_ID','Phase 3C local fixture','document')
-RETURNING id;
-```
-
-Open `/account` → **Open submission documents**, or `/documents`, and supply that
-submission UUID. This scoped test workspace lists at most 100 authorized documents,
-accepts a PDF, shows browser upload progress and cancellation, and links authenticated
-downloads. It creates no submissions, roles, consent or review decisions. It has no
-special permission bypass and loads no private metadata into SSR HTML. The later
-submission workflow will supply IDs without this operator step. Downloads use
-native browser streaming; if access changes, the endpoint returns a safe unavailable
-or access-denied message. No offline private response caching is configured.
+The detail view lists at most 100 authorized documents, shows upload progress and
+cancellation, and uses the original authenticated streaming download endpoint.
+Excluded files remain privately retained for immutable history; they are absent from
+shared metadata/downloads and final-submission requirements. Owners may still access
+retained available bytes through the protected endpoint. Exclusion is allowed only
+for settled attachments on an owned draft; pending work must finish/fail first.
+No offline private response caching is configured.
 
 For automated disposable accounts/submissions use `bun run db:test:phase3c` and,
 after `bun run build`, `bun run db:smoke:phase3c`. Both remove their own fixtures.
@@ -77,9 +74,10 @@ of truth for approval, roles, consent, parent visibility and document availabili
 Mutations require same-origin cookies plus exact Origin. Every protected operation
 checks a fresh DB-backed Better Auth session with cookie caching disabled. RLS checks
 verified email, approved profile, latest current repository consent, ownership and
-parent state. Upload requires an owned **submitted document** parent. The existing
-schema has no draft state; returned/under_review/accepted submissions cannot acquire
-new files in this phase. Parent owner, review status and confidentiality are never
+parent state. Upload requires an owned **draft document** parent.
+A reservation trigger takes a short parent SHARE lock to coordinate with final submission;
+finalization rechecks/locks the parent after I/O. Returned items must explicitly start
+an amendment before attaching files. Submitted/under-review/accepted items are locked. Parent owner, review status and confidentiality are never
 changed by document requests. RLS preserves owner access, reviewer/admin access and
 accepted **non-confidential** sharing. `approver` grants no theological review access.
 Reviewer provisioning/mailbox verification remains outside this phase.
@@ -128,7 +126,7 @@ scanner outage must leave the file unavailable. Antivirus alone cannot prove saf
 3. fsync the completed file, hard-link to `.blob` with no overwrite, unlink `.part`,
    and fsync the directory. File and temporary object stay on the same filesystem.
 4. Revalidate the session; constrained `finalize_document` locks the parent against
-   concurrent status changes, checks live consent/ownership/submitted state, and
+   concurrent status changes, checks live consent/ownership/draft state, and
    changes pending metadata to available with nonzero size and checksum.
 5. On failure call owner-scoped `fail_document`. Delete only a **confirmed failed**
    row's generated final key. It never demotes an available row. If DB outcome or

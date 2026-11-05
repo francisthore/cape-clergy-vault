@@ -21,6 +21,12 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className="flex flex-wrap items-center gap-1 text-sm">
+          <a href="/submissions" className="rounded px-3 py-2 hover:bg-accent">
+            My submissions
+          </a>
+          <a href="/repository" className="rounded px-3 py-2 hover:bg-accent">
+            Repository
+          </a>
           <a href="/account" className="rounded px-3 py-2 hover:bg-accent">
             My account
           </a>

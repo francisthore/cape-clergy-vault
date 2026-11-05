@@ -7,6 +7,7 @@ import { ProfileFields, PrivacyAcknowledgement } from "@/components/Registration
 export const Route = createFileRoute("/account")({ component: AccountPage });
 function AccountPage() {
   const [status, setStatus] = useState("loading");
+  const [canManageSettings, setCanManageSettings] = useState(false);
   const [canApprove, setCanApprove] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -16,6 +17,7 @@ function AccountPage() {
         .then((r) => {
           setStatus(r.status ?? "error");
           setCanApprove(r.canApprove === true);
+          setCanManageSettings(r.canManageSettings === true);
         })
         .catch(() => setStatus("error"));
     };
@@ -48,7 +50,7 @@ function AccountPage() {
     pending:
       "Your registration is awaiting Diocese approval. You will be notified once your account has been approved.",
     approved:
-      "Your account is approved. You can test document storage for an existing submission. Repository browsing, review and chat will follow in later phases.",
+      "Your account is approved. Create drafts, attach PDFs and submit your work, or browse accepted resources.",
     rejected:
       "Your account is not eligible for application access. Contact the Diocese for assistance.",
     suspended: "Your account is unavailable. Contact the Diocese for assistance.",
@@ -62,8 +64,18 @@ function AccountPage() {
       <h1 className="text-4xl font-semibold text-primary">Clergy account</h1>
       <p role="status">{messages[status] ?? messages["error"]}</p>
       {status === "approved" && (
-        <a className="block text-primary underline" href="/documents">
-          Open submission documents
+        <a className="block text-primary underline" href="/submissions">
+          My submissions
+        </a>
+      )}
+      {status === "approved" && (
+        <a className="block text-primary underline" href="/repository">
+          Browse repository
+        </a>
+      )}
+      {canManageSettings && (
+        <a className="block text-primary underline" href="/admin/settings/email">
+          Manage application email
         </a>
       )}
       {status === "incomplete" && (

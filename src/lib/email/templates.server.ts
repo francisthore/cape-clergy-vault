@@ -1,6 +1,18 @@
 export type EmailKind =
-  "verification" | "reset" | "pending" | "approved" | "rejected" | "suspended" | "reactivated";
+  | "test"
+  | "verification"
+  | "reset"
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "suspended"
+  | "reactivated";
 const content: Record<EmailKind, [string, string, string]> = {
+  test: [
+    "Email configuration test",
+    "This controlled test was requested by your settings manager account. Provider acceptance does not confirm recipient delivery.",
+    "View account",
+  ],
   verification: [
     "Verify your email address",
     "Confirm your email address to continue your clergy registration. This link expires in one hour.",

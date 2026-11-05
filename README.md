@@ -10,12 +10,12 @@ The [original editor](https://lovable.dev/projects/219ef20a-7e74-4f29-8092-503e1
 and [historical preview](https://cape-clergy-vault.lovable.app) are attribution
 references, not dependencies of the new authentication flow.
 
-## Current phase: 3C
+## Current phase: 3D
 
 Better Auth **1.7.16**, TanStack Start, PostgreSQL and Drizzle provide registration,
 email verification, cookie sessions, login/logout, account status and password reset.
 New clergy profiles are pending with only the clergy role. Verification never
-approves an account. Legacy repository/reviewer/chat/offline routes are isolated
+approves an account. Legacy reviewer/chat/offline routes are isolated
 until their later migration; their Supabase source and packages remain as reference.
 The self-hosted public/account, registration administration and new document flows do not require Supabase or Lovable.
 
@@ -24,12 +24,22 @@ at `/admin/registrations`. Approval, rejection, suspension and reactivation have
 transactional immutable history, security audit and durable notification intents.
 The approval role grants no theological-review, private-chat or system-admin rights.
 
-Authorized clergy can attach PDFs (up to 20 MiB) to an existing submitted document
-submission at `/documents`. Files use private filesystem storage, PostgreSQL metadata,
-RLS and authenticated streaming downloads with mandatory pre-transfer auditing. This
-is a scoped local test workspace; submission creation, repository browsing and
-theological review are later phases. Read the [storage architecture and recovery
-runbook](docs/storage.md) and [Phase 3C report](docs/phase-3c-report.md).
+Approved, verified clergy with current repository consent create and edit drafts at
+`/submissions`, attach private PDFs with progress, and explicitly submit saved work.
+Ideas need meaningful text rather than a PDF. Submitted metadata is locked; returned
+items begin an audited amendment. `/repository` searches only accepted,
+non-confidential resources, with protected details and audited private downloads.
+`/documents` now points into the draft workflow; no manual UUID entry is needed.
+
+A separate `settings_manager` capability controls `/admin/settings/email`.
+PostgreSQL stores typed sender/reply-to/enabled settings and immutable audit history.
+Auth and notification sends resolve settings without restart. Resend credentials
+remain in the protected environment (the phase's permitted fallback); encrypted
+in-app credential/provider replacement is **not implemented**. Initial sender values
+are proposals; domain verification is reported, not independently checked. Live
+sending requires explicit operator domain/sender confirmation and server opt-in.
+See [application settings](docs/application-settings.md), [submission lifecycle](docs/submission-lifecycle.md),
+[storage recovery](docs/storage.md) and the complete [Phase 3D report](docs/phase-3d-report.md).
 
 The displayed privacy wording is a **local draft with legal approval outstanding**.
 This implementation is locally reviewable, not a claim of production readiness.
@@ -67,10 +77,12 @@ bun run db:test:auth
 bun run db:test:phase3a
 bun run db:test:phase3b
 bun run db:test:phase3c
+bun run db:test:phase3d
 bun run build
 bun run db:smoke:phase3a    # starts/stops built Node server and cleans its fixtures
 bun run db:smoke:phase3b    # admin page/API authorization and approval over HTTP
-bun run db:smoke:phase3c    # private document upload/download over real HTTP
+bun run db:smoke:phase3c
+bun run db:smoke:phase3d    # private document upload/download over real HTTP
 bun run storage:inventory --verify # read-only consistency and hash check
 bun run db:local:stop      # retains data
 ```
@@ -81,10 +93,14 @@ To run the Node build manually with captured mail:
 CAPE_LOCAL_EMAIL_CAPTURE=true node --env-file=.env.db.runtime.local --env-file=.env.auth.local .output/server/index.mjs
 ```
 
-Real Resend delivery is opt-in: `EMAIL_PROVIDER=resend`, `RESEND_API_KEY`,
-`EMAIL_FROM`, optional `EMAIL_REPLY_TO`, and `EMAIL_DOMAIN_VERIFIED=true` after
-confirming the real sender domain. No Diocese sender/domain is assumed.
-Normal tests never contact Resend. The capture override is restricted to localhost.
+Real Resend delivery is opt-in: `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` and
+`EMAIL_DOMAIN_VERIFIED=true` remain server configuration. The flag alone proves
+nothing; the exact sending domain also needs protected operator authorization.
+Sender/display/reply-to/enabled settings now come from PostgreSQL. `EMAIL_FROM` and
+`EMAIL_REPLY_TO` remain compatibility defaults only for standalone legacy service
+construction; the running app and outbox worker use the database resolver.
+Normal tests never contact Resend. The production capture override is localhost-only.
+See the [operator and recovery runbook](docs/application-settings.md).
 
 The service worker caches public static assets only, with no navigation/API cache.
 Legacy IndexedDB drafts remain on the device; their UI and delivery are deferred

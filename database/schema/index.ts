@@ -6,3 +6,5 @@ export * from "./chat.ts";
 export * from "./audit.ts";
 export * from "../auth/generated.ts";
 export * from "./approval.ts";
+
+export * from "./settings.ts";

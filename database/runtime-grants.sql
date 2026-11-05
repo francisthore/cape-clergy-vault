@@ -32,3 +32,13 @@ GRANT EXECUTE ON FUNCTION app.is_approver(), app.require_approver(),
 -- Phase 3C: RLS reserves pending documents; only constrained functions finalize/fail.
 GRANT EXECUTE ON FUNCTION app.document_account_allowed(),app.finalize_document(uuid,bigint,text),
  app.fail_document(uuid),app.record_document_access(uuid,text,uuid) TO cape_clergy_runtime;
+
+-- Phase 3D settings: non-secret resolver and narrow capability-bound functions.
+REVOKE ALL ON app.settings_managers,app.email_test_attempts FROM cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.is_settings_manager(),app.require_settings_manager(),app.resolve_email_settings(),
+ app.save_email_settings(integer,text,text,text,text,boolean,boolean),app.reserve_email_test() TO cape_clergy_runtime;
+
+-- Phase 3D author metadata writes only through scoped, version-checked functions.
+REVOKE INSERT ON app.submissions FROM cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.require_submission_account(),app.save_draft(uuid,integer,text,text,text,text,text[],boolean),
+ app.transition_submission(uuid,integer,text),app.exclude_draft_document(uuid,integer) TO cape_clergy_runtime;

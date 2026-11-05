@@ -172,9 +172,9 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
     await owner.client`update app.clergy_profiles set approval_status='suspended' where user_id=${user("suspended")}`;
     await owner.client`insert into app.role_assignments(user_id,role) values(${user("reviewer")},'reviewer'),(${user("approver")},'approver')`;
     await owner.client`insert into app.submissions(id,owner_id,title,status,confidential) values
-      (${submission},${user("owner")},'Private document fixture','submitted',false),
-      (${shared},${user("owner")},'Shared fixture','submitted',false),
-      (${confidential},${user("owner")},'Confidential fixture','submitted',true),
+      (${submission},${user("owner")},'Private document fixture','draft',false),
+      (${shared},${user("owner")},'Shared fixture','draft',false),
+      (${confidential},${user("owner")},'Confidential fixture','draft',true),
       (${reviewed},${user("owner")},'Review fixture','under_review',false)`;
     await t.test("anonymous and inactive/unverified/unconsented uploads are rejected", async () => {
       for (const key of [

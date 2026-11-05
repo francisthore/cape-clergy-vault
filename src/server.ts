@@ -53,10 +53,30 @@ export default {
         const denied = await authorizeApprovalPage(request.headers);
         if (denied) return denied;
       }
+      if (path === "/admin/settings/email") {
+        const { authorizeSettingsPage } = await import("./lib/settings/runtime.server");
+        const denied = await authorizeSettingsPage(request.headers);
+        if (denied) return denied;
+      }
+      if (
+        path === "/submissions" ||
+        path.startsWith("/submissions/") ||
+        path === "/repository" ||
+        path.startsWith("/repository/")
+      ) {
+        const { authorizeSubmissionPage } = await import("./lib/submissions/runtime.server");
+        const denied = await authorizeSubmissionPage(request.headers);
+        if (denied) return denied;
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
-      if (["/auth", "/account", "/documents"].includes(path) || path.startsWith("/admin/")) {
+      if (
+        ["/auth", "/account", "/documents"].includes(path) ||
+        path.startsWith("/admin/") ||
+        path.startsWith("/submissions") ||
+        path.startsWith("/repository")
+      ) {
         const headers = new Headers(normalized.headers);
         headers.set("Cache-Control", "no-store");
         headers.set("Referrer-Policy", "no-referrer");

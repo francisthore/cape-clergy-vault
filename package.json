@@ -34,7 +34,10 @@
     "db:smoke:phase3b": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase3b-smoke.ts",
     "db:test:phase3c": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3c.test.ts",
     "db:smoke:phase3c": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3c.test.ts --http",
-    "storage:inventory": "node --env-file=.env.db.local scripts/db/storage-inventory.ts"
+    "storage:inventory": "node --env-file=.env.db.local scripts/db/storage-inventory.ts",
+    "db:test:phase3d": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3d.test.ts",
+    "db:smoke:phase3d": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase3d-smoke.ts",
+    "db:settings:operator": "node --env-file=.env.db.local scripts/db/settings-operator.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

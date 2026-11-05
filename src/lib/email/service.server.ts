@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { Resend } from "resend";
+import type { Sql } from "postgres";
+import { resolveEmailSettings } from "../settings/email.server.ts";
 import { emailTemplate, type EmailKind } from "./templates.server.ts";
 
 export type EmailMessage = {
@@ -60,18 +62,51 @@ export class ResendEmailProvider implements EmailProvider {
 }
 export class EmailService {
   readonly provider: EmailProvider;
+  private readonly resolve:
+    | (() => Promise<{
+        from: string;
+        replyTo?: string;
+        transactionalEnabled: boolean;
+        notificationsEnabled: boolean;
+      }>)
+    | undefined;
   private readonly config: { from: string; origin: string; replyTo?: string };
-  constructor(provider: EmailProvider, config: { from: string; origin: string; replyTo?: string }) {
+  constructor(
+    provider: EmailProvider,
+    config: { from: string; origin: string; replyTo?: string },
+    resolve?: EmailService["resolve"],
+  ) {
     this.provider = provider;
     this.config = config;
+    this.resolve = resolve;
   }
-  async send(kind: EmailKind, to: string, url: string, idempotencyKey?: string) {
+  async senderSettings(kind: EmailKind) {
+    const effective = this.resolve
+      ? await this.resolve()
+      : { ...this.config, transactionalEnabled: true, notificationsEnabled: true };
+    if (
+      !effective.transactionalEnabled ||
+      (!["verification", "reset", "test"].includes(kind) && !effective.notificationsEnabled)
+    )
+      throw new Error("EMAIL_DISABLED");
+    return effective;
+  }
+  async send(
+    kind: EmailKind,
+    to: string,
+    url: string,
+    idempotencyKey?: string,
+    snapshot?: { from: string; replyTo?: string },
+  ) {
     if (new URL(url).origin !== this.config.origin) throw new Error("Untrusted email URL");
+    const effective = await this.senderSettings(kind);
     const message = {
       ...emailTemplate(kind, url),
       to,
-      from: this.config.from,
-      ...(this.config.replyTo ? { replyTo: this.config.replyTo } : {}),
+      from: snapshot?.from ?? effective.from,
+      ...((snapshot ? snapshot.replyTo : effective.replyTo)
+        ? { replyTo: snapshot ? snapshot.replyTo : effective.replyTo }
+        : {}),
       key: idempotencyKey ?? createHash("sha256").update(`${kind}:${to}:${url}`).digest("hex"),
     };
     try {
@@ -82,7 +117,7 @@ export class EmailService {
     }
   }
 }
-export function configuredEmail(origin: string, env = process.env) {
+export function configuredEmail(origin: string, env = process.env, client?: Sql) {
   const real = env["EMAIL_PROVIDER"] === "resend";
   if (
     env["NODE_ENV"] === "production" &&
@@ -95,11 +130,13 @@ export function configuredEmail(origin: string, env = process.env) {
     throw new Error("Production email must be explicitly configured");
   if (
     real &&
-    (!env["RESEND_API_KEY"] || !env["EMAIL_FROM"] || env["EMAIL_DOMAIN_VERIFIED"] !== "true")
+    (!env["RESEND_API_KEY"] ||
+      (!client && !env["EMAIL_FROM"]) ||
+      env["EMAIL_DOMAIN_VERIFIED"] !== "true")
   )
     throw new Error("Resend requires credentials and a verified sender domain");
   return new EmailService(
-    real
+    real && env["NODE_ENV"] !== "test"
       ? new ResendEmailProvider(new Resend(env["RESEND_API_KEY"]))
       : new DevelopmentEmailProvider(),
     {
@@ -107,5 +144,18 @@ export function configuredEmail(origin: string, env = process.env) {
       origin,
       ...(env["EMAIL_REPLY_TO"] ? { replyTo: env["EMAIL_REPLY_TO"] } : {}),
     },
+    client
+      ? async () => {
+          const value = await resolveEmailSettings(client);
+          if (real && !value.domainAuthorized) throw new Error("EMAIL_DOMAIN_UNAUTHORIZED");
+          return {
+            from: `${value.displayName} <${value.fromEmail}>`,
+            replyTo: value.replyTo,
+            // Captured mode needs no external domain authorization; enable flags still apply.
+            transactionalEnabled: value.transactionalEnabled,
+            notificationsEnabled: value.notificationsEnabled,
+          };
+        }
+      : undefined,
   );
 }

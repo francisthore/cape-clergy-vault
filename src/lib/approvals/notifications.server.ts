@@ -26,11 +26,18 @@ export async function deliverApprovalNotifications(
     try {
       const [user] = await owner.client`select email from auth.users where id=${row["user_id"]}`;
       if (!user) throw new Error("Missing recipient");
+      const effective = await email.senderSettings(row["kind"] as EmailKind);
+      const [snapshot] =
+        await owner.client`update app.approval_notifications set sender_from=coalesce(sender_from,${effective.from}),
+       sender_reply_to=coalesce(sender_reply_to,${effective.replyTo ?? ""}),recipient_email=coalesce(recipient_email,${String(user["email"])})
+       where id=${row["id"]} and lease_token=${token} returning sender_from,sender_reply_to,recipient_email`;
+      if (!snapshot) continue;
       await email.send(
         row["kind"] as EmailKind,
-        String(user["email"]),
+        String(snapshot["recipient_email"]),
         `${origin}/account`,
         `approval:${row["id"]}`,
+        { from: String(snapshot["sender_from"]), replyTo: String(snapshot["sender_reply_to"]) },
       );
       const updated =
         await owner.client`update app.approval_notifications set delivered_at=now(),lease_token=null,last_error=null

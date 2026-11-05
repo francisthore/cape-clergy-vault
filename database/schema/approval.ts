@@ -14,6 +14,9 @@ export const approvalNotifications = app
     leaseToken: uuid("lease_token"),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
     lastError: text("last_error"),
+    senderFrom: text("sender_from"),
+    senderReplyTo: text("sender_reply_to"),
+    recipientEmail: text("recipient_email"),
   })
   .enableRLS();
 export const approverBootstrap = app

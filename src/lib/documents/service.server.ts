@@ -56,7 +56,7 @@ export function createDocumentService(
     // Finalization separately locks/rechecks the parent after the upload.
     await auth.withApprovedDatabase(request.headers, async (tx) => {
       const rows = await tx`select id from app.submissions where id=${query.submissionId}
-       and owner_id=app.request_user_id() and status='submitted' and kind='document'`;
+       and owner_id=app.request_user_id() and status='draft' and kind='document'`;
       if (!rows.length)
         throw new DocumentError(403, "This submission is not editable by your account.");
       await tx`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size,upload_request_id)

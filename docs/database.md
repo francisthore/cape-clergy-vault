@@ -1,4 +1,42 @@
-# PostgreSQL, authentication, approvals and documents (Phase 3C)
+# PostgreSQL, settings, submissions and private documents (Phase 3D)
+
+## Phase 3D current boundary
+
+The [Phase 3D report](phase-3d-report.md), [settings runbook](application-settings.md)
+and [submission lifecycle](submission-lifecycle.md) supersede historical phase-specific
+behavior below. Apply additive migrations `0011`–`0019`, then reviewed runtime grants.
+There are 20 ledger entries, 18 RLS application tables and four generated auth tables.
+No historical SQL/snapshot is rewritten. Drizzle generation reports no schema drift.
+
+New typed tables: `email_settings` (singleton), `email_domains` (protected operator
+authorization), `settings_managers` (separate capability), `email_settings_history`
+(immutable snapshots), `email_test_attempts` (persistent rate limiting),
+`submission_events` (immutable metadata/attachment snapshots). Notifications gain
+first-attempt sender/reply-to/recipient snapshots to preserve retry payloads.
+Submissions gain `draft`, integer version/revision and submission timestamp;
+documents gain an exclusion flag without deleting historical metadata/bytes.
+
+Runtime cannot directly insert submissions or update their metadata. Fixed-purpose
+`save_draft`, `transition_submission` and `exclude_draft_document` functions derive
+ownership from trusted session context, check eligibility and versions, and append
+history/audit atomically. Existing status-only reviewer grants are retained but
+policies deny self-review and draft review. Reviewer notes are now readable only
+by eligible reviewers of another author's item; authors receive separate lifecycle
+events, never private notes. No reviewer onboarding/decision API was added.
+
+Submission SELECT additionally requires verified identity; existing current-consent,
+approval, ownership/confidentiality/reviewer checks remain. Repository SQL always
+adds accepted/non-confidential predicates before counts/pagination, including for
+reviewers. Settings permission implies no reviewer/approver/document permission.
+New definer helpers have fixed search paths, qualified names and no PUBLIC execute.
+Internal snapshot/trigger/operator functions have no runtime EXECUTE.
+
+The web app uses only `CAPE_RUNTIME_DATABASE_URL`. The existing outbox worker and
+operator tools remain guarded local-owner tooling; no web handler imports their
+owner connection. Restore matching DB/private-volume backups, rerun reviewed grants
+and inventory before resuming writers. Settings recovery and credential backup are
+covered in the settings runbook. Never edit the migration ledger or disable immutable
+history to recover an ordinary application operation.
 
 The self-hosted public/account application now uses Better Auth on the guarded
 local database. Legacy Supabase repository/review/chat/offline routes are isolated.
@@ -20,7 +58,7 @@ This section supersedes historical references below to future storage or audit w
   functions. `0010_document_object_keys.sql` separates object keys from document
   IDs using validated independent UUIDv4 keys; it is a forward refinement, with no
   applied migration rewritten. Previous SQL/snapshots remain unchanged.
-- Runtime reserves only zero-size pending rows for its own submitted document
+- Runtime reserves only zero-size pending rows for its own draft document
   parents. No direct document UPDATE/DELETE is granted. `finalize_document` locks
   the parent, rechecks permission/editability, and atomically publishes accurate
   metadata. `fail_document` can fail only an authenticated owner's pending row,
@@ -217,17 +255,17 @@ can read their own profile/consent history before approval, and pending/approved
 can append their own consent for the current notice. Rejected/suspended users cannot
 append consent. No user can change their own approval or roles through runtime.
 
-| Table                          | SELECT                                                                                    | Writes allowed to runtime                                                        |
-| ------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| profiles                       | Own profile; approved admin sees all                                                      | None                                                                             |
-| approval history / role grants | Approved own user or approved admin                                                       | None                                                                             |
-| consent history                | Own history                                                                               | Own current-notice acceptance/withdrawal, pending or approved                    |
-| submissions                    | Approved + repository consent: own, live reviewer/admin, or accepted non-confidential     | Own submitted inserts; live reviewer/admin status updates                        |
-| documents                      | Parent submission must be readable                                                        | Approved/consented owner, submitted parent, storage key starts with own ID + `/` |
-| review history                 | Approved/consented owner or live reviewer/admin of readable submission                    | Consented live reviewer/admin, own reviewer ID, readable parent                  |
-| chat                           | Approved/current-chat-consented self or reviewer/admin; owner also approved and consented | Same rules, sender must be current user; no edit/delete                          |
-| mute preferences               | Own preference and authorized conversation                                                | Same scoped INSERT/UPDATE(muted); explicit USING and WITH CHECK                  |
-| audit                          | Approved live admin                                                                       | Approved actor appends only with their own actor ID; no mutations                |
+| Table                          | SELECT                                                                                         | Writes allowed to runtime                                                    |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| profiles                       | Own profile; approved admin sees all                                                           | None                                                                         |
+| approval history / role grants | Approved own user or approved admin                                                            | None                                                                         |
+| consent history                | Own history                                                                                    | Own current-notice acceptance/withdrawal, pending or approved                |
+| submissions                    | Verified/approved + repository consent: own, live reviewer/admin, or accepted non-confidential | Scoped draft/lifecycle functions; live non-author reviewer status updates    |
+| documents                      | Parent submission must be readable                                                             | Verified/approved/consented owner, draft parent, independent opaque UUID key |
+| review history                 | Verified/approved/consented live reviewer/admin of another author’s submission                 | Eligible non-author live reviewer/admin; no draft decisions                  |
+| chat                           | Approved/current-chat-consented self or reviewer/admin; owner also approved and consented      | Same rules, sender must be current user; no edit/delete                      |
+| mute preferences               | Own preference and authorized conversation                                                     | Same scoped INSERT/UPDATE(muted); explicit USING and WITH CHECK              |
+| audit                          | Approved live admin                                                                            | Approved actor appends only with their own actor ID; no mutations            |
 
 Submission review updates also have separate USING and WITH CHECK policies and a
 column-level grant preventing ownership/title/confidentiality rewrites. Reviewer roles

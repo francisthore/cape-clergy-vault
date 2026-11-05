@@ -65,8 +65,13 @@ export function createAuthService(
       const status = String(profile?.["approval_status"] ?? "incomplete");
       if (status === "suspended")
         await tx`delete from auth.sessions where user_id=${session.user.id}`;
-      const [permission] = await tx`select app.is_approver() as allowed`;
-      return { status, canApprove: permission?.["allowed"] === true };
+      const [permission] =
+        await tx`select app.is_approver() as allowed, app.is_settings_manager() as settings`;
+      return {
+        status,
+        canApprove: permission?.["allowed"] === true,
+        canManageSettings: permission?.["settings"] === true,
+      };
     });
   }
   // Future protected operations must use this gate AND scoped tx/RLS, never a UI redirect.

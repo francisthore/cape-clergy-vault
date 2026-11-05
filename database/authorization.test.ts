@@ -92,6 +92,7 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
           "submissions",
           "documents",
           "chat_messages",
+          "submission_events",
           "review_decisions",
           "audit_events",
           "role_assignments",
@@ -137,7 +138,7 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
         assert.equal(await count(tx, "chat_messages"), 1);
         assert.equal(await count(tx, "clergy_profiles"), 1);
         const [row] =
-          await tx`insert into app.submissions(owner_id,title) values (${get("alice")},'New own') returning id`;
+          await tx`select app.save_draft(null,0,'document','New own','General','',array[]::text[],false) as id`;
         const doc = randomUUID();
         await tx`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size) values (${doc},${row!["id"]},${doc},'a.pdf','application/pdf',0)`;
         await denied(
@@ -434,6 +435,7 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
       await owner.client.begin(async (tx) => {
         const fixtureIds = [...Object.values(ids), ...authIds];
         for (const table of [
+          "submission_events",
           "review_decisions",
           "chat_messages",
           "account_approval_events",
@@ -441,6 +443,7 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
           "audit_events",
         ])
           await tx.unsafe(`alter table app.${table} disable trigger user`);
+        await tx`delete from app.submission_events where actor_id=any(${fixtureIds})`;
         await tx`delete from app.review_decisions where reviewer_id = any(${fixtureIds})`;
         await tx`delete from app.documents where submission_id in (select id from app.submissions where owner_id = any(${fixtureIds}))`;
         await tx`delete from app.submissions where owner_id = any(${fixtureIds})`;
@@ -455,6 +458,7 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
         await tx`delete from auth.users where id = any(${fixtureIds})`;
         await tx`delete from auth.verifications where identifier = ${prefix + "@example.invalid"} or id = ${prefix + "-auth-crud"}`;
         for (const table of [
+          "submission_events",
           "review_decisions",
           "chat_messages",
           "account_approval_events",

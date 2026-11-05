@@ -10,8 +10,8 @@ export function getAuthService() {
       if (!secret || !baseURL) throw new Error("Explicit Better Auth secret and origin required");
       // This phase has intentionally local-only DB safety guards and a draft notice.
       // NODE_ENV=production is also used by the local Node build; deployment remains blocked.
-      const email = configuredEmail(baseURL);
       const connection = await connectLocalRuntime();
+      const email = configuredEmail(baseURL, process.env, connection.client);
       return createAuthService(connection, email, { secret, baseURL });
     })().catch((error: unknown) => {
       service = undefined;

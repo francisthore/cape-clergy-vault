@@ -17,14 +17,22 @@ import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as OfflineRouteImport } from './routes/offline'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedRepositoryRouteImport } from './routes/_authenticated/repository'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
 import { Route as AuthenticatedVerifyReviewerRouteImport } from './routes/_authenticated/verify-reviewer'
 import { Route as ApiDocumentsRouteImport } from './routes/api/documents'
 import { Route as ApiRegistrationsRouteImport } from './routes/api/registrations'
+import { Route as ApiRepositoryRouteImport } from './routes/api/repository'
+import { Route as ApiSubmissionsRouteImport } from './routes/api/submissions'
+import { Route as RepositoryIndexRouteImport } from './routes/repository.index'
+import { Route as RepositoryIdRouteImport } from './routes/repository.$id'
+import { Route as SubmissionsIndexRouteImport } from './routes/submissions.index'
+import { Route as SubmissionsIdRouteImport } from './routes/submissions.$id'
+import { Route as SubmissionsNewRouteImport } from './routes/submissions.new'
 import { Route as AdminRegistrationsIndexRouteImport } from './routes/admin.registrations.index'
 import { Route as AdminRegistrationsUserIdRouteImport } from './routes/admin.registrations.$userId'
+import { Route as AdminSettingsEmailRouteImport } from './routes/admin.settings.email'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiSettingsEmailRouteImport } from './routes/api/settings.email'
 import { Route as ApiDocumentsDocumentIdDownloadRouteImport } from './routes/api/documents.$documentId.download'
 
 const IndexRoute = IndexRouteImport.update({
@@ -66,11 +74,6 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedRepositoryRoute = AuthenticatedRepositoryRouteImport.update({
-  id: '/repository',
-  path: '/repository',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedReviewRoute = AuthenticatedReviewRouteImport.update({
   id: '/review',
   path: '/review',
@@ -92,6 +95,41 @@ const ApiRegistrationsRoute = ApiRegistrationsRouteImport.update({
   path: '/api/registrations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRepositoryRoute = ApiRepositoryRouteImport.update({
+  id: '/api/repository',
+  path: '/api/repository',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSubmissionsRoute = ApiSubmissionsRouteImport.update({
+  id: '/api/submissions',
+  path: '/api/submissions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RepositoryIndexRoute = RepositoryIndexRouteImport.update({
+  id: '/repository/',
+  path: '/repository/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RepositoryIdRoute = RepositoryIdRouteImport.update({
+  id: '/repository/$id',
+  path: '/repository/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubmissionsIndexRoute = SubmissionsIndexRouteImport.update({
+  id: '/submissions/',
+  path: '/submissions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubmissionsIdRoute = SubmissionsIdRouteImport.update({
+  id: '/submissions/$id',
+  path: '/submissions/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubmissionsNewRoute = SubmissionsNewRouteImport.update({
+  id: '/submissions/new',
+  path: '/submissions/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRegistrationsIndexRoute = AdminRegistrationsIndexRouteImport.update({
   id: '/admin/registrations/',
   path: '/admin/registrations/',
@@ -103,9 +141,19 @@ const AdminRegistrationsUserIdRoute =
     path: '/admin/registrations/$userId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminSettingsEmailRoute = AdminSettingsEmailRouteImport.update({
+  id: '/admin/settings/email',
+  path: '/admin/settings/email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSettingsEmailRoute = ApiSettingsEmailRouteImport.update({
+  id: '/api/settings/email',
+  path: '/api/settings/email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiDocumentsDocumentIdDownloadRoute =
@@ -123,13 +171,21 @@ export interface FileRoutesByFullPath {
   '/offline': typeof OfflineRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/repository': typeof AuthenticatedRepositoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
+  '/api/repository': typeof ApiRepositoryRoute
+  '/api/submissions': typeof ApiSubmissionsRoute
+  '/repository/$id': typeof RepositoryIdRoute
+  '/submissions/$id': typeof SubmissionsIdRoute
+  '/submissions/new': typeof SubmissionsNewRoute
+  '/repository/': typeof RepositoryIndexRoute
+  '/submissions/': typeof SubmissionsIndexRoute
   '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
+  '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/settings/email': typeof ApiSettingsEmailRoute
   '/admin/registrations/': typeof AdminRegistrationsIndexRoute
   '/api/documents/$documentId/download': typeof ApiDocumentsDocumentIdDownloadRoute
 }
@@ -141,13 +197,21 @@ export interface FileRoutesByTo {
   '/offline': typeof OfflineRoute
   '/chat': typeof AuthenticatedChatRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/repository': typeof AuthenticatedRepositoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
+  '/api/repository': typeof ApiRepositoryRoute
+  '/api/submissions': typeof ApiSubmissionsRoute
+  '/repository/$id': typeof RepositoryIdRoute
+  '/submissions/$id': typeof SubmissionsIdRoute
+  '/submissions/new': typeof SubmissionsNewRoute
+  '/repository': typeof RepositoryIndexRoute
+  '/submissions': typeof SubmissionsIndexRoute
   '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
+  '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/settings/email': typeof ApiSettingsEmailRoute
   '/admin/registrations': typeof AdminRegistrationsIndexRoute
   '/api/documents/$documentId/download': typeof ApiDocumentsDocumentIdDownloadRoute
 }
@@ -161,13 +225,21 @@ export interface FileRoutesById {
   '/offline': typeof OfflineRoute
   '/_authenticated/chat': typeof AuthenticatedChatRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/repository': typeof AuthenticatedRepositoryRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
+  '/api/repository': typeof ApiRepositoryRoute
+  '/api/submissions': typeof ApiSubmissionsRoute
+  '/repository/$id': typeof RepositoryIdRoute
+  '/submissions/$id': typeof SubmissionsIdRoute
+  '/submissions/new': typeof SubmissionsNewRoute
+  '/repository/': typeof RepositoryIndexRoute
+  '/submissions/': typeof SubmissionsIndexRoute
   '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
+  '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/settings/email': typeof ApiSettingsEmailRoute
   '/admin/registrations/': typeof AdminRegistrationsIndexRoute
   '/api/documents/$documentId/download': typeof ApiDocumentsDocumentIdDownloadRoute
 }
@@ -181,13 +253,21 @@ export interface FileRouteTypes {
     | '/offline'
     | '/chat'
     | '/dashboard'
-    | '/repository'
     | '/review'
     | '/verify-reviewer'
     | '/api/documents'
     | '/api/registrations'
+    | '/api/repository'
+    | '/api/submissions'
+    | '/repository/$id'
+    | '/submissions/$id'
+    | '/submissions/new'
+    | '/repository/'
+    | '/submissions/'
     | '/admin/registrations/$userId'
+    | '/admin/settings/email'
     | '/api/auth/$'
+    | '/api/settings/email'
     | '/admin/registrations/'
     | '/api/documents/$documentId/download'
   fileRoutesByTo: FileRoutesByTo
@@ -199,13 +279,21 @@ export interface FileRouteTypes {
     | '/offline'
     | '/chat'
     | '/dashboard'
-    | '/repository'
     | '/review'
     | '/verify-reviewer'
     | '/api/documents'
     | '/api/registrations'
+    | '/api/repository'
+    | '/api/submissions'
+    | '/repository/$id'
+    | '/submissions/$id'
+    | '/submissions/new'
+    | '/repository'
+    | '/submissions'
     | '/admin/registrations/$userId'
+    | '/admin/settings/email'
     | '/api/auth/$'
+    | '/api/settings/email'
     | '/admin/registrations'
     | '/api/documents/$documentId/download'
   id:
@@ -218,13 +306,21 @@ export interface FileRouteTypes {
     | '/offline'
     | '/_authenticated/chat'
     | '/_authenticated/dashboard'
-    | '/_authenticated/repository'
     | '/_authenticated/review'
     | '/_authenticated/verify-reviewer'
     | '/api/documents'
     | '/api/registrations'
+    | '/api/repository'
+    | '/api/submissions'
+    | '/repository/$id'
+    | '/submissions/$id'
+    | '/submissions/new'
+    | '/repository/'
+    | '/submissions/'
     | '/admin/registrations/$userId'
+    | '/admin/settings/email'
     | '/api/auth/$'
+    | '/api/settings/email'
     | '/admin/registrations/'
     | '/api/documents/$documentId/download'
   fileRoutesById: FileRoutesById
@@ -238,8 +334,17 @@ export interface RootRouteChildren {
   OfflineRoute: typeof OfflineRoute
   ApiDocumentsRoute: typeof ApiDocumentsRouteWithChildren
   ApiRegistrationsRoute: typeof ApiRegistrationsRoute
+  ApiRepositoryRoute: typeof ApiRepositoryRoute
+  ApiSubmissionsRoute: typeof ApiSubmissionsRoute
+  RepositoryIdRoute: typeof RepositoryIdRoute
+  SubmissionsIdRoute: typeof SubmissionsIdRoute
+  SubmissionsNewRoute: typeof SubmissionsNewRoute
+  RepositoryIndexRoute: typeof RepositoryIndexRoute
+  SubmissionsIndexRoute: typeof SubmissionsIndexRoute
   AdminRegistrationsUserIdRoute: typeof AdminRegistrationsUserIdRoute
+  AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiSettingsEmailRoute: typeof ApiSettingsEmailRoute
   AdminRegistrationsIndexRoute: typeof AdminRegistrationsIndexRoute
 }
 
@@ -301,13 +406,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/repository': {
-      id: '/_authenticated/repository'
-      path: '/repository'
-      fullPath: '/repository'
-      preLoaderRoute: typeof AuthenticatedRepositoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/review': {
       id: '/_authenticated/review'
       path: '/review'
@@ -336,6 +434,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRegistrationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/repository': {
+      id: '/api/repository'
+      path: '/api/repository'
+      fullPath: '/api/repository'
+      preLoaderRoute: typeof ApiRepositoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/submissions': {
+      id: '/api/submissions'
+      path: '/api/submissions'
+      fullPath: '/api/submissions'
+      preLoaderRoute: typeof ApiSubmissionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/repository/': {
+      id: '/repository/'
+      path: '/repository'
+      fullPath: '/repository/'
+      preLoaderRoute: typeof RepositoryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/repository/$id': {
+      id: '/repository/$id'
+      path: '/repository/$id'
+      fullPath: '/repository/$id'
+      preLoaderRoute: typeof RepositoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/submissions/': {
+      id: '/submissions/'
+      path: '/submissions'
+      fullPath: '/submissions/'
+      preLoaderRoute: typeof SubmissionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/submissions/$id': {
+      id: '/submissions/$id'
+      path: '/submissions/$id'
+      fullPath: '/submissions/$id'
+      preLoaderRoute: typeof SubmissionsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/submissions/new': {
+      id: '/submissions/new'
+      path: '/submissions/new'
+      fullPath: '/submissions/new'
+      preLoaderRoute: typeof SubmissionsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/registrations/': {
       id: '/admin/registrations/'
       path: '/admin/registrations'
@@ -350,11 +497,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegistrationsUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/settings/email': {
+      id: '/admin/settings/email'
+      path: '/admin/settings/email'
+      fullPath: '/admin/settings/email'
+      preLoaderRoute: typeof AdminSettingsEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/settings/email': {
+      id: '/api/settings/email'
+      path: '/api/settings/email'
+      fullPath: '/api/settings/email'
+      preLoaderRoute: typeof ApiSettingsEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/documents/$documentId/download': {
@@ -370,7 +531,6 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedRepositoryRoute: typeof AuthenticatedRepositoryRoute
   AuthenticatedReviewRoute: typeof AuthenticatedReviewRoute
   AuthenticatedVerifyReviewerRoute: typeof AuthenticatedVerifyReviewerRoute
 }
@@ -378,7 +538,6 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedRepositoryRoute: AuthenticatedRepositoryRoute,
   AuthenticatedReviewRoute: AuthenticatedReviewRoute,
   AuthenticatedVerifyReviewerRoute: AuthenticatedVerifyReviewerRoute,
 }
@@ -407,8 +566,17 @@ const rootRouteChildren: RootRouteChildren = {
   OfflineRoute: OfflineRoute,
   ApiDocumentsRoute: ApiDocumentsRouteWithChildren,
   ApiRegistrationsRoute: ApiRegistrationsRoute,
+  ApiRepositoryRoute: ApiRepositoryRoute,
+  ApiSubmissionsRoute: ApiSubmissionsRoute,
+  RepositoryIdRoute: RepositoryIdRoute,
+  SubmissionsIdRoute: SubmissionsIdRoute,
+  SubmissionsNewRoute: SubmissionsNewRoute,
+  RepositoryIndexRoute: RepositoryIndexRoute,
+  SubmissionsIndexRoute: SubmissionsIndexRoute,
   AdminRegistrationsUserIdRoute: AdminRegistrationsUserIdRoute,
+  AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiSettingsEmailRoute: ApiSettingsEmailRoute,
   AdminRegistrationsIndexRoute: AdminRegistrationsIndexRoute,
 }
 export const routeTree = rootRouteImport

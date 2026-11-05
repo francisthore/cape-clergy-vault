@@ -1,10 +1,21 @@
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, index, text, unique, uuid } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  boolean,
+  check,
+  index,
+  integer,
+  timestamp,
+  text,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { app, createdAt } from "./common.ts";
 import { profiles } from "./profiles.ts";
 
 export const submissionKind = app.enum("submission_kind", ["document", "idea"]);
 export const submissionStatus = app.enum("submission_status", [
+  "draft",
   "submitted",
   "under_review",
   "accepted",
@@ -30,6 +41,9 @@ export const submissions = app
         .default(sql`'{}'::text[]`),
       confidential: boolean("confidential").notNull().default(false),
       status: submissionStatus("status").notNull().default("submitted"),
+      version: integer("version").notNull().default(1),
+      revision: integer("revision").notNull().default(1),
+      submittedAt: timestamp("submitted_at", { withTimezone: true }),
       createdAt: createdAt(),
     },
     (t) => [
@@ -53,6 +67,7 @@ export const documents = app
       mediaType: text("media_type").notNull(),
       byteSize: bigint("byte_size", { mode: "bigint" }).notNull(),
       sha256: text("sha256"),
+      excluded: boolean("excluded").notNull().default(false),
       state: text("state").notNull().default("pending"),
       uploadRequestId: uuid("upload_request_id").notNull().defaultRandom(),
       createdAt: createdAt(),
@@ -95,3 +110,30 @@ export type Submission = typeof submissions.$inferSelect;
 export type NewSubmission = typeof submissions.$inferInsert;
 export type Document = typeof documents.$inferSelect;
 export type ReviewDecision = typeof reviewDecisions.$inferSelect;
+
+// Immutable author lifecycle snapshots; reviewer notes remain in their own table.
+export const submissionEvents = app
+  .table(
+    "submission_events",
+    {
+      id: uuid("id").primaryKey().defaultRandom(),
+      submissionId: uuid("submission_id")
+        .notNull()
+        .references(() => submissions.id),
+      actorId: text("actor_id")
+        .notNull()
+        .references(() => profiles.userId),
+      event: text("event").notNull(),
+      version: integer("version").notNull(),
+      revision: integer("revision").notNull(),
+      title: text("title").notNull(),
+      category: text("category").notNull(),
+      abstract: text("abstract").notNull(),
+      keywords: text("keywords").array().notNull(),
+      confidential: boolean("confidential").notNull(),
+      documentIds: uuid("document_ids").array().notNull(),
+      createdAt: createdAt(),
+    },
+    (t) => [index("submission_event_parent_idx").on(t.submissionId, t.createdAt)],
+  )
+  .enableRLS();
