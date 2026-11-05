@@ -13,7 +13,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "start": "node .output/server/index.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:check": "drizzle-kit check --config drizzle.config.ts",
+    "db:local:init": "node scripts/db/local-postgres.ts init",
+    "db:local:start": "node scripts/db/local-postgres.ts start",
+    "db:local:stop": "node scripts/db/local-postgres.ts stop",
+    "db:status": "node --env-file=.env.db.local scripts/db/manage.ts status",
+    "db:migrate": "node --env-file=.env.db.local scripts/db/manage.ts migrate",
+    "db:test": "node --env-file=.env.db.local database/integration.test.ts",
+    "db:test:unit": "node database/safety.test.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -74,7 +83,9 @@
     "vaul": "^1.1.2",
     "vite-plugin-pwa": "^2.0.0",
     "vite-tsconfig-paths": "^6.0.2",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "drizzle-orm": "0.45.4",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
@@ -84,8 +95,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.2.0",
-    "drizzle-kit": "0.x",
-    "drizzle-orm": "0.x",
+    "drizzle-kit": "0.31.11",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
@@ -95,7 +105,6 @@
     "globals": "^15.15.0",
     "jsdom": "^20.0.3",
     "nitro": "3.0.260603-beta",
-    "postgres": "^3.4.9",
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
