@@ -65,14 +65,14 @@ export class EmailService {
     this.provider = provider;
     this.config = config;
   }
-  async send(kind: EmailKind, to: string, url: string) {
+  async send(kind: EmailKind, to: string, url: string, idempotencyKey?: string) {
     if (new URL(url).origin !== this.config.origin) throw new Error("Untrusted email URL");
     const message = {
       ...emailTemplate(kind, url),
       to,
       from: this.config.from,
       ...(this.config.replyTo ? { replyTo: this.config.replyTo } : {}),
-      key: createHash("sha256").update(`${kind}:${to}:${url}`).digest("hex"),
+      key: idempotencyKey ?? createHash("sha256").update(`${kind}:${to}:${url}`).digest("hex"),
     };
     try {
       await this.provider.send(message);

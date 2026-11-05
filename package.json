@@ -27,7 +27,11 @@
     "db:test:auth": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/authorization.test.ts",
     "db:auth:generate": "auth generate --config database/auth/generate.server.ts --output database/auth/generated.ts --yes",
     "db:test:phase3a": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3a.test.ts",
-    "db:smoke:phase3a": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase3a-smoke.ts"
+    "db:smoke:phase3a": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase3a-smoke.ts",
+    "db:bootstrap:approver": "node --env-file=.env.db.local scripts/db/bootstrap-approver.ts",
+    "db:notifications": "node --env-file=.env.db.local --env-file=.env.auth.local scripts/db/approval-notifications.ts",
+    "db:test:phase3b": "node --env-file=.env.db.local --env-file=.env.db.runtime.local database/phase3b.test.ts",
+    "db:smoke:phase3b": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase3b-smoke.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

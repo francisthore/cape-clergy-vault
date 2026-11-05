@@ -19,6 +19,9 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRepositoryRouteImport } from './routes/_authenticated/repository'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
 import { Route as AuthenticatedVerifyReviewerRouteImport } from './routes/_authenticated/verify-reviewer'
+import { Route as ApiRegistrationsRouteImport } from './routes/api/registrations'
+import { Route as AdminRegistrationsIndexRouteImport } from './routes/admin.registrations.index'
+import { Route as AdminRegistrationsUserIdRouteImport } from './routes/admin.registrations.$userId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -71,6 +74,22 @@ const AuthenticatedVerifyReviewerRoute =
     path: '/verify-reviewer',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiRegistrationsRoute = ApiRegistrationsRouteImport.update({
+  id: '/api/registrations',
+  path: '/api/registrations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRegistrationsIndexRoute = AdminRegistrationsIndexRouteImport.update({
+  id: '/admin/registrations/',
+  path: '/admin/registrations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRegistrationsUserIdRoute =
+  AdminRegistrationsUserIdRouteImport.update({
+    id: '/admin/registrations/$userId',
+    path: '/admin/registrations/$userId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -87,7 +106,10 @@ export interface FileRoutesByFullPath {
   '/repository': typeof AuthenticatedRepositoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/registrations': typeof ApiRegistrationsRoute
+  '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/admin/registrations/': typeof AdminRegistrationsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -99,7 +121,10 @@ export interface FileRoutesByTo {
   '/repository': typeof AuthenticatedRepositoryRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/registrations': typeof ApiRegistrationsRoute
+  '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/admin/registrations': typeof AdminRegistrationsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -113,7 +138,10 @@ export interface FileRoutesById {
   '/_authenticated/repository': typeof AuthenticatedRepositoryRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/api/registrations': typeof ApiRegistrationsRoute
+  '/admin/registrations/$userId': typeof AdminRegistrationsUserIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/admin/registrations/': typeof AdminRegistrationsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,7 +155,10 @@ export interface FileRouteTypes {
     | '/repository'
     | '/review'
     | '/verify-reviewer'
+    | '/api/registrations'
+    | '/admin/registrations/$userId'
     | '/api/auth/$'
+    | '/admin/registrations/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -139,7 +170,10 @@ export interface FileRouteTypes {
     | '/repository'
     | '/review'
     | '/verify-reviewer'
+    | '/api/registrations'
+    | '/admin/registrations/$userId'
     | '/api/auth/$'
+    | '/admin/registrations'
   id:
     | '__root__'
     | '/'
@@ -152,7 +186,10 @@ export interface FileRouteTypes {
     | '/_authenticated/repository'
     | '/_authenticated/review'
     | '/_authenticated/verify-reviewer'
+    | '/api/registrations'
+    | '/admin/registrations/$userId'
     | '/api/auth/$'
+    | '/admin/registrations/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -161,7 +198,10 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   AuthRoute: typeof AuthRoute
   OfflineRoute: typeof OfflineRoute
+  ApiRegistrationsRoute: typeof ApiRegistrationsRoute
+  AdminRegistrationsUserIdRoute: typeof AdminRegistrationsUserIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  AdminRegistrationsIndexRoute: typeof AdminRegistrationsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -236,6 +276,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVerifyReviewerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/registrations': {
+      id: '/api/registrations'
+      path: '/api/registrations'
+      fullPath: '/api/registrations'
+      preLoaderRoute: typeof ApiRegistrationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/registrations/': {
+      id: '/admin/registrations/'
+      path: '/admin/registrations'
+      fullPath: '/admin/registrations/'
+      preLoaderRoute: typeof AdminRegistrationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/registrations/$userId': {
+      id: '/admin/registrations/$userId'
+      path: '/admin/registrations/$userId'
+      fullPath: '/admin/registrations/$userId'
+      preLoaderRoute: typeof AdminRegistrationsUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -271,7 +332,10 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   AuthRoute: AuthRoute,
   OfflineRoute: OfflineRoute,
+  ApiRegistrationsRoute: ApiRegistrationsRoute,
+  AdminRegistrationsUserIdRoute: AdminRegistrationsUserIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  AdminRegistrationsIndexRoute: AdminRegistrationsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,9 +1,56 @@
-# PostgreSQL and authentication (Phase 3A)
+# PostgreSQL, authentication and approvals (Phase 3B)
 
 The self-hosted public/account application now uses Better Auth on the guarded
 local database. Legacy Supabase repository/review/chat/offline routes are isolated.
 No production connection, account import, deployment or push has been performed.
 See [Phase 3A implementation and local setup](phase-3a-report.md).
+
+## Phase 3B approval administration
+
+See [Phase 3B implementation report](phase-3b-report.md) for the operator runbook,
+full file inventory, results and limitations. The sections below retain historical
+Phase 2B/3A descriptions; this section supersedes statements about the role list,
+owner-only approval, notification reliability, table/ledger counts and unused context.
+
+- Additive `0006_approval_administration.sql` adds enum role `approver` and two
+  RLS-enabled internal tables: `approval_notifications` and `approver_bootstrap`.
+  `0007_approval_security.sql` adds fixed-purpose functions, queue triggers, safe
+  input checks and the immutable singleton bootstrap marker. There are eight ledger
+  entries, twelve application tables and four generated auth tables. `0000`–`0005`
+  and historical Supabase migrations are unchanged.
+- An approver must have a live, unrevoked `approver` assignment, approved profile
+  and verified Better Auth identity. `admin` or `reviewer` alone does not authorize
+  registration administration. Existing admin/reviewer content policies are preserved;
+  approver is deliberately absent from them. A clergy approval never grants roles.
+- Runtime gets only EXECUTE on `is_approver`, `require_approver`,
+  `registration_list(text,text,integer)`, `registration_detail(text)` and
+  `decide_registration(text,text,text,uuid)`. No new app INSERT/UPDATE/DELETE grants.
+  Runtime has no SELECT on the two internal tables and cannot execute bootstrap.
+  No general SELECT on auth identities is exposed through the approval HTTP API.
+- List/detail SECURITY DEFINER functions require live authorization before reading
+  data and return selected personal fields only. Search and 20-row pagination run
+  in PostgreSQL. Existing profile/history RLS is not widened for approvers.
+- Decisions lock the actor profile/auth/role rows against revocation and lock target
+  auth/profile rows against conflicting changes. A transaction updates status and
+  appends history, audit and notification intent. UUID retries validate original
+  actor/target/action/reason before returning the existing event. Conflicts fail;
+  short READ COMMITTED requests retain the documented in-flight revocation limits.
+- The owner-only bootstrap function locks an immutable singleton marker table and
+  refuses any previous approver grant, even a revoked one. It requires explicit
+  exact-ID confirmation and a verified pending/approved clergy identity. It approves,
+  grants only approver and records evidence/intent atomically. No migration or server
+  startup invokes it. The interactive guarded CLI is the only operator entry point.
+- Verification/profile-insert triggers queue one registration receipt only once both
+  prerequisites exist. Status-change emails are durable intents in the decision
+  transaction. An operator-only outbox worker claims rows with SKIP LOCKED, commits
+  a five-minute lease, sends outside a transaction, then records result or backoff.
+  It uses the existing EmailService with per-outbox-row provider keys, eight attempts
+  and at most one-hour retry delays. It never logs recipient/payload/provider errors.
+  This minimal worker uses guarded owner tooling, not a new web-runtime privilege.
+  Scheduling, alerting, dedicated production worker permissions and provider ambiguity
+  handling remain operational dependencies. Read the report before enabling real mail.
+- Root/nested `.env*` files are ignored except `.env.example`; local secrets are
+  retained, and removing `.env` from tracking does not remove historical commits.
 
 ## Phase 3A changes to the Phase 2B foundation
 

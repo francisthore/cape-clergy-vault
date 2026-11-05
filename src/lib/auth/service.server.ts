@@ -45,9 +45,7 @@ export function createAuthService(
     sendResetPassword: async ({ user, url }) => {
       await email.send("reset", user.email, url);
     },
-    afterEmailVerification: async (user) => {
-      await email.send("pending", user.email, `${config.baseURL}/account`);
-    },
+    // Registration-received intent is queued transactionally by database triggers.
   });
   const withRequestDatabase = createRequestDatabaseBoundary(connection, async (headers) => {
     const session = await auth.api.getSession({ headers, query: { disableCookieCache: true } });
@@ -67,7 +65,8 @@ export function createAuthService(
       const status = String(profile?.["approval_status"] ?? "incomplete");
       if (status === "suspended")
         await tx`delete from auth.sessions where user_id=${session.user.id}`;
-      return { status };
+      const [permission] = await tx`select app.is_approver() as allowed`;
+      return { status, canApprove: permission?.["allowed"] === true };
     });
   }
   // Future protected operations must use this gate AND scoped tx/RLS, never a UI redirect.

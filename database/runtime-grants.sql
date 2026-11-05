@@ -22,3 +22,9 @@ GRANT EXECUTE ON FUNCTION app.request_user_id(), app.is_active(), app.is_reviewe
 ALTER DEFAULT PRIVILEGES FOR ROLE cape_clergy_dev REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 -- New tables/functions require an explicit reviewed grant.
 GRANT EXECUTE ON FUNCTION app.provision_clergy(text,text,text,text,text,boolean,text) TO cape_clergy_runtime;
+
+-- Approval administration uses fixed-purpose functions, never direct table mutation.
+REVOKE ALL ON app.approval_notifications, app.approver_bootstrap FROM cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.is_approver(), app.require_approver(),
+ app.registration_list(text,text,integer), app.registration_detail(text),
+ app.decide_registration(text,text,text,uuid) TO cape_clergy_runtime;

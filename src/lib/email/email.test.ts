@@ -77,8 +77,16 @@ describe("email infrastructure", () => {
     await expect(provider.send(message)).rejects.toThrow("EMAIL_DELIVERY_FAILED");
     expect(send).toHaveBeenCalledTimes(3);
   });
-  it("has reusable future templates without activating approval workflows", () => {
-    for (const kind of ["verification", "reset", "pending", "approved", "rejected"] as const) {
+  it("renders all authentication and approval notification templates", () => {
+    for (const kind of [
+      "verification",
+      "reset",
+      "pending",
+      "approved",
+      "rejected",
+      "suspended",
+      "reactivated",
+    ] as const) {
       const result = emailTemplate(kind, "https://vault.example.invalid/account");
       expect(result.html).toContain('lang="en"');
       expect(result.text).toContain("Anglican Diocese of Cape Town");

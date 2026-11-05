@@ -10,7 +10,12 @@ export async function accountRequest(path: string, body?: unknown) {
       ? {}
       : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   });
-  const data = (await response.json()) as { status?: string; message?: string; ok?: boolean };
+  const data = (await response.json()) as {
+    status?: string;
+    canApprove?: boolean;
+    message?: string;
+    ok?: boolean;
+  };
   if (!response.ok) throw new Error(data.message || "Request failed. Try again.");
   return data;
 }

@@ -10,18 +10,24 @@ The [original editor](https://lovable.dev/projects/219ef20a-7e74-4f29-8092-503e1
 and [historical preview](https://cape-clergy-vault.lovable.app) are attribution
 references, not dependencies of the new authentication flow.
 
-## Current phase: 3A
+## Current phase: 3B
 
 Better Auth **1.7.16**, TanStack Start, PostgreSQL and Drizzle provide registration,
 email verification, cookie sessions, login/logout, account status and password reset.
 New clergy profiles are pending with only the clergy role. Verification never
 approves an account. Legacy repository/reviewer/chat/offline routes are isolated
 until their later migration; their Supabase source and packages remain as reference.
-The self-hosted public/account flow does not require Supabase or Lovable.
+The self-hosted public/account and registration administration flows do not require Supabase or Lovable.
+
+Verified, approved holders of the separate `approver` role manage clergy registrations
+at `/admin/registrations`. Approval, rejection, suspension and reactivation have
+transactional immutable history, security audit and durable notification intents.
+The approval role grants no theological-review, private-chat or system-admin rights.
 
 The displayed privacy wording is a **local draft with legal approval outstanding**.
 This implementation is locally reviewable, not a claim of production readiness.
-See the [complete Phase 3A report](docs/phase-3a-report.md),
+See the [Phase 3B report and operator procedures](docs/phase-3b-report.md),
+[Phase 3A report](docs/phase-3a-report.md),
 [database guide](docs/database.md) and historical
 [Phase 2A](docs/phase-2a-report.md)/[Phase 2B](docs/phase-2b-report.md) reports.
 
@@ -52,8 +58,10 @@ bun run db:test:unit
 bun run db:test
 bun run db:test:auth
 bun run db:test:phase3a
+bun run db:test:phase3b
 bun run build
 bun run db:smoke:phase3a    # starts/stops built Node server and cleans its fixtures
+bun run db:smoke:phase3b    # admin page/API authorization and approval over HTTP
 bun run db:local:stop      # retains data
 ```
 
@@ -71,3 +79,30 @@ Normal tests never contact Resend. The capture override is restricted to localho
 The service worker caches public static assets only, with no navigation/API cache.
 Legacy IndexedDB drafts remain on the device; their UI and delivery are deferred
 with the private-chat migration. There is no new offline authentication mode.
+
+## Initial clergy approver and queued notifications
+
+After the intended approver registers and verifies her email, a trusted local operator
+must independently confirm the person and obtain the exact Better Auth identity ID.
+From an interactive terminal, run `bun run db:bootstrap:approver EXACT_ID`, review the
+account shown, then type the exact confirmation requested. This one-time procedure
+approves that existing clergy identity and grants only `approver`; it creates no
+identity, password, reviewer or admin role. No email/name matching grants privilege.
+Never run it at build/startup or through HTTP. See the report for prerequisites and
+recovery limits. No real approver has been bootstrapped during implementation.
+
+Registration receipts and status notifications now enter a durable database outbox.
+Run `bun run db:notifications` separately to deliver a bounded batch, using captured
+email by default. This guarded operator command loads the owner URL; the web server
+still uses only runtime credentials. **Schedule this command at least once a minute
+and monitor its exhausted count before relying on notifications.** No scheduler or
+production service was installed. Eight attempts with bounded backoff, crash leases
+and stable provider keys support recovery; exactly-once inbox delivery is not claimed.
+Keep sender/origin configuration stable while retrying a batch. See the report for
+ambiguous-delivery reconciliation and future worker privilege separation.
+
+Only `.env.example` filenames may be tracked. Root and nested `.env*` files are
+ignored; use the ignored local files above. The former tracked root `.env` remains
+on disk but is removed from the current index. Historical commits still contain it;
+removing tracking does not erase history. Private captures, credentials and database
+files stay under ignored `.local/` and ignored environment files.

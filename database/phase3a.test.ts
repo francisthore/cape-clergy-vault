@@ -168,7 +168,12 @@ test("Phase 3A HTTP auth, email and negative authorization using restricted Post
           ],
           true,
         );
-        link("Registration received");
+        assert.equal(
+          (
+            await owner.client`select count(*)::int as n from app.approval_notifications where user_id=${id} and kind='pending'`
+          )[0]!["n"],
+          1,
+        );
         assert.equal(
           (
             await owner.client`select approval_status from app.clergy_profiles where user_id=${id}`
@@ -411,6 +416,7 @@ test("Phase 3A HTTP auth, email and negative authorization using restricted Post
         await tx`delete from app.audit_events where actor_id=any(${ids})`;
         await tx`delete from app.account_approval_events where user_id=any(${ids})`;
         await tx`delete from app.popia_consent_events where user_id=any(${ids})`;
+        await tx`delete from app.approval_notifications where user_id=any(${ids})`;
         await tx`delete from app.role_assignments where user_id=any(${ids})`;
         await tx`delete from app.clergy_profiles where user_id=any(${ids})`;
         await tx`delete from auth.users where id=any(${ids})`;

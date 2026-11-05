@@ -9,7 +9,7 @@ export const approvalStatus = app.enum("approval_status", [
   "rejected",
   "suspended",
 ]);
-export const appRole = app.enum("app_role", ["clergy", "reviewer", "admin"]);
+export const appRole = app.enum("app_role", ["clergy", "reviewer", "admin", "approver"]);
 
 export const profiles = app
   .table(

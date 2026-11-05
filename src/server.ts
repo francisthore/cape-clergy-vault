@@ -47,13 +47,20 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const path = new URL(request.url).pathname;
+      if (path === "/admin/registrations" || path.startsWith("/admin/registrations/")) {
+        const { authorizeApprovalPage } = await import("./lib/approvals/runtime.server");
+        const denied = await authorizeApprovalPage(request.headers);
+        if (denied) return denied;
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
-      if (["/auth", "/account"].includes(new URL(request.url).pathname)) {
+      if (["/auth", "/account"].includes(path) || path.startsWith("/admin/")) {
         const headers = new Headers(normalized.headers);
         headers.set("Cache-Control", "no-store");
         headers.set("Referrer-Policy", "no-referrer");
+        if (path.startsWith("/admin/")) headers.set("Vary", "Cookie");
         return new Response(normalized.body, { status: normalized.status, headers });
       }
       return normalized;

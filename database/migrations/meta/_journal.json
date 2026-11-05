@@ -43,6 +43,20 @@
       "when": 1793887409266,
       "tag": "0005_provisioning_audit_outcome",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793889964456,
+      "tag": "0006_approval_administration",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793889998349,
+      "tag": "0007_approval_security",
+      "breakpoints": true
     }
   ]
 }

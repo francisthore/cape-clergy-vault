@@ -7,12 +7,16 @@ import { ProfileFields, PrivacyAcknowledgement } from "@/components/Registration
 export const Route = createFileRoute("/account")({ component: AccountPage });
 function AccountPage() {
   const [status, setStatus] = useState("loading");
+  const [canApprove, setCanApprove] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     const refresh = () => {
       void accountRequest("account")
-        .then((r) => setStatus(r.status ?? "error"))
+        .then((r) => {
+          setStatus(r.status ?? "error");
+          setCanApprove(r.canApprove === true);
+        })
         .catch(() => setStatus("error"));
     };
     refresh();
@@ -63,6 +67,11 @@ function AccountPage() {
           <PrivacyAcknowledgement />
           <Button disabled={busy}>{busy ? "Saving…" : "Complete registration"}</Button>
         </form>
+      )}
+      {canApprove && (
+        <a className="block text-primary underline" href="/admin/registrations">
+          Manage clergy registrations
+        </a>
       )}
       {message && <p role="alert">{message}</p>}
       {status === "signed-out" ? (

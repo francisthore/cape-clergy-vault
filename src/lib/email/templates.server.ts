@@ -1,4 +1,5 @@
-export type EmailKind = "verification" | "reset" | "pending" | "approved" | "rejected";
+export type EmailKind =
+  "verification" | "reset" | "pending" | "approved" | "rejected" | "suspended" | "reactivated";
 const content: Record<EmailKind, [string, string, string]> = {
   verification: [
     "Verify your email address",
@@ -12,12 +13,22 @@ const content: Record<EmailKind, [string, string, string]> = {
   ],
   pending: [
     "Registration received",
-    "Your email address has been verified. Your registration is awaiting approval. You will be notified once your account has been approved.",
+    "Your verified registration has been received for review. Sign in to view your current account status. You will be notified of approval decisions.",
     "View account status",
   ],
   approved: [
     "Account approved",
     "Your clergy registration has been approved. Sign in to view your account.",
+    "Sign in",
+  ],
+  suspended: [
+    "Account suspended",
+    "Your account access has been suspended. Contact the Diocese through your usual channel for assistance.",
+    "View account status",
+  ],
+  reactivated: [
+    "Account reactivated",
+    "Your account access has been restored. Sign in to view your account.",
     "Sign in",
   ],
   rejected: [

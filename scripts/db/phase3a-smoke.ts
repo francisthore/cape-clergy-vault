@@ -131,6 +131,7 @@ try {
       await tx`delete from app.audit_events where actor_id=any(${ids})`;
       await tx`delete from app.account_approval_events where user_id=any(${ids})`;
       await tx`delete from app.popia_consent_events where user_id=any(${ids})`;
+      await tx`delete from app.approval_notifications where user_id=any(${ids})`;
       await tx`delete from app.role_assignments where user_id=any(${ids})`;
       await tx`delete from app.clergy_profiles where user_id=any(${ids})`;
       await tx`delete from auth.users where id=any(${ids})`;
