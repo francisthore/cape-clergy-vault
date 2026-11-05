@@ -1,16 +1,21 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { nitro } from "nitro/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 import { VitePWA } from "vite-plugin-pwa";
 
-export default defineConfig({
-  vite: {
-    plugins: [VitePWA({
+export default defineConfig(({ command }) => ({
+  plugins: [
+    tailwindcss(),
+    tsconfigPaths(),
+    tanstackStart({ server: { entry: "server" } }),
+    ...(command === "build" ? [nitro({ preset: "node-server" })] : []),
+    react(),
+    VitePWA({
       strategies: "generateSW",
+      outDir: ".output/public",
       filename: "sw.js",
       registerType: "autoUpdate",
       injectRegister: null,
@@ -18,19 +23,32 @@ export default defineConfig({
       manifest: false,
       workbox: {
         globPatterns: ["**/*.{js,css,png,ico,webmanifest}"],
-        // No cached private conversations or API responses: offline has a dedicated draft-only page.
-        additionalManifestEntries: [{ url: "/offline", revision: "offline-drafts-v1" }],
         navigateFallback: null,
         runtimeCaching: [
-          { urlPattern: ({ request, url }) => request.mode === "navigate" && url.origin === self.location.origin && !/^\/(~oauth|api|auth)/.test(url.pathname), handler: "NetworkFirst", options: { cacheName: "teft-public-navigations", networkTimeoutSeconds: 5, precacheFallback: { fallbackURL: "/offline" }, cacheableResponse: { statuses: [200] }, expiration: { maxEntries: 8, maxAgeSeconds: 86400 } } },
-          { urlPattern: ({ url }) => url.origin === self.location.origin && /\/assets\/.*-[\w-]{8,}\.(js|css|png|woff2)$/.test(url.pathname), handler: "CacheFirst", options: { cacheName: "teft-hashed-assets", expiration: { maxEntries: 100, maxAgeSeconds: 2592000 } } },
+          {
+            urlPattern: ({ url }) =>
+              url.origin === self.location.origin &&
+              /\/assets\/.*-[\w-]{8,}\.(js|css|png|woff2)$/.test(url.pathname),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "teft-hashed-assets",
+              expiration: { maxEntries: 100, maxAgeSeconds: 2592000 },
+            },
+          },
         ],
+        cleanupOutdatedCaches: true,
+        importScripts: ["/sw-cleanup.js"],
       },
-    })],
+    }),
+  ],
+  resolve: {
+    dedupe: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "@tanstack/react-query",
+      "@tanstack/query-core",
+    ],
   },
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
-});
+}));

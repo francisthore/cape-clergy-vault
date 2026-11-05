@@ -11,6 +11,9 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "virtual:pwa-register": path.resolve(__dirname, "./src/test/mocks/pwa-register.ts"),
+      "@": path.resolve(__dirname, "./src"),
+    },
   },
 });
