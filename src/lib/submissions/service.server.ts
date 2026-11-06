@@ -15,6 +15,10 @@ export function createSubmissionService(
     });
   async function handle(request: Request, repository = false) {
     try {
+      if (request.method === "GET" && repository) {
+        const denied = await auth.limitOperation(request, "search");
+        if (denied) return denied;
+      }
       if (request.method === "GET") {
         const q = querySchema.parse(Object.fromEntries(new URL(request.url).searchParams));
         return json(

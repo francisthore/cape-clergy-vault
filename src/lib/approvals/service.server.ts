@@ -32,6 +32,10 @@ export function createApprovalService(auth: ReturnType<typeof createAuthService>
         headers: { "Cache-Control": "no-store", Vary: "Cookie", "Referrer-Policy": "no-referrer" },
       });
     try {
+      if (request.method === "POST") {
+        const denied = await auth.limitOperation(request, "admin");
+        if (denied) return denied;
+      }
       if (request.method === "GET") {
         const query = querySchema.parse(Object.fromEntries(new URL(request.url).searchParams));
         return json(

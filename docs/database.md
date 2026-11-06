@@ -453,3 +453,13 @@ no direct app/auth table access, ownership, elevated flags or role memberships.
 Web runtime cannot read/write scan evidence or finalize a scan, including by forged
 actor settings. Repeated runtime/scanner setup preserves protected local credentials.
 Read [scanning](document-scanning.md) and [operations](operations-monitoring.md).
+
+## Phase 4 additive boundary
+
+Migration `0032_operational_boundaries` adds cancellation state to the existing approval
+outbox, shared HMAC-keyed bounded limiter rows with RLS and narrow notification
+claim/prepare/check/finish functions. The chain now has 33 entries and 25 RLS app tables.
+No previous SQL/snapshot/hash changed. `db:notifications:setup` provisions only a
+separate restricted marked local login, without role memberships/ownership/DDL/auth
+CRUD or direct table grants. See [production role design](production-database-roles.md)
+and [release matrix](release-readiness.md). No production connection guard is bypassed.

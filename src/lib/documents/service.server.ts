@@ -49,6 +49,8 @@ export function createDocumentService(
     const length = request.headers.get("content-length");
     if (length && (!/^\d+$/.test(length) || Number(length) > maxBytes))
       throw new DocumentError(413, "Document exceeds the upload limit.");
+    const denied = await auth.limitOperation(request, "upload");
+    if (denied) return denied;
     const id = randomUUID();
     const storageKey = randomUUID();
     const requestId = query.requestId;

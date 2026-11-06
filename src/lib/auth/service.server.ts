@@ -1,4 +1,10 @@
-import { createHash, createHmac } from "node:crypto";
+import {
+  clientAddress,
+  consumeLimit,
+  limitedResponse,
+  type LimitPurpose,
+} from "../security/rate-limit.server.ts";
+import { createHash } from "node:crypto";
 import { APIError } from "better-auth/api";
 import { z } from "zod";
 import { createLocalAuth } from "../../../database/auth/config.server.ts";
@@ -17,16 +23,25 @@ export function createAuthService(
   email: EmailService,
   config: { secret: string; baseURL: string },
 ) {
-  // Bounded, process-local throttling. No proxy header is trusted as a client IP.
-  // A shared persistent limiter is required before multi-process deployment.
-  const attempts = new Map<string, { count: number; until: number }>();
-  function allow(key: string, max: number, window = 60_000) {
-    const now = Date.now();
-    for (const [k, v] of attempts) if (v.until <= now) attempts.delete(k);
-    const value = attempts.get(key) ?? { count: 0, until: now + window };
-    value.count++;
-    attempts.set(key, value);
-    return value.count <= max;
+  async function limit(request: Request, purpose: LimitPurpose, subject?: string) {
+    const result = await consumeLimit(
+      connection.client,
+      config.secret,
+      purpose,
+      subject ?? clientAddress(request),
+    );
+    return result.allowed ? null : limitedResponse(result.retryAfter);
+  }
+  async function limitOperation(request: Request, purpose: LimitPurpose) {
+    const denied = await limit(request, purpose);
+    if (denied) return denied;
+    const session = await auth.api.getSession({
+      headers: request.headers,
+      query: { disableCookieCache: true },
+    });
+    return session?.user.emailVerified
+      ? limit(request, purpose, `identity:${session.user.id}`)
+      : null;
   }
   const internalBoundary = (id: string) =>
     createRequestDatabaseBoundary(connection, async () => ({ user: { id } }));
@@ -96,12 +111,13 @@ export function createAuthService(
   async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname.replace(/^\/api\/auth/, "");
-    if (!allow("global", 120)) return json({ message: "Please wait before trying again." }, 429);
     if (request.method !== "GET" && request.method !== "POST") return json({}, 405);
     // All mutations require an exact trusted Origin, including custom endpoints.
     if (request.method === "POST" && request.headers.get("origin") !== config.baseURL)
       return json({ message: "Untrusted origin" }, 403);
     try {
+      const denied = await limit(request, "auth");
+      if (denied) return denied;
       if (path === "/account" && request.method === "GET")
         return json(await account(request.headers));
       if (path === "/verify-email" && request.method === "GET") {
@@ -132,8 +148,8 @@ export function createAuthService(
       const input: unknown = JSON.parse(raw);
       if (path === "/register") {
         const data = registrationSchema.parse(input);
-        if (!allow("register", 10))
-          return json({ message: "Please wait before registering again." }, 429);
+        const denied = await limit(request, "register");
+        if (denied) return denied;
         const result = await auth.api.signUpEmail({
           body: { name: data.fullName, email: data.email, password: data.password },
         });
@@ -183,8 +199,8 @@ export function createAuthService(
       const publicEmail = z.object({ email: emailSchema }).strict();
       if (path === "/send-verification-email" || path === "/request-password-reset") {
         const { email: address } = publicEmail.parse(input);
-        const key = createHmac("sha256", config.secret).update(`${path}:${address}`).digest("hex");
-        if (!allow(key, 1)) return json(genericMail);
+        const denied = await limit(request, "mail", `${path}:${address}`);
+        if (denied) return denied;
         try {
           if (path === "/send-verification-email")
             await auth.api.sendVerificationEmail({
@@ -205,8 +221,10 @@ export function createAuthService(
           .object({ email: emailSchema, password: z.string().min(1).max(128) })
           .strict()
           .parse(input);
-        if (!allow("login", 20))
-          return json({ message: "Please wait before signing in again." }, 429);
+        const denied = await limit(request, "login");
+        if (denied) return denied;
+        const mailboxDenied = await limit(request, "login", `mailbox:${data.email}`);
+        if (mailboxDenied) return mailboxDenied;
         const response = await auth.api.signInEmail({
           body: data,
           headers: request.headers,
@@ -236,7 +254,8 @@ export function createAuthService(
           .object({ token: z.string().min(1).max(512), newPassword: passwordSchema })
           .strict()
           .parse(input);
-        if (!allow("reset", 10)) return json({ message: "Please wait before trying again." }, 429);
+        const denied = await limit(request, "reset");
+        if (denied) return denied;
         await auth.api.resetPassword({ body: data });
         return json({ ok: true });
       }
@@ -275,5 +294,5 @@ export function createAuthService(
       return operation(tx);
     })) as T;
   }
-  return { auth, handle, account, withApprovedDatabase, withAuditDatabase };
+  return { auth, handle, account, withApprovedDatabase, withAuditDatabase, limitOperation };
 }

@@ -1,3 +1,4 @@
+import { connectLocalNotifications } from "./notifications.server.ts";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
@@ -7,6 +8,7 @@ import { deliverReviewerNotifications } from "../src/lib/reviews/notifications.s
 import { EmailService, TestEmailProvider } from "../src/lib/email/service.server.ts";
 
 test("Phase 3F exact assignment notification regression", async (t) => {
+  const notificationWorker = await connectLocalNotifications();
   const owner = await connectLocalDatabase(),
     runtime = await connectLocalRuntime();
   const prefix = `p3f-notice-${randomUUID()}`,
@@ -62,7 +64,14 @@ test("Phase 3F exact assignment notification regression", async (t) => {
         await owner.client`update app.reviewer_notifications set cancelled_at=null where id=${stale.n}`;
         assert.equal(await allowed(stale.n), false);
         assert.equal(
-          await deliverReviewerNotifications(owner, email, origin, "fixture", 1, stale.n),
+          await deliverReviewerNotifications(
+            notificationWorker,
+            email,
+            origin,
+            "fixture",
+            1,
+            stale.n,
+          ),
           0,
         );
       },
@@ -77,7 +86,14 @@ test("Phase 3F exact assignment notification regression", async (t) => {
       await owner.client`update app.role_assignments set revoked_at=now() where user_id=${ids[1]!} and role='reviewer'`;
       assert.equal(await allowed(current.n), false);
       assert.equal(
-        await deliverReviewerNotifications(owner, email, origin, "fixture", 1, current.n),
+        await deliverReviewerNotifications(
+          notificationWorker,
+          email,
+          origin,
+          "fixture",
+          1,
+          current.n,
+        ),
         0,
       );
     });
@@ -92,7 +108,14 @@ test("Phase 3F exact assignment notification regression", async (t) => {
         { origin, from: "Fixture <fixture@example.invalid>" },
       );
       assert.equal(
-        await deliverReviewerNotifications(owner, failing, origin, "fixture", 1, item.n),
+        await deliverReviewerNotifications(
+          notificationWorker,
+          failing,
+          origin,
+          "fixture",
+          1,
+          item.n,
+        ),
         0,
       );
       const [r] =
@@ -102,7 +125,7 @@ test("Phase 3F exact assignment notification regression", async (t) => {
       assert.ok(r!["sender_from"]);
       await owner.client`update app.reviewer_notifications set available_at=now() where id=${item.n}`;
       assert.equal(
-        await deliverReviewerNotifications(owner, email, origin, "fixture", 1, item.n),
+        await deliverReviewerNotifications(notificationWorker, email, origin, "fixture", 1, item.n),
         1,
       );
       assert.equal(provider.messages.length, 1);
@@ -125,7 +148,14 @@ test("Phase 3F exact assignment notification regression", async (t) => {
           },
         );
         assert.equal(
-          await deliverReviewerNotifications(owner, cancelling, origin, "fixture", 1, item.n),
+          await deliverReviewerNotifications(
+            notificationWorker,
+            cancelling,
+            origin,
+            "fixture",
+            1,
+            item.n,
+          ),
           0,
         );
         assert.equal(provider.messages.length, 1);
@@ -146,7 +176,14 @@ test("Phase 3F exact assignment notification regression", async (t) => {
           { origin, from: "Fixture <fixture@example.invalid>" },
         );
         assert.equal(
-          await deliverReviewerNotifications(owner, inFlight, origin, "fixture", 1, item.n),
+          await deliverReviewerNotifications(
+            notificationWorker,
+            inFlight,
+            origin,
+            "fixture",
+            1,
+            item.n,
+          ),
           0,
         );
         assert.equal(accepted, 1);
@@ -168,13 +205,27 @@ test("Phase 3F exact assignment notification regression", async (t) => {
           },
           { origin, from: "Fixture <fixture@example.invalid>" },
         );
-        await deliverReviewerNotifications(owner, failing, origin, "fixture", 1, item.n);
+        await deliverReviewerNotifications(
+          notificationWorker,
+          failing,
+          origin,
+          "fixture",
+          1,
+          item.n,
+        );
         const [before] =
           await owner.client`select recipient_email from app.reviewer_notifications where id=${item.n}`;
         await owner.client`update auth.users set email=${prefix + "-replacement@example.invalid"} where id=${ids[2]!}`;
         await owner.client`update app.reviewer_notifications set available_at=now() where id=${item.n}`;
         assert.equal(
-          await deliverReviewerNotifications(owner, email, origin, "fixture", 1, item.n),
+          await deliverReviewerNotifications(
+            notificationWorker,
+            email,
+            origin,
+            "fixture",
+            1,
+            item.n,
+          ),
           0,
         );
         const [after] =
@@ -200,6 +251,7 @@ test("Phase 3F exact assignment notification regression", async (t) => {
       await tx`delete from auth.users where id=any(${ids})`;
     });
     await runtime.close();
+    await notificationWorker.close();
     await owner.close();
   }
 });

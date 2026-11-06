@@ -113,3 +113,12 @@ an approved retention/investigation policy and future explicit disposal workflow
 
 Protocol reference: [official clamd protocol](https://docs.clamav.net/manual/Usage/ClamdProtocol.html).
 See the Phase 3F report for actual test results and the explicit real-daemon skip.
+
+## Phase 4 acceptance boundary
+
+Real-daemon validation remains Blocked locally: binaries/socket absent and Docker
+unavailable to this environment. Protocol, lifecycle and restore tests explicitly use
+doubles and do not close this gate. The executable installation/configuration/fault
+acceptance pack is [here](clamav-operational-acceptance.md). No daemon was installed
+or service restarted. Scanner-only readiness now reports degraded/HTTP 200, while
+promotion and download clean-evidence gates remain unchanged.

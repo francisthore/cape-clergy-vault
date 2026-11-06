@@ -263,3 +263,11 @@ pending/error metadata, without a byte-access exception. See
 [document scanning](document-scanning.md) for leases, freshness, integrity checks,
 reconciliation and retained infected-file policy, and [operations](operations-monitoring.md)
 for health/capacity monitoring. No automatic destruction or confidential release occurs.
+
+## Phase 4 recovery and isolation
+
+See [coordinated encrypted backup/recovery](backup-recovery.md) for the disposable
+restore drill and mandatory pre-exposure hash reconciliation. A restored clean flag
+alone is insufficient. The current provider still enforces process-owner/0700 roots;
+ordinary cross-UID group sharing is not supported. See the proposed
+[namespace isolation design](production-architecture.md) before host provisioning.

@@ -10,7 +10,7 @@ export const localTarget = {
 
 export function validateLocalUrl(
   value: string | undefined,
-  runtime: boolean | "scanner" = false,
+  runtime: boolean | "scanner" | "notifications" = false,
 ): string {
   if (!value) throw new Error("CAPE_DATABASE_URL is required in .env.db.local");
   let url: URL;
@@ -25,11 +25,13 @@ export function validateLocalUrl(
     url.port !== String(localTarget.port) ||
     url.pathname !== `/${localTarget.database}` ||
     url.username !==
-      (runtime === "scanner"
-        ? "cape_clergy_scanner"
-        : runtime
-          ? "cape_clergy_runtime"
-          : localTarget.user) ||
+      (runtime === "notifications"
+        ? "cape_clergy_notifications"
+        : runtime === "scanner"
+          ? "cape_clergy_scanner"
+          : runtime
+            ? "cape_clergy_runtime"
+            : localTarget.user) ||
     !url.password ||
     url.search !== "" ||
     url.hash !== ""
@@ -42,7 +44,7 @@ export function validateLocalUrl(
 
 export async function assertLocalDatabase(
   client: Sql,
-  runtime: boolean | "scanner" = false,
+  runtime: boolean | "scanner" | "notifications" = false,
 ): Promise<void> {
   const [identity] = await client<
     {
@@ -72,11 +74,13 @@ export async function assertLocalDatabase(
     !identity ||
     identity.database !== localTarget.database ||
     identity.username !==
-      (runtime === "scanner"
-        ? "cape_clergy_scanner"
-        : runtime
-          ? "cape_clergy_runtime"
-          : localTarget.user) ||
+      (runtime === "notifications"
+        ? "cape_clergy_notifications"
+        : runtime === "scanner"
+          ? "cape_clergy_scanner"
+          : runtime
+            ? "cape_clergy_runtime"
+            : localTarget.user) ||
     identity.owner !== localTarget.user ||
     identity.marker !== localTarget.marker ||
     identity.host !== localTarget.host ||

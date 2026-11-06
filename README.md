@@ -10,7 +10,14 @@ The [original editor](https://lovable.dev/projects/219ef20a-7e74-4f29-8092-503e1
 and [historical preview](https://cape-clergy-vault.lovable.app) are attribution
 references, not dependencies of the new authentication flow.
 
-## Current phase: 3D
+## Current phase: 4 — local operational acceptance
+
+Phase 4 adds restricted notification-worker functions/login, shared PostgreSQL rate
+limits, trusted-proxy checks, scanner-degraded health semantics, an encrypted disposable
+restore drill and operational/approval acceptance packs. No production or staging
+provisioning is authorized. Real ClamAV, target-specific infrastructure isolation,
+live deliverability and human approvals remain open. See the
+[Phase 4 report](docs/phase-4-report.md) and [release matrix](docs/release-readiness.md).
 
 Better Auth **1.7.16**, TanStack Start, PostgreSQL and Drizzle provide registration,
 email verification, cookie sessions, login/logout, account status and password reset.
@@ -58,6 +65,8 @@ bun install --frozen-lockfile
 bun run db:local:start     # db:local:init only for a new setup
 bun run db:migrate
 bun run db:runtime:setup
+bun run db:scanner:setup
+bun run db:notifications:setup
 # Put a random 32+ character secret and trusted localhost origin in ignored
 # .env.auth.local, following .env.example. Never use VITE_ for auth/email secrets.
 bun --env-file=.env.db.runtime.local --env-file=.env.auth.local run dev

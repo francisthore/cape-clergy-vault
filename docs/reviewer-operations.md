@@ -222,3 +222,12 @@ intent is cancelled rather than sent to an old address or silently retargeted.
 Reviewers only receive clean authorized attachments. Quarantine/error/infected/legacy
 bytes have no privileged reviewer preview. Scan and notification operational commands,
 recovery and production-role blockers are documented in [operations](operations-monitoring.md).
+
+## Phase 4 restricted delivery
+
+Exact-ID reviewer operator maintenance remains guarded owner-only. Background delivery
+now uses the separate restricted notification connection and lease-fenced functions;
+no owner credential enters its CLI environment or web handlers. See
+[production database roles](production-database-roles.md) and
+[worker supervision](worker-supervision.md). This resolves the owner-backed delivery
+implementation gap; real host provisioning/isolation and provider acceptance remain open.

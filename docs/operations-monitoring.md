@@ -8,7 +8,7 @@ operator/worker credentials, capture-only test email and private filesystem owne
 
 `GET /health/live` returns only `{"status":"live"}` while the process can respond;
 it has no dependency checks. `GET /health/ready` returns `ready` (200), `degraded`
-(503, database/storage available but scanner not ready), or `unavailable` (503,
+(200, database/storage available but scanner not ready), or `unavailable` (503,
 database/storage failed or dangerously low). Responses use no-store and never expose
 component addresses, paths, engine diagnostics, keys, identities or queue contents.
 Only GET/HEAD are accepted. Readiness probes are coalesced for 15 seconds; changes
@@ -51,21 +51,22 @@ production collection. SQL queue ages cannot by themselves prove a worker is ali
 
 ## Worker coordination and recovery
 
-| Command                             | Credential                                    | Claim/recovery                                             |
-| ----------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
-| `bun run db:notifications`          | guarded owner, existing local approval worker | SKIP LOCKED, five-minute lease, max 20, eight attempts     |
-| `bun run db:reviewer:notifications` | guarded owner, existing local reviewer worker | same bounds, exact assignment check, audited cancellations |
-| `bun run db:scans`                  | separate restricted scanner login             | SKIP LOCKED + global two-lease cap, max 20, five attempts  |
+| Command                             | Credential                        | Claim/recovery                                             |
+| ----------------------------------- | --------------------------------- | ---------------------------------------------------------- |
+| `bun run db:notifications`          | restricted notification login     | SKIP LOCKED, five-minute lease, max 20, eight attempts     |
+| `bun run db:reviewer:notifications` | restricted notification login     | same bounds, exact assignment check, audited cancellations |
+| `bun run db:scans`                  | separate restricted scanner login | SKIP LOCKED + global two-lease cap, max 20, five attempts  |
 
 Choose one supervisor/schedule per command, e.g. a minute-based timer with bounded
 invocations and overlap monitoring. Claims tolerate concurrent invocations; do not
 assume scheduling alone provides exclusivity. Avoid duplicate PM2/cron/systemd schedules.
-No owner worker may run from a web request. For production, give approval/reviewer
-workers separate named restricted logins with narrowly scoped claim/snapshot/eligibility/
-acknowledgment functions, reviewed grants and isolated secrets. The existing guarded
-owner-based email workers are a documented production blocker, not a production default.
-The scan role demonstrates the intended boundary; production host provisioning remains
-separate from this deliberately local-only setup.
+No owner worker may run from a web request. Phase 4 supplies the restricted notification login and five reviewed functions;
+run `db:notifications:setup` locally, and keep its ignored environment outside web.
+Production target-specific provisioning remains separately reviewed; local guards are
+retained. See [database roles](production-database-roles.md) and
+[supervision](worker-supervision.md). Ordinary multi-UID filesystem sharing is not
+supported by the current 0700 owner-checked provider; resolve host namespace isolation
+before confidential staging.
 
 After interruption, restart the bounded worker and let expired leases recover. Do not
 rebuild queues from submission decisions or modify review outcomes after email failure.
@@ -81,3 +82,9 @@ Read [scanning](document-scanning.md), [reviewer operations](reviewer-operations
 storage runbooks before release. TLS, shared rate limits, monitoring escalation,
 capacity quotas, delivery/DNS checks, backup restore drills and worker supervision
 remain required. No unrestricted confidential readiness is claimed.
+
+Phase 4 changes scanner-only degradation to HTTP 200 with `status: degraded`; monitors
+must inspect JSON and must not restart healthy Node for daemon outages. Database,
+storage and critical-capacity failure remain unavailable/503. See the
+[release matrix](release-readiness.md), [backup drill](backup-recovery.md),
+[ClamAV pack](clamav-operational-acceptance.md) and [shared limiter](shared-rate-limiting.md).

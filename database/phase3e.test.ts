@@ -1,3 +1,5 @@
+import { connectLocalNotifications } from "./notifications.server.ts";
+import { expireFixtureLimits } from "./test-rate-limits.ts";
 import { scanTestDocument, cleanTestScanRows } from "./test-scanning.ts";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -22,6 +24,7 @@ import { EmailService, TestEmailProvider } from "../src/lib/email/service.server
 import { resolveEmailSettings } from "../src/lib/settings/email.server.ts";
 const http = process.argv.includes("--http");
 test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workflow`, async (t) => {
+  const notificationWorker = await connectLocalNotifications();
   const owner = await connectLocalDatabase(),
     runtime = await connectLocalRuntime(),
     root = await mkdtemp(join(tmpdir(), "cape-phase3e-"));
@@ -54,6 +57,9 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
     documents = createDocumentService(auth, new LocalPrivateStorageProvider(root), origin);
   const [initial] =
     await owner.client`select transactional_enabled,notifications_enabled from app.email_settings`;
+  // Independent scenarios get a fresh window for their exact fixture namespace.
+  // Phase 4 separately asserts denial, restart persistence and real expiry.
+  t.afterEach(() => expireFixtureLimits(owner.client, secret, ["invitation"], ids));
   const originalFetch = globalThis.fetch;
   let child: ReturnType<typeof spawn> | undefined;
   globalThis.fetch = async (input, init) => {
@@ -183,7 +189,14 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
     const [n] =
       await owner.client`select id from app.reviewer_notifications where invitation_id=${inv}`;
     assert.equal(
-      await deliverReviewerNotifications(owner, email, origin, secret, 1, String(n!["id"])),
+      await deliverReviewerNotifications(
+        notificationWorker,
+        email,
+        origin,
+        secret,
+        1,
+        String(n!["id"]),
+      ),
       1,
     );
     const mail = provider.messages.at(-1)!;
@@ -920,7 +933,14 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
         assert.ok(n);
         provider.fail = true;
         assert.equal(
-          await deliverReviewerNotifications(owner, email, origin, secret, 1, String(n["id"])),
+          await deliverReviewerNotifications(
+            notificationWorker,
+            email,
+            origin,
+            secret,
+            1,
+            String(n["id"]),
+          ),
           0,
         );
         const [failed] =
@@ -930,8 +950,22 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
         await owner.client`update app.reviewer_notifications set available_at=now() where id=${n["id"]}`;
         provider.fail = false;
         const r = await Promise.all([
-          deliverReviewerNotifications(owner, email, origin, secret, 1, String(n["id"])),
-          deliverReviewerNotifications(owner, email, origin, secret, 1, String(n["id"])),
+          deliverReviewerNotifications(
+            notificationWorker,
+            email,
+            origin,
+            secret,
+            1,
+            String(n["id"]),
+          ),
+          deliverReviewerNotifications(
+            notificationWorker,
+            email,
+            origin,
+            secret,
+            1,
+            String(n["id"]),
+          ),
         ]);
         assert.equal(r[0]! + r[1]!, 1);
         const mail = provider.messages.at(-1)!;
@@ -940,7 +974,14 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
         assert.ok(mail.html);
         assert.equal(mail.from, failed!["sender_from"]);
         assert.equal(
-          await deliverReviewerNotifications(owner, email, origin, secret, 1, String(n["id"])),
+          await deliverReviewerNotifications(
+            notificationWorker,
+            email,
+            origin,
+            secret,
+            1,
+            String(n["id"]),
+          ),
           0,
         );
         const inv = await issue("other");
@@ -950,7 +991,7 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
         provider.fail = true;
         assert.equal(
           await deliverReviewerNotifications(
-            owner,
+            notificationWorker,
             email,
             origin,
             secret,
@@ -963,7 +1004,7 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
         await owner.client`update app.reviewer_notifications set available_at=now() where id=${queued!["id"]}`;
         assert.equal(
           await deliverReviewerNotifications(
-            owner,
+            notificationWorker,
             email,
             origin,
             secret,
@@ -1035,6 +1076,7 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
         if (String(m.to).startsWith(prefix)) await unlink(".local/email/" + file);
       }
     }
+    await notificationWorker.close();
     await owner.close();
     await rm(root, { recursive: true, force: true });
   }

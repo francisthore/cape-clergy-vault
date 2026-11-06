@@ -34,7 +34,7 @@ describe("privacy-safe operational readiness", () => {
   });
   it("public endpoint returns only a generic status with no cache", async () => {
     const r = healthResponse("degraded");
-    expect(r.status).toBe(503);
+    expect(r.status).toBe(200);
     expect(await r.json()).toEqual({ status: "degraded" });
     expect(r.headers.get("Cache-Control")).toBe("no-store");
   });

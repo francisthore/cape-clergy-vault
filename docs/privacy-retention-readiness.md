@@ -114,3 +114,14 @@ read-only transaction. Only settled notification payloads and expired sessions/t
 are counted in their respective operational projections. Every output remains marked
 hypothetical and requires record-specific hold review; no write/disposal function is
 provided. Keep policy files private and do not put subject-specific details in them.
+
+## Phase 4 operational metadata
+
+Shared limiter rows contain only purpose/HMAC digest, saturated hit count and expiry;
+no plaintext mailbox/IP/password/token is stored. They are ephemeral enforcement state,
+not immutable consent/security history. Expired buckets are removed in bounded batches
+as part of window management, with a 50,000-active-bucket cap. Structured denial logs
+contain only purpose and random correlation ID; their log retention/access still needs
+organizational approval. A party holding the auth secret can compute candidate HMACs,
+so treat database/log access as protected; no claim of irreversible anonymization is made.
+See the [approval register](privacy-approval-register.md) for all pending policy decisions.

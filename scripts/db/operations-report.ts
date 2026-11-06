@@ -12,11 +12,11 @@ try {
   (select count(*)::int from app.document_scans where state='exhausted') as exhausted_scans,
   (select count(*)::int from app.documents where state='legacy_unscanned') as legacy_unscanned,
   (select count(*)::int from app.documents where state='infected') as infected,
-  (select count(*)::int from app.approval_notifications where delivered_at is null and attempts<8) as pending_approval,
+  (select count(*)::int from app.approval_notifications where delivered_at is null and cancelled_at is null and attempts<8) as pending_approval,
   (select count(*)::int from app.reviewer_notifications where delivered_at is null and cancelled_at is null and attempts<8) as pending_reviewer,
-  (select count(*)::int from app.approval_notifications where delivered_at is null and attempts>=8)+
+  (select count(*)::int from app.approval_notifications where delivered_at is null and cancelled_at is null and attempts>=8)+
   (select count(*)::int from app.reviewer_notifications where delivered_at is null and cancelled_at is null and attempts>=8) as exhausted_email,
-  (select count(*)::int from app.approval_notifications where delivered_at is null and created_at<now()-interval '15 minutes') as stale_approval,
+  (select count(*)::int from app.approval_notifications where delivered_at is null and cancelled_at is null and created_at<now()-interval '15 minutes') as stale_approval,
   (select count(*)::int from app.reviewer_notifications where delivered_at is null and cancelled_at is null and created_at<now()-interval '15 minutes') as stale_reviewer,
   (select count(*)::int from app.audit_events where created_at>now()-interval '1 hour' and outcome in ('error','denied')) as recent_audit_errors,
   (select count(*)::int from app.audit_events where created_at>now()-interval '1 hour' and outcome='denied') as recent_authorization_denials,

@@ -11,6 +11,7 @@ bun run db:local:start
 bun run db:migrate
 bun run db:runtime:setup
 bun run db:scanner:setup
+bun run db:notifications:setup
 bun run build
 bun run test:browser
 # Focus a viewport while investigating:
@@ -43,7 +44,7 @@ Do not run these owner-fixture tests alongside another writer or on production d
 
 ## Journey coverage
 
-Each viewport executes three genuine browser scenarios:
+Each viewport executes the following browser scenarios:
 
 1. Registration and explicit draft notice acknowledgement; captured email verification;
    login and pending feedback; logout; captured password recovery and new-password login.
@@ -58,7 +59,7 @@ Each viewport executes three genuine browser scenarios:
    category filtering; real authenticated PDF download; confidential-item denial.
 
 The authentication scenario also verifies generic live/readiness HTTP responses from
-inside the browser run while the real scanner is unavailable (live 200, degraded 503).
+inside the browser run while the real scanner is unavailable (live 200, degraded 200).
 Detailed restricted-role API/concurrency/attack tests remain separate database suites.
 
 ## Accessibility and responsive baseline
@@ -97,3 +98,14 @@ The final [Phase 3F report](phase-3f-report.md) records exact executed counts, i
 failures/corrections, final viewport results and remaining manual/infrastructure gaps.
 Reference: [Playwright browser installation](https://playwright.dev/docs/browsers) and
 [isolated test web server](https://playwright.dev/docs/test-webserver).
+
+## Phase 4 additions
+
+A fourth scenario checks shared mail throttling across browser contexts, forged
+forwarding-header resistance, bounded Retry-After and an actually expired DB session
+losing account/repository access. Existing readiness assertion now expects scanner
+`degraded` with HTTP 200. Four viewports therefore execute 16 tests. Reviewer delivery
+fixtures now use actual restricted notification credentials; owner fixtures remain
+separate for deliberate exact-ID preparation/cleanup. No worker secret enters web.
+See [manual accessibility/device acceptance](manual-accessibility-acceptance.md) for
+all still-pending human tasks; axe success is not full WCAG compliance.

@@ -1,0 +1,31 @@
+# REVIEW TEMPLATE ONLY. Proposed dedicated vhost, upstream and paths.
+# No modification to existing VPS/vhosts is authorized. TLS material, DNS and
+# logs must be provisioned separately; placeholders deliberately prevent activation.
+server {
+    listen 443 ssl;
+    server_name vault.example.invalid;
+    ssl_certificate /PROPOSED/cape-vault/fullchain.pem;
+    ssl_certificate_key /PROPOSED/cape-vault/privkey.pem;
+    access_log /var/log/cape-vault/nginx-access.log cape_vault_safe;
+    # Define in http context: log_format cape_vault_safe '$request_id $request_method $uri $status $request_time';
+    # Exclude query strings, cookies, authorization and referrers (auth proof).
+    client_max_body_size 21m;
+    client_body_timeout 60s;
+    location / {
+        proxy_pass http://127.0.0.1:3300;
+        proxy_set_header Host $host;
+        # Exactly ONE trusted hop. OVERWRITE incoming attacker headers.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP "";
+        proxy_set_header Forwarded "";
+        proxy_set_header X-Forwarded-Host "";
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_request_buffering off;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 310s;
+    }
+}
+# Node binds loopback only; explicitly configure CAPE_TRUSTED_PROXY_IPS=127.0.0.1.
+# No CDN/additional proxy chains supported without another review. No auth health
+# dependency should trigger restarting Node when /health/ready says degraded.

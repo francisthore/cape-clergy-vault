@@ -225,6 +225,13 @@
       "when": 1793914960312,
       "tag": "0031_infected_scan_evidence",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793957099164,
+      "tag": "0032_operational_boundaries",
+      "breakpoints": true
     }
   ]
 }

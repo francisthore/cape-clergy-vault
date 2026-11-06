@@ -14,7 +14,7 @@ try {
     ),
   );
   const ledger = await owner.client`select hash from cape_migrations.__drizzle_migrations`;
-  assert.equal(ledger.length, 32);
+  assert.equal(ledger.length, 33);
   assert.deepEqual(new Set(ledger.map((r) => r["hash"])), new Set(hashes));
   const [grants] =
     await owner.client`select has_any_column_privilege('cape_clergy_runtime','app.submissions','UPDATE') as status_write,
@@ -35,7 +35,7 @@ try {
   assert.equal(publicFunctions.length, 0);
   const [rls] =
     await owner.client`select count(*)::int as n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='app' and c.relkind='r' and c.relrowsecurity`;
-  assert.equal(rls!["n"], 24);
+  assert.equal(rls!["n"], 25);
   const disabled =
     await owner.client`select t.oid from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='app' and not t.tgisinternal and t.tgenabled='D'`;
   assert.equal(disabled.length, 0);
@@ -50,6 +50,7 @@ try {
     "RESEND_API_KEY",
     "CAPE_RUNTIME_DATABASE_URL",
     "CAPE_DATABASE_URL",
+    "CAPE_NOTIFICATION_DATABASE_URL",
   ]
     .map((k) => process.env[k])
     .filter((s): s is string => !!s && s.length >= 8);
@@ -74,7 +75,7 @@ try {
   }
   await scan(".output/public");
   console.log(
-    `PASS: ${ledger.length} migration hashes, 24 RLS tables, reviewed grants/functions, enabled immutable triggers, empty disposable fixtures and ${artifacts} public artifacts without configured private credentials.`,
+    `PASS: ${ledger.length} migration hashes, 25 RLS tables, reviewed grants/functions, enabled immutable triggers, empty disposable fixtures and ${artifacts} public artifacts without configured private credentials.`,
   );
 } finally {
   await owner.close();

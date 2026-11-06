@@ -43,6 +43,10 @@ export function createReviewService(auth: ReturnType<typeof createAuthService>, 
     });
   async function handle(request: Request) {
     try {
+      if (request.method === "POST") {
+        const denied = await auth.limitOperation(request, "admin");
+        if (denied) return denied;
+      }
       if (request.method === "GET") {
         const q = query.parse(Object.fromEntries(new URL(request.url).searchParams));
         return json(
@@ -85,6 +89,8 @@ export function createReviewService(auth: ReturnType<typeof createAuthService>, 
         "action" in input &&
         ["inspect-invitation", "accept-invitation"].includes(String(input.action))
       ) {
+        const denied = await auth.limitOperation(request, "invitation");
+        if (denied) return denied;
         const v = invitation.parse(input),
           digest = digestInvitation(v.token);
         const result = await auth.withApprovedDatabase(request.headers, async (tx) => {

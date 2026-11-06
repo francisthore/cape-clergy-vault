@@ -1,3 +1,4 @@
+import { connectLocalNotifications } from "../database/notifications.server.ts";
 import { randomUUID } from "node:crypto";
 import { readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import { hashPassword } from "better-auth/crypto";
@@ -12,6 +13,7 @@ export const origin = "http://localhost:3220",
   secret = "Disposable-browser-fixture-secret-Phase3F-ONLY",
   password = "Disposable Phase3F browser passphrase";
 export async function fixtures() {
+  const notificationWorker = await connectLocalNotifications();
   const owner = await connectLocalDatabase(),
     prefix = "browser-p3f-" + randomUUID();
   const ids: string[] = [],
@@ -50,7 +52,7 @@ export async function fixtures() {
     Awaited<ReturnType<ReturnType<Page["context"]>["cookies"]>>
   >();
   async function signIn(page: Page, name: string, pass = password) {
-    // Respect the real per-process/IP rate limit; never weaken application controls.
+    // Respect the real shared per-client rate limit; never weaken application controls.
     let times: number[] = [];
     try {
       times = JSON.parse(await readFile(".local/browser-login-times.json", "utf8"));
@@ -58,7 +60,8 @@ export async function fixtures() {
       /* A new isolated server has no previous login reservations. */
     }
     times = times.filter((time) => Date.now() - time < 62000);
-    if (times.length >= 5) {
+    // Leave headroom beneath the shared 20/minute budget for explicit denial tests.
+    if (times.length >= 15) {
       await new Promise((resolve) => setTimeout(resolve, 62000 - (Date.now() - times[0]!)));
       times = times.filter((time) => Date.now() - time < 62000);
     }
@@ -111,7 +114,7 @@ export async function fixtures() {
     const [n] =
       await owner.client`select id from app.reviewer_notifications where invitation_id=${inv!["id"]}`;
     await deliverReviewerNotifications(
-      owner,
+      notificationWorker,
       configuredEmail(origin, { NODE_ENV: "test", EMAIL_PROVIDER: "development" }, owner.client),
       origin,
       secret,
@@ -177,6 +180,7 @@ export async function fixtures() {
       const mail = JSON.parse(await readFile(".local/email/" + file, "utf8"));
       if (String(mail.to).startsWith(prefix)) await unlink(".local/email/" + file);
     }
+    await notificationWorker.close();
     await owner.close();
   }
   return {

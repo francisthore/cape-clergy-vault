@@ -27,7 +27,7 @@ export const healthResponse = (state: "live" | "ready" | "degraded" | "unavailab
   Response.json(
     { status: state },
     {
-      status: state === "live" || state === "ready" ? 200 : 503,
+      status: state !== "unavailable" ? 200 : 503,
       headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
     },
   );

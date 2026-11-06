@@ -19,6 +19,10 @@ export function createSettingsService(
     });
   async function handle(request: Request) {
     try {
+      if (request.method === "POST") {
+        const denied = await auth.limitOperation(request, "admin");
+        if (denied) return denied;
+      }
       if (request.method === "GET")
         return json(
           await authorize(request.headers, async (tx) => {
@@ -48,6 +52,8 @@ export function createSettingsService(
           .strict()
           .safeParse(input).success
       ) {
+        const denied = await auth.limitOperation(request, "test_email");
+        if (denied) return denied;
         const id = await authorize(request.headers, async (tx) => {
           const [row] = await tx`select app.reserve_email_test() as id`;
           return String(row!["id"]);

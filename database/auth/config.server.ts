@@ -48,17 +48,9 @@ export function createLocalAuth(
       },
     },
     logger: { disabled: true }, // Do not let library errors include emails, SQL or credentials.
-    rateLimit: {
-      enabled: true,
-      window: 60,
-      max: 30,
-      storage: "memory",
-      customRules: {
-        "/sign-in/email": { window: 60, max: 5 },
-        "/send-verification-email": { window: 60, max: 2 },
-        "/request-password-reset": { window: 60, max: 2 },
-      },
-    },
+    // The allowlisted public handler uses the shared PostgreSQL limiter.
+    // Server-side Better Auth API calls do not provide an independent public route.
+    rateLimit: { enabled: false },
     database: drizzleAdapter(connection.db, {
       provider: "pg",
       schemaName: "auth",

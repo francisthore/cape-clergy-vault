@@ -155,3 +155,11 @@ operations CLI. No general mail dashboard or credential store is added. See
 [operations](operations-monitoring.md) for scheduling, least-privilege production worker
 recommendations and provider ambiguity handling. Scanner failure never changes a
 review decision or notification payload.
+
+## Phase 4 operations
+
+The CLI workers now use the restricted notification login, never the migration owner.
+Shared PostgreSQL limits supplement the existing recent-auth/test reservation gates.
+Sender snapshots, dynamic resolver and environment credential fallback remain.
+See [deliverability acceptance](email-deliverability-acceptance.md) for exact live-send
+authorization and provider-accepted versus recipient-delivered evidence.

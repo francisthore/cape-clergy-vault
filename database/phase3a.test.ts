@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomBytes, randomUUID, createHash } from "node:crypto";
+import { randomBytes, randomUUID, createHash, createHmac } from "node:crypto";
 import { test } from "node:test";
 import { createEmailVerificationToken } from "better-auth/api";
 import { connectLocalDatabase } from "./connection.server.ts";
@@ -352,7 +352,7 @@ test("Phase 3A HTTP auth, email and negative authorization using restricted Post
         const failure = await request("send-verification-email", { email: address });
         assert.equal(failure.status, 200);
         provider.fail = false;
-        // New service simulates restart, resetting only process-local limiter.
+        // A restarted service must retain the shared limit. Expiry is advanced only for this fixture bucket.
         const restarted = createAuthService(runtime, mail, { secret, baseURL });
         const response = await restarted.handle(
           new Request(`${baseURL}/api/auth/send-verification-email`, {
@@ -361,7 +361,13 @@ test("Phase 3A HTTP auth, email and negative authorization using restricted Post
             body: JSON.stringify({ email: address }),
           }),
         );
-        assert.equal(response.status, 200);
+        assert.equal(response.status, 429);
+        assert.ok(Number(response.headers.get("Retry-After")) > 0);
+        const digest = createHmac("sha256", secret)
+          .update(`mail:/send-verification-email:${address}`)
+          .digest("hex");
+        await owner.client`update app.rate_limits set expires_at=now()-interval '1 second' where key=${"mail:" + digest}`;
+        assert.equal((await request("send-verification-email", { email: address })).status, 200);
         link("Verify", address);
       },
     );

@@ -1,3 +1,4 @@
+import { expireFixtureLimits } from "./test-rate-limits.ts";
 import { scanTestDocument, cleanTestScanRows } from "./test-scanning.ts";
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
@@ -52,6 +53,9 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
     confidential = randomUUID(),
     reviewed = randomUUID();
   const submissions = [submission, shared, confidential, reviewed];
+  // Independent scenarios get a fresh window for their exact fixture namespace.
+  // Phase 4 separately asserts denial, restart persistence and real expiry.
+  t.afterEach(() => expireFixtureLimits(owner.client, secret, ["upload"], ids));
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input, init) => {
     const url = input instanceof Request ? input.url : String(input);

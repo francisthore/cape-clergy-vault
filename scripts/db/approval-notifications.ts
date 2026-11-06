@@ -1,15 +1,15 @@
-import { connectLocalDatabase } from "../../database/connection.server.ts";
+import { connectLocalNotifications } from "../../database/notifications.server.ts";
 import { configuredEmail } from "../../src/lib/email/service.server.ts";
 import { deliverApprovalNotifications } from "../../src/lib/approvals/notifications.server.ts";
 const origin = process.env["BETTER_AUTH_URL"];
 if (!origin) throw new Error("Trusted application origin required");
-const owner = await connectLocalDatabase();
-const email = configuredEmail(origin, process.env, owner.client);
+const worker = await connectLocalNotifications();
+const email = configuredEmail(origin, process.env, worker.client);
 try {
-  console.log("Notifications delivered:", await deliverApprovalNotifications(owner, email, origin));
-  const [row] = await owner.client`select count(*)::int as exhausted from app.approval_notifications
-    where delivered_at is null and attempts>=8`;
-  console.log("Notifications needing operator review:", row!["exhausted"]);
+  console.log(
+    "Notifications delivered:",
+    await deliverApprovalNotifications(worker, email, origin),
+  );
 } finally {
-  await owner.close();
+  await worker.close();
 }

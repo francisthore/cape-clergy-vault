@@ -67,7 +67,7 @@ test("registration, captured verification, login, pending feedback, logout and p
   const live = await page.request.get("/health/live");
   expect(await live.json()).toEqual({ status: "live" });
   const ready = await page.request.get("/health/ready");
-  expect(ready.status()).toBe(503);
+  expect(ready.status()).toBe(200);
   expect(await ready.json()).toEqual({ status: "degraded" });
   await page.goto("/auth?view=register");
   await assess(page);
@@ -260,5 +260,45 @@ test("quarantine, exact revision review, author feedback and repository download
   await f.owner.client`update app.submissions set confidential=true where id=${id}`;
   await page.reload();
   await expect(page.getByRole("status")).toContainText(/unavailable|denied/i);
+  await assess(page);
+});
+
+test("shared mail limits resist forged IP headers and expired sessions lose access", async ({
+  page,
+  browser,
+}) => {
+  const address = f.address("phase4-rate-probe");
+  const send = (headers: Record<string, string> = {}) =>
+    page.request.post("/api/auth/send-verification-email", {
+      headers: { origin: "http://localhost:3220", ...headers },
+      data: { email: address },
+    });
+  const first = await send();
+  expect(first.status()).toBe(200);
+  const other = await browser.newContext();
+  try {
+    const limited = await other.request.post(
+      "http://localhost:3220/api/auth/send-verification-email",
+      {
+        headers: { origin: "http://localhost:3220", "x-forwarded-for": "198.51.100.77" },
+        data: { email: address },
+      },
+    );
+    expect(limited.status()).toBe(429);
+    expect(Number(limited.headers()["retry-after"])).toBeGreaterThan(0);
+    expect(
+      (await send({ "x-forwarded-for": "198.51.100.88", "x-real-ip": "198.51.100.88" })).status(),
+    ).toBe(429);
+  } finally {
+    await other.close();
+  }
+  await f.login(page, "reader");
+  await f.owner
+    .client`update auth.sessions set expires_at=(now() at time zone 'UTC')-interval '1 second' where user_id=${f.id("reader")}`;
+  const account = await page.request.get("/api/auth/account");
+  expect(await account.json()).toEqual({ status: "signed-out" });
+  expect((await page.request.get("/api/repository")).status()).toBe(403);
+  await page.goto("/account");
+  await expect(page.getByRole("link", { name: /sign in/i }).first()).toBeVisible();
   await assess(page);
 });
