@@ -8,7 +8,10 @@ export const localTarget = {
   marker: "cape-clergy-vault:phase-2a:local-only",
 } as const;
 
-export function validateLocalUrl(value: string | undefined, runtime = false): string {
+export function validateLocalUrl(
+  value: string | undefined,
+  runtime: boolean | "scanner" = false,
+): string {
   if (!value) throw new Error("CAPE_DATABASE_URL is required in .env.db.local");
   let url: URL;
   try {
@@ -21,7 +24,12 @@ export function validateLocalUrl(value: string | undefined, runtime = false): st
     url.hostname !== localTarget.host ||
     url.port !== String(localTarget.port) ||
     url.pathname !== `/${localTarget.database}` ||
-    url.username !== (runtime ? "cape_clergy_runtime" : localTarget.user) ||
+    url.username !==
+      (runtime === "scanner"
+        ? "cape_clergy_scanner"
+        : runtime
+          ? "cape_clergy_runtime"
+          : localTarget.user) ||
     !url.password ||
     url.search !== "" ||
     url.hash !== ""
@@ -32,7 +40,10 @@ export function validateLocalUrl(value: string | undefined, runtime = false): st
   return value;
 }
 
-export async function assertLocalDatabase(client: Sql, runtime = false): Promise<void> {
+export async function assertLocalDatabase(
+  client: Sql,
+  runtime: boolean | "scanner" = false,
+): Promise<void> {
   const [identity] = await client<
     {
       database: string;
@@ -60,7 +71,12 @@ export async function assertLocalDatabase(client: Sql, runtime = false): Promise
   if (
     !identity ||
     identity.database !== localTarget.database ||
-    identity.username !== (runtime ? "cape_clergy_runtime" : localTarget.user) ||
+    identity.username !==
+      (runtime === "scanner"
+        ? "cape_clergy_scanner"
+        : runtime
+          ? "cape_clergy_runtime"
+          : localTarget.user) ||
     identity.owner !== localTarget.user ||
     identity.marker !== localTarget.marker ||
     identity.host !== localTarget.host ||

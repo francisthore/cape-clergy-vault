@@ -26,8 +26,8 @@ export function createSubmissionService(
        (case when ${repository} then status::text='accepted' and not confidential else owner_id=app.request_user_id() end)`;
               if (!rows.length) throw new RequestError(404, "Item unavailable or access denied.");
               const documents =
-                await tx`select id,file_name,byte_size::text,state,excluded from app.documents where submission_id=${q.id}
-       and (not ${repository} or (state='available' and not excluded)) order by created_at,id limit 100`;
+                await tx`select id,file_name,byte_size::text,state,excluded,app.document_is_clean(id) as clean from app.documents where submission_id=${q.id}
+       and (not ${repository} or (app.document_is_clean(id) and not excluded)) order by created_at,id limit 100`;
               const history = repository
                 ? []
                 : await tx`select event,version,revision,created_at from app.submission_events where submission_id=${q.id} order by created_at desc,id desc limit 100`;
@@ -44,7 +44,7 @@ export function createSubmissionService(
             // Explicit repository predicate applies before counts and pagination, even for reviewers.
             const [result] =
               await tx`with eligible as materialized (select s.id,s.kind,s.title,s.category,s.abstract,s.keywords,s.confidential,s.status,s.version,s.revision,s.created_at,s.submitted_at,
-       (select count(*)::int from app.documents d where d.submission_id=s.id and not d.excluded and (not ${repository} or d.state='available')) as document_count,
+       (select count(*)::int from app.documents d where d.submission_id=s.id and not d.excluded and (not ${repository} or app.document_is_clean(d.id))) as document_count,
        s.owner_id
        from app.submissions s where (case when ${repository} then s.status::text='accepted' and not s.confidential else s.owner_id=app.request_user_id() end)
        and (${q.status}='' or s.status::text=${q.status}) and (${q.category}='' or s.category=${q.category})

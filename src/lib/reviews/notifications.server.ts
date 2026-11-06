@@ -47,9 +47,8 @@ export async function deliverReviewerNotifications(
       } else if (kind === "review_assigned") {
         const allowed = await owner.client.begin(async (tx) => {
           await tx`select set_config('cape.user_id',${row["user_id"]},true)`;
-          const [r] = await tx`select app.can_review_submission(${row["submission_id"]}) as allowed,
- exists(select 1 from app.reviewer_assignments where id=${row["assignment_id"]} and status='active') as assignment`;
-          return r?.["allowed"] && r?.["assignment"];
+          const [r] = await tx`select app.assignment_notification_allowed(${row["id"]}) as allowed`;
+          return r?.["allowed"];
         });
         valid = valid && !!allowed;
       }
@@ -68,6 +67,23 @@ export async function deliverReviewerNotifications(
           : kind === "review_assigned"
             ? `${origin}/reviewer/submissions/${row["submission_id"]}`
             : `${origin}/submissions/${row["submission_id"]}`;
+      // Final short, committed eligibility check immediately before provider I/O.
+      // Revocation after this point cannot recall accepted provider work; links use live RLS.
+      const stillEligible = await owner.client.begin(async (tx) => {
+        await tx`select set_config('cape.user_id',${row["user_id"]},true)`;
+        const [current] =
+          await tx`select 1 from app.reviewer_notifications n where n.id=${row["id"]}
+          and lease_token=${lease} and cancelled_at is null and delivered_at is null and available_at>now()
+          and (${kind}<>'review_assigned' or app.assignment_notification_allowed(n.id))
+          and (${kind} not in ('review_assigned','reviewer_invitation') or exists
+            (select 1 from auth.users u where u.id=n.user_id and u.email_verified and u.email=n.recipient_email))`;
+        return !!current;
+      });
+      if (!stillEligible) {
+        await owner.client`update app.reviewer_notifications set cancelled_at=coalesce(cancelled_at,now()),lease_token=null,last_error='recipient_ineligible'
+          where id=${row["id"]} and lease_token=${lease}`;
+        continue;
+      }
       await email.send(kind, String(snapshot["recipient_email"]), url, `reviewer:${row["id"]}`, {
         from: String(snapshot["sender_from"]),
         replyTo: String(snapshot["sender_reply_to"]),

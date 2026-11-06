@@ -441,3 +441,15 @@ References: [Better Auth generator](https://better-auth.com/docs/concepts/cli),
 [Better Auth Drizzle adapter](https://better-auth.com/docs/adapters/drizzle),
 [PostgreSQL RLS](https://www.postgresql.org/docs/current/ddl-rowsecurity.html),
 [PostgreSQL SET LOCAL](https://www.postgresql.org/docs/current/sql-set.html).
+
+## Phase 3F additive boundary
+
+Migrations `0026`–`0031` add exact-assignment notification eligibility/cancellation,
+quarantine job/event tables, legacy demotion and clean-evidence download/submission
+gates, a global two-live-scan-lease cap and preserved infection evidence during exclusion. The chain has 32 entries and 24 RLS app
+tables. Existing applied migrations are unchanged. Scanner event history is append-only.
+`cape_clergy_scanner` is separately provisioned with only claim/finalize EXECUTE;
+no direct app/auth table access, ownership, elevated flags or role memberships.
+Web runtime cannot read/write scan evidence or finalize a scan, including by forged
+actor settings. Repeated runtime/scanner setup preserves protected local credentials.
+Read [scanning](document-scanning.md) and [operations](operations-monitoring.md).

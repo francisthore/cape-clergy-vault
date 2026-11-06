@@ -1,3 +1,4 @@
+import { scanTestDocument, cleanTestScanRows } from "./test-scanning.ts";
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
@@ -60,15 +61,15 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
   let child: ReturnType<typeof spawn> | undefined;
   const send = async (request: Request, documentId?: string, target = service) =>
     http ? fetch(request) : target.handle(request, documentId);
-  const upload = (
+  const upload = async (
     key = "owner",
     body: Uint8Array = pdf,
     requestId = randomUUID(),
     sub = submission,
     extra: Record<string, string> = {},
     target = service,
-  ) =>
-    send(
+  ) => {
+    const response = await send(
       new Request(`${baseURL}/api/documents?submissionId=${sub}&requestId=${requestId}`, {
         method: "POST",
         headers: {
@@ -83,6 +84,10 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
       undefined,
       target,
     );
+    if (response.status === 201 && sub !== submission)
+      await scanTestDocument((await response.clone().json()).id, storage);
+    return response;
+  };
   const download = (id: string, key = "owner", target = service, signal?: AbortSignal) =>
     send(
       new Request(`${baseURL}/api/documents/${id}/download`, {
@@ -200,7 +205,8 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
       assert.equal(response.status, 201, await response.clone().text());
       doc = (await response.json()).id;
       const [row] = await owner.client`select * from app.documents where id=${doc}`;
-      assert.equal(row!["state"], "available");
+      assert.equal(row!["state"], "quarantined");
+      await scanTestDocument(doc, storage);
       assert.equal(Number(row!["byte_size"]), pdf.length);
       assert.equal(row!["sha256"], createHash("sha256").update(pdf).digest("hex"));
       objectKey = String(row!["storage_key"]);
@@ -361,6 +367,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
         );
         const response = await upload();
         const missingObject = (await response.json()).id;
+        await scanTestDocument(missingObject, storage);
         const [metadata] =
           await owner.client`select storage_key from app.documents where id=${missingObject}`;
         await storage.delete(String(metadata!["storage_key"]));
@@ -574,7 +581,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
         },
       );
       await t.test(
-        "ambiguous successful commit retains available bytes for reconciliation",
+        "ambiguous successful commit retains quarantined bytes for reconciliation",
         async () => {
           let calls = 0;
           const ambiguous = createDocumentService(
@@ -593,7 +600,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
           assert.equal((await upload("owner", pdf, key, submission, {}, ambiguous)).status, 503);
           const [row] =
             await owner.client`select id,state,storage_key from app.documents where upload_request_id=${key}`;
-          assert.equal(row!["state"], "available");
+          assert.equal(row!["state"], "quarantined");
           const object = await storage.open(String(row!["storage_key"]));
           await object.close();
         },
@@ -686,6 +693,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
         const created = await upload("owner", large);
         assert.equal(created.status, 201);
         const id = (await created.json()).id;
+        await scanTestDocument(id, storage);
         const response = await download(id);
         assert.equal(response.status, 200);
         assert.deepEqual(Buffer.from(await response.arrayBuffer()), large);
@@ -731,6 +739,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
         await tx.unsafe(`alter table app.${table} disable trigger user`);
       await tx`delete from app.audit_events where actor_id=any(${ids}) or submission_id=any(${submissions}) or document_id in (select id from app.documents where submission_id=any(${submissions}))`;
       await tx`delete from app.popia_consent_events where user_id=any(${ids})`;
+      await cleanTestScanRows(tx, submissions);
       await tx`delete from app.documents where submission_id=any(${submissions})`;
       await tx`delete from app.reviewer_assignments where submission_id=any(${submissions})`;
       await tx`delete from app.submissions where id=any(${submissions})`;

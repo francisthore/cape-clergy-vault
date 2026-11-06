@@ -12,6 +12,7 @@ type Detail = {
     byte_size: string;
     state: string;
     excluded: boolean;
+    clean: boolean;
   }[];
   feedback: {
     id: string;
@@ -73,14 +74,17 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
         setMessage(error.message);
       });
     };
-    const timer = setInterval(refresh, 30000);
+    const waitingForScan = data?.documents.some((d) =>
+      ["quarantined", "scanning"].includes(d.state),
+    );
+    const timer = setInterval(refresh, waitingForScan ? 3000 : 30000);
     window.addEventListener("focus", refresh);
     return () => {
       active = false;
       clearInterval(timer);
       window.removeEventListener("focus", refresh);
     };
-  }, [load, editing, progress, id, repository]);
+  }, [load, editing, progress, id, repository, data?.documents]);
   async function action(action: "submit" | "amend" | "exclude", target = id) {
     if (!data || busy) return;
     setBusy(true);
@@ -198,12 +202,18 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
           >
             <h2 className="text-xl">Documents</h2>
             {data.documents.length === 0 && <p>No attached documents.</p>}
-            <ul className="space-y-3">
+            <ul className="space-y-3 break-words" aria-live="polite">
               {data.documents.map((d) => (
                 <li key={d.id}>
                   {d.file_name} · {Number(d.byte_size).toLocaleString()} bytes ·{" "}
-                  {d.excluded ? "Excluded from this revision" : d.state}
-                  {d.state === "available" && !d.excluded && (
+                  {d.excluded
+                    ? "Excluded from this revision"
+                    : ["quarantined", "scanning", "legacy_unscanned"].includes(d.state)
+                      ? "Security checks pending"
+                      : ["infected", "scan_failed"].includes(d.state)
+                        ? "This document could not pass the required security checks. Please contact the administrator or upload a different PDF."
+                        : d.state}
+                  {d.state === "available" && d.clean && !d.excluded && (
                     <>
                       {" "}
                       ·{" "}
@@ -257,13 +267,22 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                     </Button>
                   </>
                 )}
-                <p>Local testing with disposable PDFs only. Files have not been malware scanned.</p>
+                <p>PDFs remain private and unavailable until the required security checks pass.</p>
               </>
             )}
           </section>
           {editable && !editing && (
             <>
-              <Button disabled={busy || progress !== null} onClick={() => setConfirm(true)}>
+              <Button
+                disabled={
+                  busy ||
+                  progress !== null ||
+                  (s.kind === "document" &&
+                    (!data.documents.some((d) => !d.excluded && d.clean) ||
+                      data.documents.some((d) => !d.excluded && !d.clean)))
+                }
+                onClick={() => setConfirm(true)}
+              >
                 Submit for review
               </Button>
               {confirm && (

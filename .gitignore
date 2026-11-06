@@ -32,4 +32,10 @@ dist-ssr
 *.sw?
 .local/
 .env*
-!.env.example
+!/.env.example
+
+# Browser acceptance artifacts may contain disposable account/session data.
+playwright-report/
+playwright/.auth/
+test-results/
+blob-report/

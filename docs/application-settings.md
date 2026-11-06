@@ -144,3 +144,14 @@ cancellation/reissue. See [reviewer operations](reviewer-operations.md) for proo
 leases, sender snapshots, safe retries and operational dependencies. The existing
 approval outbox and its worker remain unchanged. Both workers require scheduling,
 monitoring and ambiguity reconciliation before production use.
+
+## Phase 3F operations
+
+Both notification workers retain shared dynamic sender settings, committed stable
+snapshots/keys, bounded retries and private captured mail. Assignment deliveries now
+require the exact intended assignment/current revision; cancellation is audited.
+Aggregate pending/stale/exhausted counts are available only through the guarded
+operations CLI. No general mail dashboard or credential store is added. See
+[operations](operations-monitoring.md) for scheduling, least-privilege production worker
+recommendations and provider ambiguity handling. Scanner failure never changes a
+review decision or notification payload.

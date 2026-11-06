@@ -1,3 +1,4 @@
+import { scanTestDocument, cleanTestScanRows } from "./test-scanning.ts";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { mkdtemp, readFile, readdir, rm, unlink, writeFile } from "node:fs/promises";
@@ -459,6 +460,7 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
         );
         const r = http ? await fetch(req) : await documents.handle(req);
         assert.equal(r.status, 201);
+        await scanTestDocument((await r.clone().json()).id, new LocalPrivateStorageProvider(root));
         await submit(target);
         const author = await (await call("/api/submissions?id=" + target, "author")).json();
         doc = author.documents[0].id;
@@ -999,6 +1001,12 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
       await tx`delete from app.reviewer_assignments where reviewer_id=any(${ids})`;
       await tx`delete from app.reviewer_invitations where user_id=any(${ids})`;
       await tx`delete from app.submission_events where actor_id=any(${ids})`;
+      const fixtureSubmissions =
+        await tx`select id from app.submissions where owner_id=any(${ids})`;
+      await cleanTestScanRows(
+        tx,
+        fixtureSubmissions.map((s) => String(s["id"])),
+      );
       await tx`delete from app.documents where submission_id in(select id from app.submissions where owner_id=any(${ids}))`;
       await tx`delete from app.submissions where owner_id=any(${ids})`;
       await tx`delete from app.audit_events where actor_id=any(${ids}) or target_user_id=any(${ids})`;

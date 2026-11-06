@@ -1,3 +1,4 @@
+import { cleanTestScanRows, scanMetadataFixtures } from "./test-scanning.ts";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
@@ -28,6 +29,7 @@ test("Checkpoint A: restricted review boundary", async (t) => {
       await tx`insert into app.submissions(id,owner_id,title,confidential) values(${target},${ids[0]!},'Confidential fixture',true)`;
       await tx`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size,state,sha256) values(${doc},${target},${randomUUID()},'fixture.pdf','application/pdf',12,'available',${"0".repeat(64)})`;
     });
+    await scanMetadataFixtures(owner.client, [target]);
     await t.test("direct status/history writes are denied to every role", async () => {
       for (const id of ids) {
         await assert.rejects(
@@ -94,6 +96,7 @@ test("Checkpoint A: restricted review boundary", async (t) => {
   } finally {
     await owner.client.begin(async (tx) => {
       await tx`delete from app.reviewer_assignments where submission_id=${target}`;
+      await cleanTestScanRows(tx, [target]);
       await tx`delete from app.documents where submission_id=${target}`;
       await tx`delete from app.submissions where id=${target}`;
       await tx`alter table app.popia_consent_events disable trigger user`;

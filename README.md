@@ -162,3 +162,11 @@ used. Reviewed privacy/retention, malware quarantine, production roles/infrastru
 shared abuse limits, monitored workers, backups/restore drills, quotas, live email
 verification and browser/mobile/accessibility acceptance remain release prerequisites.
 No chat/OAuth/deployment or Phase 3F work is included.
+
+Phase 3F adds private PDF quarantine/ClamAV integration, exact-assignment notification
+checks, restricted scan workers, privacy-safe health/operational reports, pending
+retention policy previews and Chromium/axe acceptance tests. Local use remains
+pre-launch; no deployment or unrestricted confidential readiness is authorized.
+See [Phase 3F report](docs/phase-3f-report.md), [scanning](docs/document-scanning.md),
+[monitoring](docs/operations-monitoring.md), [privacy/retention](docs/privacy-retention-readiness.md)
+and [browser acceptance](docs/browser-acceptance.md).

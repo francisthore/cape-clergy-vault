@@ -50,3 +50,8 @@ GRANT EXECUTE ON FUNCTION app.can_review_submission(uuid) TO cape_clergy_runtime
 REVOKE ALL ON app.reviewer_invitations,app.reviewer_events,app.reviewer_notifications FROM cape_clergy_runtime;
 GRANT EXECUTE ON FUNCTION app.inspect_reviewer_invitation(text),app.accept_reviewer_invitation(text),
  app.decide_review(uuid,integer,text,text,text,uuid),app.author_review_feedback(uuid),app.reviewer_author(uuid) TO cape_clergy_runtime;
+
+GRANT EXECUTE ON FUNCTION app.assignment_notification_allowed(uuid) TO cape_clergy_runtime;
+-- Scanner evidence is inaccessible to the web runtime; only a safe predicate is executable.
+REVOKE ALL ON app.document_scans,app.document_scan_events FROM cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.document_is_clean(uuid) TO cape_clergy_runtime;

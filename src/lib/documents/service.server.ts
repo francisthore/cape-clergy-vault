@@ -70,9 +70,9 @@ export function createDocumentService(
       await auth.withApprovedDatabase(request.headers, async (tx) => {
         await tx`select app.finalize_document(${id},${object.byteSize},${object.sha256})`;
       });
-      return json({ id, message: "Document uploaded." }, 201);
+      return json({ id, message: "Document uploaded. Security checks are pending." }, 201);
     } catch (error) {
-      // Never remove an available object after an uncertain successful DB commit.
+      // Never remove a finalized quarantined/available object after an uncertain DB commit.
       try {
         const state = await auth.withAuditDatabase(request.headers, async (tx) => {
           const [row] = await tx`select app.fail_document(${id}) as state`;
@@ -117,11 +117,12 @@ export function createDocumentService(
         throw error;
       }
       const document = await auth.withApprovedDatabase(request.headers, async (tx) => {
-        const [row] = await tx`select storage_key,file_name,media_type,byte_size::text,state
+        const [row] =
+          await tx`select storage_key,file_name,media_type,byte_size::text,state,app.document_is_clean(id) as clean
           from app.documents where id=${id}`;
         return row;
       });
-      if (!document || document["state"] !== "available") {
+      if (!document || document["state"] !== "available" || !document["clean"]) {
         await audit(request.headers, id, "unavailable", correlation);
         throw new DocumentError(404, "Document unavailable or access denied.");
       }

@@ -92,3 +92,13 @@ no cross-revision private-note access is implied. Accepted non-confidential reso
 appear automatically through existing repository predicates. Confidential resources
 remain outside shared discovery regardless of acceptance. There are no direct runtime
 status writes and no admin substitution for confidential assignment access.
+
+## Phase 3F attachment requirement
+
+The upload row's `pending` state is followed by `quarantined`/`scanning`; only durable
+clean evidence makes it `available`. Infected/exhausted files remain unavailable and
+must be excluded or investigated under policy. Submission SQL now requires clean
+evidence for every included attachment. The author page announces pending/error
+statuses, polls pending scans, hides unsafe download links and disables final submit
+until checks pass. Exclusion retains bytes/history. Legacy available documents are
+reconciled explicitly and never assumed scanned. See [scanning](document-scanning.md).

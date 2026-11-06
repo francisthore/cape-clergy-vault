@@ -202,3 +202,23 @@ Do not automatically reset exhausted or ambiguous attempts: reconcile provider e
 first. Provider idempotency retention is finite; exactly-once inbox delivery is not
 claimed. An in-flight send can complete after a revocation; its link still checks live
 authorization. Local tests capture mail and prohibit external network fetch.
+
+## Phase 3F notification consistency and scan safety
+
+Assignment mail eligibility now joins the notification's exact assignment ID to its
+recipient, submission and current revision, requires an active assignment and live
+verified/approved/consented reviewer, and limits actionable new notices to submitted/
+under-review work. An unrelated newer assignment cannot validate an older event.
+Assignment revocation and revision/status supersession cancel pending notices in the
+business transaction. Cancellation appends an ID-only audit correlated to the intent.
+The worker rechecks the committed lease/eligibility immediately before provider I/O;
+revocation after that final check can still race provider submission/completion; there is
+no atomic database/provider transaction. Previously cancelled leases are fenced, and
+every link checks live access.
+Retries preserve existing keys/payloads and never alter review decisions. If a
+captured actionable recipient no longer matches the live verified mailbox, the
+intent is cancelled rather than sent to an old address or silently retargeted.
+
+Reviewers only receive clean authorized attachments. Quarantine/error/infected/legacy
+bytes have no privileged reviewer preview. Scan and notification operational commands,
+recovery and production-role blockers are documented in [operations](operations-monitoring.md).

@@ -251,3 +251,15 @@ S3 SDK, production migration or deployment is included.
 
 Implementation follows the existing [TanStack server route conventions](https://tanstack.com/start/latest/docs/framework/react/guide/server-routes)
 and [Node filesystem APIs](https://nodejs.org/docs/latest-v24.x/api/fs.html).
+
+## Phase 3F superseding safety gate
+
+New uploads finalize to durable quarantine, not availability. Existing unscanned
+available records become `legacy_unscanned`; bytes and metadata are preserved.
+Only restricted scanner finalization with matching clean evidence may promote.
+RLS, the streaming service and mandatory authorization/start audits require the
+clean predicate in addition to all prior live permissions. Owners can see safe
+pending/error metadata, without a byte-access exception. See
+[document scanning](document-scanning.md) for leases, freshness, integrity checks,
+reconciliation and retained infected-file policy, and [operations](operations-monitoring.md)
+for health/capacity monitoring. No automatic destruction or confidential release occurs.

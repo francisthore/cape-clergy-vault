@@ -1,3 +1,4 @@
+import { scanTestDocument, cleanTestScanRows } from "./test-scanning.ts";
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes } from "node:crypto";
 import { test } from "node:test";
@@ -342,7 +343,7 @@ test("Phase 3D restricted runtime", async (t) => {
     });
     const pdf = Buffer.from("%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n");
     async function upload(name: string, target: string, requestId = randomUUID()) {
-      return documents.handle(
+      const response = await documents.handle(
         new Request(origin + "/api/documents?submissionId=" + target + "&requestId=" + requestId, {
           method: "POST",
           headers: {
@@ -354,6 +355,12 @@ test("Phase 3D restricted runtime", async (t) => {
           body: pdf,
         }),
       );
+      if (response.status === 201)
+        await scanTestDocument(
+          (await response.clone().json()).id,
+          new LocalPrivateStorageProvider(root),
+        );
+      return response;
     }
     await t.test(
       "private upload integrated with draft, finalization, excluded failures and locking",
@@ -553,6 +560,12 @@ test("Phase 3D restricted runtime", async (t) => {
       await tx`update app.email_domains set authorized_at=${domain!["authorized_at"]} where domain='notifications.ctdiocese.org.za'`;
       await tx`delete from app.submission_events where actor_id=any(${ids})`;
       await tx`delete from app.review_decisions where reviewer_id=any(${ids})`;
+      const fixtureSubmissions =
+        await tx`select id from app.submissions where owner_id=any(${ids})`;
+      await cleanTestScanRows(
+        tx,
+        fixtureSubmissions.map((s) => String(s["id"])),
+      );
       await tx`delete from app.documents where submission_id in (select id from app.submissions where owner_id=any(${ids}))`;
       await tx`delete from app.submissions where owner_id=any(${ids})`;
       await tx`delete from app.account_approval_events where user_id=any(${ids})`;

@@ -48,6 +48,12 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const path = new URL(request.url).pathname;
+      if (path === "/health/live" || path === "/health/ready") {
+        if (request.method !== "GET" && request.method !== "HEAD")
+          return new Response(null, { status: 405 });
+        const { handleHealth } = await import("./lib/operations/health.server");
+        return handleHealth(path);
+      }
       if (path === "/admin/registrations" || path.startsWith("/admin/registrations/")) {
         const { authorizeApprovalPage } = await import("./lib/approvals/runtime.server");
         const denied = await authorizeApprovalPage(request.headers);

@@ -1,3 +1,4 @@
+import { cleanTestScanRows, scanMetadataFixtures } from "./test-scanning.ts";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
@@ -81,12 +82,13 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
         (${confidentialId},${get("alice")},'Confidential','accepted',true)`;
       for (const id of [privateId, sharedId, confidentialId]) {
         await tx`insert into app.documents(submission_id,storage_key,file_name,media_type,byte_size,state,sha256) values
-          (${id},${get("alice") + "/" + id},'fixture.pdf','application/pdf',12,'available',${"0".repeat(64)})`;
+          (${id},${randomUUID()},'fixture.pdf','application/pdf',12,'available',${"0".repeat(64)})`;
       }
       await tx`insert into app.chat_messages(id,owner_id,sender_id,body) values (${messageId},${get("alice")},${get("alice")},'Private fixture')`;
       await tx`insert into app.audit_events(actor_id,action,outcome) values (${get("alice")},'fixture','ok')`;
     });
 
+    await scanMetadataFixtures(owner.client, [privateId, sharedId, confidentialId]);
     await t.test("missing identity denies all protected reads and writes", async () => {
       await as(null, async (tx) => {
         for (const table of [
@@ -450,6 +452,7 @@ test("Phase 2B: actual restricted runtime login, authorization and Better Auth i
           await tx.unsafe(`alter table app.${table} disable trigger user`);
         await tx`delete from app.submission_events where actor_id=any(${fixtureIds})`;
         await tx`delete from app.review_decisions where reviewer_id = any(${fixtureIds})`;
+        await cleanTestScanRows(tx, [privateId, sharedId, confidentialId]);
         await tx`delete from app.documents where submission_id in (select id from app.submissions where owner_id = any(${fixtureIds}))`;
         await tx`delete from app.submissions where owner_id = any(${fixtureIds})`;
         await tx`delete from app.chat_messages where owner_id = any(${fixtureIds})`;

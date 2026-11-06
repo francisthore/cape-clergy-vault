@@ -79,7 +79,10 @@ export const documents = app
       index("document_submission_idx").on(t.submissionId),
       check("document_size_nonnegative", sql`${t.byteSize} >= 0`),
       check("document_sha256_format", sql`${t.sha256} is null or ${t.sha256} ~ '^[0-9a-f]{64}$'`),
-      check("document_state_valid", sql`${t.state} in ('pending', 'available', 'failed')`),
+      check(
+        "document_state_valid",
+        sql`${t.state} in ('pending', 'quarantined', 'scanning', 'available', 'infected', 'scan_failed', 'legacy_unscanned', 'failed')`,
+      ),
       check(
         "document_available_complete",
         sql`${t.state} <> 'available' or (${t.byteSize} > 0 and ${t.sha256} is not null)`,

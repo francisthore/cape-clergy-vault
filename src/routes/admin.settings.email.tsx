@@ -164,7 +164,11 @@ function EmailSettingsPage() {
               Reload
             </Button>
           </form>
-          <Button disabled={busy} onClick={() => void send(true)}>
+          <Button
+            className="h-auto min-h-10 max-w-full whitespace-normal py-2"
+            disabled={busy}
+            onClick={() => void send(true)}
+          >
             Test saved configuration to my verified address
           </Button>
           <p>Provider acceptance does not confirm delivery.</p>

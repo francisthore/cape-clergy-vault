@@ -1,3 +1,5 @@
+import { scanTestDocument, cleanTestScanRows } from "../../database/test-scanning.ts";
+import { LocalPrivateStorageProvider } from "../../src/lib/documents/storage.server.ts";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID, randomBytes } from "node:crypto";
@@ -193,6 +195,7 @@ try {
   );
   assert.equal(uploaded.status, 201);
   const document = (await uploaded.json()).id;
+  await scanTestDocument(document, new LocalPrivateStorageProvider(root));
   assert.equal(
     (await call("/api/submissions", cookie, { action: "submit", id: submission, version: 1 }))
       .status,
@@ -244,6 +247,11 @@ try {
     await tx`update app.email_settings set sending_domain=${initial!["sending_domain"]},display_name=${initial!["display_name"]},from_email=${initial!["from_email"]},reply_to=${initial!["reply_to"]},transactional_enabled=${initial!["transactional_enabled"]},notifications_enabled=${initial!["notifications_enabled"]},version=${initial!["version"]},updated_at=${initial!["updated_at"]},updated_by=${initial!["updated_by"]} where id=1`;
     await tx`update app.email_domains set authorized_at=${initialDomain!["authorized_at"]} where domain='notifications.ctdiocese.org.za'`;
     await tx`delete from app.submission_events where actor_id=any(${cleanupIds})`;
+    const subs = await tx`select id from app.submissions where owner_id=any(${cleanupIds})`;
+    await cleanTestScanRows(
+      tx,
+      subs.map((s) => String(s["id"])),
+    );
     await tx`delete from app.documents where submission_id in(select id from app.submissions where owner_id=any(${cleanupIds}))`;
     await tx`delete from app.submissions where owner_id=any(${cleanupIds})`;
     await tx`delete from app.email_settings_history where actor_id=any(${cleanupIds})`;
