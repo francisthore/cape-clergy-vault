@@ -39,7 +39,11 @@ export function createSubmissionService(
               const [review] = repository
                 ? []
                 : await tx`select app.author_review_feedback(${q.id}) as feedback`;
+              const [assignment] = repository
+                ? []
+                : await tx`select app.author_assignment_status(${q.id}) as status`;
               return {
+                assignmentStatus: assignment?.["status"],
                 submission: rows[0],
                 documents,
                 history,
@@ -87,7 +91,7 @@ export function createSubmissionService(
       return json({
         message:
           v.action === "submit"
-            ? "Sent to TEFT for theological review."
+            ? "Your resource has been sent to TEFT. It is awaiting assignment for theological review."
             : v.action === "amend"
               ? "Revision started. Edit your submission, then send it to TEFT again."
               : "Attachment excluded; retained privately for history.",

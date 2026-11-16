@@ -131,6 +131,7 @@ try {
     ? [
         ["database/phase42.test.ts"],
         ["database/phase421.test.ts"],
+        ["database/phase422.test.ts"],
         ["node_modules/@playwright/test/cli.js", "test", "--config=playwright.phase42.config.ts"],
       ]
     : [["database/phase41b.test.ts"]];

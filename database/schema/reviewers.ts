@@ -70,6 +70,7 @@ export const reviewerNotifications = app
       submissionId: uuid("submission_id").references(() => submissions.id),
       assignmentId: uuid("assignment_id").references(() => reviewerAssignments.id),
       sealedToken: text("sealed_token"),
+      submissionRevision: integer("submission_revision"),
       createdAt: createdAt(),
       attempts: integer("attempts").notNull().default(0),
       availableAt: timestamp("available_at", { withTimezone: true }).notNull().defaultNow(),
@@ -85,7 +86,7 @@ export const reviewerNotifications = app
       index("reviewer_notifications_pending_idx").on(t.availableAt, t.createdAt),
       check(
         "reviewer_notification_kind",
-        sql`${t.kind} in ('reviewer_invitation','review_assigned','submission_accepted','submission_returned')`,
+        sql`${t.kind} in ('reviewer_invitation','review_assigned','submission_accepted','submission_returned','submission_received','submission_intake')`,
       ),
       check(
         "reviewer_notification_proof",

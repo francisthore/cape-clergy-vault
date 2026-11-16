@@ -113,6 +113,20 @@ export function SiteHeader() {
                     </Link>
                   </>
                 )}
+                {(account.canApprove ||
+                  account.canCoordinate ||
+                  account.canReview ||
+                  account.canManageAccess ||
+                  account.canManageSettings) && (
+                  <a href="/admin" className={linkClass}>
+                    TEFT Administration
+                  </a>
+                )}
+                {account.canCoordinate && (
+                  <a href="/admin/intake" className={linkClass}>
+                    TEFT submission inbox
+                  </a>
+                )}
                 {account.canApprove && (
                   <Link
                     to="/admin/registrations"

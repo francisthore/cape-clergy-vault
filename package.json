@@ -65,7 +65,9 @@
     "branding:generate": "node scripts/branding/generate.mjs",
     "db:notifications:status": "node --env-file=.env.db.local scripts/db/notification-status.ts",
     "test:dev": "node scripts/dev-all.test.mjs",
-    "test:phase421": "node scripts/db/phase42-test.ts"
+    "test:phase421": "node scripts/db/phase42-test.ts",
+    "db:administration:operator": "node --env-file=.env.db.local scripts/db/administration-operator.ts",
+    "test:phase422": "node scripts/db/phase42-test.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

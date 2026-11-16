@@ -104,7 +104,7 @@ export function createReviewService(auth: ReturnType<typeof createAuthService>, 
             if ((error as { code?: string }).code === "22023")
               throw new RequestError(
                 400,
-                "This invitation is expired, used, revoked or unavailable for this account. Ask the trusted operator for help.",
+                "This invitation is expired, used, revoked or unavailable for this account. Ask an authorized TEFT access manager for help.",
               );
             throw error;
           }

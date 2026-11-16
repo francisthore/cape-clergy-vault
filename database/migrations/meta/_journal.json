@@ -260,6 +260,13 @@
       "when": 1794860000000,
       "tag": "0036_owner_verification_status",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794866428483,
+      "tag": "0037_phase422_administration",
+      "breakpoints": true
     }
   ]
 }

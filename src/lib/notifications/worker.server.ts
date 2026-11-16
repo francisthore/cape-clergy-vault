@@ -47,7 +47,10 @@ export async function deliverNotifications(
             throw Error("Proof mismatch");
           url = `${origin}/reviewer/invitation#token=${proof}`;
         } else {
-          url = `${origin}/${kind === "review_assigned" ? "reviewer/submissions" : "submissions"}/${payload.submissionId}`;
+          url =
+            kind === "submission_intake"
+              ? `${origin}/admin/intake`
+              : `${origin}/${kind === "review_assigned" ? "reviewer/submissions" : "submissions"}/${payload.submissionId}`;
         }
       }
       const [checked] =

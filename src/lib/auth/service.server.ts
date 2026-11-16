@@ -81,13 +81,15 @@ export function createAuthService(
       if (status === "suspended")
         await tx`delete from auth.sessions where user_id=${session.user.id}`;
       const [permission] =
-        await tx`select app.is_approver() as allowed, app.is_settings_manager() as settings, app.is_reviewer() as reviewer, app.document_account_allowed() as repository`;
+        await tx`select app.is_approver() as allowed, app.is_settings_manager() as settings, app.is_reviewer() as reviewer, app.document_account_allowed() as repository, app.has_operational('review_coordinator') as coordinator, app.has_operational('access_manager') as access_manager`;
       return {
         status,
         canUseRepository: permission?.["repository"] === true,
         canApprove: permission?.["allowed"] === true,
         canManageSettings: permission?.["settings"] === true,
         canReview: permission?.["reviewer"] === true,
+        canCoordinate: permission?.["coordinator"] === true,
+        canManageAccess: permission?.["access_manager"] === true,
       };
     });
   }

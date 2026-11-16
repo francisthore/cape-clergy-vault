@@ -231,3 +231,16 @@ no owner credential enters its CLI environment or web handlers. See
 [production database roles](production-database-roles.md) and
 [worker supervision](worker-supervision.md). This resolves the owner-backed delivery
 implementation gap; real host provisioning/isolation and provider acceptance remain open.
+
+## Phase 4.2.2 TEFT web administration
+
+The earlier statements that invitation/assignment issuance is operator-only and no
+management dashboard exists describe Phase 3E. Ordinary operation now uses the
+independent `review_coordinator` and explicitly delegated `access_manager`
+capabilities. Read [TEFT administration and recovery](teft-administration.md) for the
+restricted one-time bootstrap, web workflow, confidential metadata projection and
+break-glass commands. Existing reviewer operator commands remain emergency tools.
+Admin still confers no review authority. A coordinator who separately activated as
+a reviewer may explicitly assign themselves to another author's exact revision;
+author self-review remains prohibited. Reviewer mailbox proof, expiry and explicit
+acceptance, private streaming, RLS and immutable history are unchanged.

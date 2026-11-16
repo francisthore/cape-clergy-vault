@@ -2,6 +2,8 @@ export type EmailKind =
   | "registration_pending_alert"
   | "reviewer_invitation"
   | "review_assigned"
+  | "submission_received"
+  | "submission_intake"
   | "submission_accepted"
   | "submission_returned"
   | "test"
@@ -13,6 +15,16 @@ export type EmailKind =
   | "suspended"
   | "reactivated";
 const content: Record<EmailKind, [string, string, string]> = {
+  submission_received: [
+    "Your resource has been received",
+    "Your resource has been sent to TEFT. It is awaiting assignment for theological review. Sign in to follow its current status.",
+    "View submission",
+  ],
+  submission_intake: [
+    "New theological submission awaiting assignment",
+    "A resource is awaiting reviewer assignment. Sign in to the TEFT submission inbox to check current intake. It may already have been assigned.",
+    "Open TEFT submission inbox",
+  ],
   registration_pending_alert: [
     "New clergy registration awaiting review",
     "A verified clergy registration is awaiting review. Sign in to Manage registrations to check current applications. The dashboard is the source of truth; an application may already have been processed.",

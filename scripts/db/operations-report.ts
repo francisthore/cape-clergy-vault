@@ -7,6 +7,7 @@ import { configuredScanner } from "../../src/lib/scanning/scanner.server.ts";
 const owner = await connectLocalDatabase();
 try {
   const [counts] = await owner.client`select
+  (select count(*)::int from app.audit_events where action='submission.intake_no_recipients' and created_at>now()-interval '1 hour') as recent_intake_without_coordinator,
   (select count(*)::int from app.document_scans where state in ('queued','scanning')) as pending_scans,
   (select count(*)::int from app.document_scans where state in ('queued','scanning') and created_at<now()-interval '10 minutes') as stale_scans,
   (select count(*)::int from app.document_scans where state='exhausted') as exhausted_scans,

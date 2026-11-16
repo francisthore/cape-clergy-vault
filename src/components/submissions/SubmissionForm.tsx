@@ -6,9 +6,11 @@ import { submissionRequest } from "@/lib/submissions/client";
 export function SubmissionForm({
   submission,
   onSaved,
+  disabled = false,
 }: {
   submission?: SubmissionRow;
-  onSaved: (id: string) => void;
+  disabled?: boolean;
+  onSaved: (id: string) => void | Promise<void>;
 }) {
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState("");
@@ -17,7 +19,7 @@ export function SubmissionForm({
       className="space-y-5"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (busy) return;
+        if (busy || disabled) return;
         const f = new FormData(e.currentTarget);
         setBusy(true);
         setMessage("");
@@ -36,7 +38,7 @@ export function SubmissionForm({
               .filter(Boolean),
             confidential: f.get("confidential") === "on",
           });
-          onSaved(v.id);
+          await onSaved(v.id);
         } catch (e) {
           setMessage(e instanceof Error ? e.message : "Save unavailable");
         } finally {
@@ -50,7 +52,7 @@ export function SubmissionForm({
           id="kind"
           name="kind"
           defaultValue={submission?.kind ?? "document"}
-          disabled={busy || !!submission}
+          disabled={busy || disabled || !!submission}
           className="block w-full rounded border bg-background p-2"
         >
           <option value="document">Document (PDF)</option>
@@ -65,7 +67,7 @@ export function SubmissionForm({
           required
           maxLength={200}
           defaultValue={submission?.title}
-          disabled={busy}
+          disabled={busy || disabled}
         />
       </label>
       <label className="block" htmlFor="category">
@@ -74,7 +76,7 @@ export function SubmissionForm({
           id="category"
           name="category"
           defaultValue={submission?.category ?? "General"}
-          disabled={busy}
+          disabled={busy || disabled}
           className="block w-full rounded border bg-background p-2"
         >
           {categories.map((c) => (
@@ -90,7 +92,7 @@ export function SubmissionForm({
           rows={6}
           maxLength={20000}
           defaultValue={submission?.abstract}
-          disabled={busy}
+          disabled={busy || disabled}
           className="block w-full rounded border bg-background p-2"
           aria-describedby="description-help"
         />
@@ -105,7 +107,7 @@ export function SubmissionForm({
           id="keywords"
           name="keywords"
           defaultValue={submission?.keywords.join(", ")}
-          disabled={busy}
+          disabled={busy || disabled}
         />
       </label>
       <label className="flex gap-3">
@@ -113,7 +115,7 @@ export function SubmissionForm({
           name="confidential"
           type="checkbox"
           defaultChecked={submission?.confidential}
-          disabled={busy}
+          disabled={busy || disabled}
         />
         <span>
           Confidential
@@ -123,7 +125,7 @@ export function SubmissionForm({
           </span>
         </span>
       </label>
-      <Button disabled={busy}>{busy ? "Saving…" : "Save resource details"}</Button>
+      <Button disabled={busy || disabled}>{busy ? "Saving…" : "Save resource details"}</Button>
       {message && <p role="alert">{message}</p>}
     </form>
   );

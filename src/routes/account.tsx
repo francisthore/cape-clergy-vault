@@ -1,3 +1,4 @@
+import { useAccount } from "@/lib/auth/account-context";
 import { PageHeader } from "@/components/workspace";
 import { profileValues } from "@/lib/auth/registration";
 import { createFileRoute } from "@tanstack/react-router";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ProfileFields, PrivacyAcknowledgement } from "@/components/RegistrationFields";
 export const Route = createFileRoute("/account")({ component: AccountPage });
 function AccountPage() {
+  const account = useAccount();
   const [status, setStatus] = useState("loading");
   const [canManageSettings, setCanManageSettings] = useState(false);
   const [canReview, setCanReview] = useState(false);
@@ -86,6 +88,16 @@ function AccountPage() {
           </p>
         )}
       </div>
+      {(account.canApprove ||
+        account.canCoordinate ||
+        account.canReview ||
+        account.canManageAccess ||
+        account.canManageSettings) &&
+        !["loading", "error", "signed-out"].includes(account.status) && (
+          <a className="back-link" href="/admin">
+            TEFT Administration
+          </a>
+        )}
       <div className="grid gap-4 sm:grid-cols-2">
         {status === "approved" && (
           <a className="account-action" href="/submissions">

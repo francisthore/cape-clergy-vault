@@ -18,7 +18,7 @@ for (const connect of [connectLocalRuntime, connectLocalScanner, connectLocalNot
       }
     }
     if (connect === connectLocalRuntime)
-      await connection.client`select app.owner_document_verification(null::uuid)`;
+      await connection.client`select app.owner_document_verification(null::uuid), app.has_operational('review_coordinator')`;
   } finally {
     await connection.close();
   }

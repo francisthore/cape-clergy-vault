@@ -22,6 +22,7 @@ import { submissionStatusLabel, lifecycleLabel } from "@/lib/submissions/wording
 import { SubmissionForm } from "./SubmissionForm";
 type Detail = {
   submission: SubmissionRow;
+  assignmentStatus?: "assigned" | "unassigned";
   documents: Attachment[];
   feedback: {
     id: string;
@@ -85,6 +86,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
       if (g === generation.current) {
         setData(v);
         setAuthorized(true);
+        return true;
       }
     } catch (e) {
       if (g === generation.current) {
@@ -97,6 +99,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
         setMessage(e instanceof Error ? e.message : "Unavailable");
       }
     }
+    return false;
   }, [id, repository]);
   useEffect(() => {
     setData(null);
@@ -288,10 +291,15 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                   <SubmissionForm
                     key={s.id}
                     submission={editorSnapshot}
-                    onSaved={() => {
-                      setEditorSnapshot(null);
-                      setMessage("Submission saved. You can return later.");
-                      void load();
+                    disabled={!authorized}
+                    onSaved={async () => {
+                      if (await load()) {
+                        setEditorSnapshot(null);
+                        setMessage("Submission saved. You can return later.");
+                      } else
+                        throw Error(
+                          "Details saved, but the latest revision could not be loaded. Refresh before editing again.",
+                        );
                     }}
                   />
                 ) : (
@@ -447,6 +455,15 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                 ) : (
                   <WorkspaceSection title="Submission status">
                     <p>{submissionStatusLabel(s.status)}</p>
+                    {s.status === "submitted" && (
+                      <p>
+                        {data.assignmentStatus === "assigned"
+                          ? "Assigned for review"
+                          : data.assignmentStatus === "unassigned"
+                            ? "Awaiting reviewer assignment"
+                            : "Refresh to check current assignment status."}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground">
                       {s.submitted_at
                         ? `Submitted ${new Date(s.submitted_at).toLocaleString()}`

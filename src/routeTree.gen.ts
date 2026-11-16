@@ -19,6 +19,10 @@ import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/c
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedReviewRouteImport } from './routes/_authenticated/review'
 import { Route as AuthenticatedVerifyReviewerRouteImport } from './routes/_authenticated/verify-reviewer'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAccessRouteImport } from './routes/admin.access'
+import { Route as AdminIntakeRouteImport } from './routes/admin.intake'
+import { Route as ApiAdministrationRouteImport } from './routes/api/administration'
 import { Route as ApiDocumentsRouteImport } from './routes/api/documents'
 import { Route as ApiRegistrationsRouteImport } from './routes/api/registrations'
 import { Route as ApiRepositoryRouteImport } from './routes/api/repository'
@@ -89,6 +93,26 @@ const AuthenticatedVerifyReviewerRoute =
     path: '/verify-reviewer',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAccessRoute = AdminAccessRouteImport.update({
+  id: '/admin/access',
+  path: '/admin/access',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIntakeRoute = AdminIntakeRouteImport.update({
+  id: '/admin/intake',
+  path: '/admin/intake',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdministrationRoute = ApiAdministrationRouteImport.update({
+  id: '/api/administration',
+  path: '/api/administration',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDocumentsRoute = ApiDocumentsRouteImport.update({
   id: '/api/documents',
   path: '/api/documents',
@@ -197,6 +221,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/admin/access': typeof AdminAccessRoute
+  '/admin/intake': typeof AdminIntakeRoute
+  '/api/administration': typeof ApiAdministrationRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
   '/api/repository': typeof ApiRepositoryRoute
@@ -206,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/reviewer/invitation': typeof ReviewerInvitationRoute
   '/submissions/$id': typeof SubmissionsIdRoute
   '/submissions/new': typeof SubmissionsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/repository/': typeof RepositoryIndexRoute
   '/reviewer/': typeof ReviewerIndexRoute
   '/submissions/': typeof SubmissionsIndexRoute
@@ -227,6 +255,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/review': typeof AuthenticatedReviewRoute
   '/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/admin/access': typeof AdminAccessRoute
+  '/admin/intake': typeof AdminIntakeRoute
+  '/api/administration': typeof ApiAdministrationRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
   '/api/repository': typeof ApiRepositoryRoute
@@ -236,6 +267,7 @@ export interface FileRoutesByTo {
   '/reviewer/invitation': typeof ReviewerInvitationRoute
   '/submissions/$id': typeof SubmissionsIdRoute
   '/submissions/new': typeof SubmissionsNewRoute
+  '/admin': typeof AdminIndexRoute
   '/repository': typeof RepositoryIndexRoute
   '/reviewer': typeof ReviewerIndexRoute
   '/submissions': typeof SubmissionsIndexRoute
@@ -259,6 +291,9 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/review': typeof AuthenticatedReviewRoute
   '/_authenticated/verify-reviewer': typeof AuthenticatedVerifyReviewerRoute
+  '/admin/access': typeof AdminAccessRoute
+  '/admin/intake': typeof AdminIntakeRoute
+  '/api/administration': typeof ApiAdministrationRoute
   '/api/documents': typeof ApiDocumentsRouteWithChildren
   '/api/registrations': typeof ApiRegistrationsRoute
   '/api/repository': typeof ApiRepositoryRoute
@@ -268,6 +303,7 @@ export interface FileRoutesById {
   '/reviewer/invitation': typeof ReviewerInvitationRoute
   '/submissions/$id': typeof SubmissionsIdRoute
   '/submissions/new': typeof SubmissionsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/repository/': typeof RepositoryIndexRoute
   '/reviewer/': typeof ReviewerIndexRoute
   '/submissions/': typeof SubmissionsIndexRoute
@@ -291,6 +327,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/review'
     | '/verify-reviewer'
+    | '/admin/access'
+    | '/admin/intake'
+    | '/api/administration'
     | '/api/documents'
     | '/api/registrations'
     | '/api/repository'
@@ -300,6 +339,7 @@ export interface FileRouteTypes {
     | '/reviewer/invitation'
     | '/submissions/$id'
     | '/submissions/new'
+    | '/admin/'
     | '/repository/'
     | '/reviewer/'
     | '/submissions/'
@@ -321,6 +361,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/review'
     | '/verify-reviewer'
+    | '/admin/access'
+    | '/admin/intake'
+    | '/api/administration'
     | '/api/documents'
     | '/api/registrations'
     | '/api/repository'
@@ -330,6 +373,7 @@ export interface FileRouteTypes {
     | '/reviewer/invitation'
     | '/submissions/$id'
     | '/submissions/new'
+    | '/admin'
     | '/repository'
     | '/reviewer'
     | '/submissions'
@@ -352,6 +396,9 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/review'
     | '/_authenticated/verify-reviewer'
+    | '/admin/access'
+    | '/admin/intake'
+    | '/api/administration'
     | '/api/documents'
     | '/api/registrations'
     | '/api/repository'
@@ -361,6 +408,7 @@ export interface FileRouteTypes {
     | '/reviewer/invitation'
     | '/submissions/$id'
     | '/submissions/new'
+    | '/admin/'
     | '/repository/'
     | '/reviewer/'
     | '/submissions/'
@@ -380,6 +428,9 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DocumentsRoute: typeof DocumentsRoute
   OfflineRoute: typeof OfflineRoute
+  AdminAccessRoute: typeof AdminAccessRoute
+  AdminIntakeRoute: typeof AdminIntakeRoute
+  ApiAdministrationRoute: typeof ApiAdministrationRoute
   ApiDocumentsRoute: typeof ApiDocumentsRouteWithChildren
   ApiRegistrationsRoute: typeof ApiRegistrationsRoute
   ApiRepositoryRoute: typeof ApiRepositoryRoute
@@ -389,6 +440,7 @@ export interface RootRouteChildren {
   ReviewerInvitationRoute: typeof ReviewerInvitationRoute
   SubmissionsIdRoute: typeof SubmissionsIdRoute
   SubmissionsNewRoute: typeof SubmissionsNewRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   RepositoryIndexRoute: typeof RepositoryIndexRoute
   ReviewerIndexRoute: typeof ReviewerIndexRoute
   SubmissionsIndexRoute: typeof SubmissionsIndexRoute
@@ -471,6 +523,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/verify-reviewer'
       preLoaderRoute: typeof AuthenticatedVerifyReviewerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/access': {
+      id: '/admin/access'
+      path: '/admin/access'
+      fullPath: '/admin/access'
+      preLoaderRoute: typeof AdminAccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/intake': {
+      id: '/admin/intake'
+      path: '/admin/intake'
+      fullPath: '/admin/intake'
+      preLoaderRoute: typeof AdminIntakeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/administration': {
+      id: '/api/administration'
+      path: '/api/administration'
+      fullPath: '/api/administration'
+      preLoaderRoute: typeof ApiAdministrationRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/documents': {
       id: '/api/documents'
@@ -644,6 +724,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DocumentsRoute: DocumentsRoute,
   OfflineRoute: OfflineRoute,
+  AdminAccessRoute: AdminAccessRoute,
+  AdminIntakeRoute: AdminIntakeRoute,
+  ApiAdministrationRoute: ApiAdministrationRoute,
   ApiDocumentsRoute: ApiDocumentsRouteWithChildren,
   ApiRegistrationsRoute: ApiRegistrationsRoute,
   ApiRepositoryRoute: ApiRepositoryRoute,
@@ -653,6 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReviewerInvitationRoute: ReviewerInvitationRoute,
   SubmissionsIdRoute: SubmissionsIdRoute,
   SubmissionsNewRoute: SubmissionsNewRoute,
+  AdminIndexRoute: AdminIndexRoute,
   RepositoryIndexRoute: RepositoryIndexRoute,
   ReviewerIndexRoute: ReviewerIndexRoute,
   SubmissionsIndexRoute: SubmissionsIndexRoute,

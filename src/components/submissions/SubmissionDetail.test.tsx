@@ -201,3 +201,82 @@ describe("attachment presentation", () => {
     click.mockRestore();
   });
 });
+
+describe("persisted submission readiness", () => {
+  it("blocks a second stale save when a committed save cannot reload its persisted revision", async () => {
+    render(<SubmissionDetail id="resource-1" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit submission" }));
+    request.mockImplementation(async (_path, body) => {
+      if (body) return { id: "resource-1" };
+      throw Error("Temporary read failure");
+    });
+    fireEvent.submit(
+      screen.getByRole("button", { name: "Save resource details" }).closest("form")!,
+    );
+    await screen.findByText(
+      "Details saved, but the latest revision could not be loaded. Refresh before editing again.",
+    );
+    expect(screen.getByRole("button", { name: "Save resource details" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Send to TEFT for review" })).toBeDisabled();
+    expect(screen.getByText("Resource details saved").parentElement).toHaveTextContent(
+      "Incomplete:",
+    );
+  });
+
+  it.each([false, true])(
+    "save/reopen uses the refreshed persisted description with confidentiality=%s",
+    async (confidential) => {
+      const clean = [
+        { ...document, state: "available", clean: true, verification_status: "ready" },
+      ];
+      request.mockResolvedValue({
+        ...detail(clean),
+        submission: { ...submission, abstract: "Short", confidential },
+      });
+      const view = render(<SubmissionDetail id="resource-1" />);
+      fireEvent.click(await screen.findByRole("button", { name: "Edit submission" }));
+      fireEvent.change(screen.getByLabelText("Abstract or description"), {
+        target: { value: submission.abstract },
+      });
+      expect(screen.getByRole("button", { name: "Send to TEFT for review" })).toBeDisabled();
+      let resolveRefresh: (value: unknown) => void = () => {};
+      const refreshed = new Promise((resolve) => {
+        resolveRefresh = resolve;
+      });
+      request.mockImplementation(async (_path, body) => (body ? { id: "resource-1" } : refreshed));
+      fireEvent.submit(
+        screen.getByRole("button", { name: "Save resource details" }).closest("form")!,
+      );
+      await waitFor(() =>
+        expect(request).toHaveBeenCalledWith(
+          "/api/submissions",
+          expect.objectContaining({ confidential, abstract: submission.abstract }),
+        ),
+      );
+      // Save has committed, but stale pre-save detail must not turn the checklist green.
+      expect(screen.getByLabelText("Abstract or description")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Send to TEFT for review" })).toBeDisabled();
+      await act(async () =>
+        resolveRefresh({
+          ...detail(clean),
+          submission: { ...submission, version: 2, confidential },
+        }),
+      );
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Send to TEFT for review" })).toBeEnabled(),
+      );
+      expect(screen.getByText("Resource details saved").parentElement).toHaveTextContent(
+        "Complete:",
+      );
+      view.unmount();
+      request.mockResolvedValue({
+        ...detail(clean),
+        submission: { ...submission, version: 2, confidential },
+      });
+      render(<SubmissionDetail id="resource-1" />);
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Send to TEFT for review" })).toBeEnabled(),
+      );
+    },
+  );
+});

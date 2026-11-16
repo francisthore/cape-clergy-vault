@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
+import { createFileRoute } from "@tanstack/react-router";
+import { AccountActions } from "@/components/administration/AccountActions";
 import { Crest } from "@/components/branding/Crest";
 
 export const Route = createFileRoute("/")({
@@ -49,22 +49,9 @@ function Index() {
             A home for the sermons, research, liturgical writing and ideas of our clergy. Contribute
             your work to TEFT and discover resources for your ministry.
           </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link to="/auth" search={{ view: "register", token: "", error: "" }}>
-                Register as clergy
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link to="/repository">Browse the repository</Link>
-            </Button>
+          <div className="mt-7">
+            <AccountActions />
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Already registered?{" "}
-            <a className="text-primary underline underline-offset-4" href="/auth?view=login">
-              Sign in to your account
-            </a>
-          </p>
         </div>
         <div className="hidden justify-center md:flex">
           <Crest size="hero" />

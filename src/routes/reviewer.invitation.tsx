@@ -97,8 +97,8 @@ function Invitation() {
               {inv.state === "accepted"
                 ? "This invitation has already been used."
                 : inv.state === "expired"
-                  ? "This invitation has expired. Ask the trusted operator to issue a new invitation."
-                  : "This invitation has been revoked. Contact the trusted operator."}
+                  ? "This invitation has expired. Ask an authorized TEFT access manager to issue a new invitation."
+                  : "This invitation has been revoked. Contact an authorized TEFT access manager."}
             </p>
           )}
         </section>

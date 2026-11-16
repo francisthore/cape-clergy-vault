@@ -3,6 +3,8 @@ import { createAuthClient } from "better-auth/react";
 export const authClient = createAuthClient();
 export type AccountState = {
   status: string;
+  canCoordinate?: boolean;
+  canManageAccess?: boolean;
   canApprove?: boolean;
   canReview?: boolean;
   canManageSettings?: boolean;
@@ -20,6 +22,8 @@ export async function accountRequest(path: string, body?: unknown) {
   const data = (await response.json()) as {
     status?: string;
     canUseRepository?: boolean;
+    canCoordinate?: boolean;
+    canManageAccess?: boolean;
     canApprove?: boolean;
     canReview?: boolean;
     canManageSettings?: boolean;

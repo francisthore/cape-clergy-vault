@@ -81,3 +81,10 @@ limits, a shutdown allowance of at least 200 seconds and alerts for old/exhauste
 queues and missing cycles. See [worker supervision](worker-supervision.md). Actual
 VPS scheduling, restarts, deliverability and alert routing remain untested and were
 not activated.
+
+Phase 4.2.2 adds submission-received and coordinator-intake intents to the separate
+existing reviewer queue, delivered by its restricted worker. `db:notifications:status`
+now reports both queues and aggregate zero-coordinator evidence. Registration
+recipient selection and worker behavior remain unchanged. See
+[TEFT administration](teft-administration.md) for bootstrap, ordinary UI operations,
+new notification eligibility and no-backfill behavior.

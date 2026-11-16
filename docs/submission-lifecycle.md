@@ -119,3 +119,19 @@ Bouncer/ClamAV evidence. Selected filename and readable size, progress and uploa
 completion are separate from the current PDF screening status. A quarantined file
 has no download link and cannot be sent for review. Invalid selections can be replaced
 without any upload request. See [Phase 4.2 evidence](phase-42-report.md).
+
+## Phase 4.2.2 readiness, assignment and receipt
+
+The editor remains open and readiness blocked until a successful save is followed
+by a successful load of the current persisted revision. Confidentiality is optional
+and has no readiness predicate. A normalized description of at least 20 characters
+is still required for final submission. Current editing prevents unsaved text from
+being presented as persisted work. Ideas do not require PDFs; documents still need
+clean included attachments.
+
+The submitted confirmation now reads “Your resource has been sent to TEFT. It is
+awaiting assignment for theological review.” The owner detail additionally receives
+a fixed assigned/unassigned projection using live reviewer eligibility and the
+exact current revision. It exposes no reviewer identity or private notes. Assigned,
+review in progress, returned and accepted remain distinct. Intake and new receipt
+notifications are documented in [TEFT administration](teft-administration.md).

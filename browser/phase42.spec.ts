@@ -227,11 +227,14 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
   const exactLimitPdf = Buffer.alloc(MAX_PDF_BYTES);
   exactLimitPdf.write("%PDF-1.4\n");
   exactLimitPdf.write("\n%%EOF\n", exactLimitPdf.length - 7);
-  await input.setInputFiles({
-    name: "exact-limit.pdf",
-    mimeType: "application/pdf",
-    buffer: exactLimitPdf,
-  });
+  await input.setInputFiles(
+    {
+      name: "exact-limit.pdf",
+      mimeType: "application/pdf",
+      buffer: exactLimitPdf,
+    },
+    { timeout: 60000 },
+  );
   await expect(upload).toBeEnabled();
   expect(requests).toBe(0);
   await page.getByRole("button", { name: "Edit submission", exact: true }).click();
@@ -293,7 +296,10 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
   );
   await page.getByRole("button", { name: "Confirm submission", exact: true }).click();
   await expect(
-    page.getByText("Sent to TEFT for theological review.", { exact: true }),
+    page.getByText(
+      "Your resource has been sent to TEFT. It is awaiting assignment for theological review.",
+      { exact: true },
+    ),
   ).toBeVisible();
   await f.owner
     .client`select app.reviewer_operator('assign',${f.id("multi")},${submission},null,null,${"ASSIGN " + f.id("multi") + " " + submission + " REVISION 1"},1)`;

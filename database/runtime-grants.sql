@@ -60,3 +60,11 @@ GRANT EXECUTE ON FUNCTION app.consume_rate_limit(text,text) TO cape_clergy_runti
 
 -- Owner-only safe status; scanner tables remain inaccessible.
 GRANT EXECUTE ON FUNCTION app.owner_document_verification(uuid) TO cape_clergy_runtime;
+
+-- Phase 4.2.2: table evidence/credential envelopes remain private; functions only.
+REVOKE ALL ON app.operational_grants,app.administration_events,app.administration_bootstrap FROM cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.has_operational(text),app.coordination_inbox(integer),
+ app.coordinate_assignment(uuid,integer,text,uuid),app.coordination_revoke_assignment(uuid,uuid),
+ app.access_identity(text),app.manage_access(text,text,text,text,text,text,uuid,uuid,text,text),
+ app.author_assignment_status(uuid) TO cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.require_delegation(text) TO cape_clergy_runtime;
