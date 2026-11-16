@@ -8,9 +8,9 @@ export type ReadinessDependencies = {
 };
 export async function readiness(deps: ReadinessDependencies) {
   const [db, scan, storage] = await Promise.allSettled([
-    deps.database(),
-    deps.scanner(),
-    deps.storage(),
+    Promise.resolve().then(deps.database),
+    Promise.resolve().then(deps.scanner),
+    Promise.resolve().then(deps.storage),
   ]);
   const essential =
     db.status === "fulfilled" &&

@@ -1,3 +1,4 @@
+import { MAX_PDF_BYTES } from "./validation.ts";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { createAuthService } from "../auth/service.server.ts";
@@ -16,7 +17,7 @@ export function createDocumentService(
   auth: ReturnType<typeof createAuthService>,
   storage: StorageProvider,
   origin: string,
-  maxBytes = 20 * 1024 * 1024,
+  maxBytes = MAX_PDF_BYTES,
 ) {
   const json = (body: unknown, status = 200) =>
     Response.json(body, { status, headers: privateHeaders });

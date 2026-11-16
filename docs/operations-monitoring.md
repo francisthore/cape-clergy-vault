@@ -88,3 +88,14 @@ must inspect JSON and must not restart healthy Node for daemon outages. Database
 storage and critical-capacity failure remain unavailable/503. See the
 [release matrix](release-readiness.md), [backup drill](backup-recovery.md),
 [ClamAV pack](clamav-operational-acceptance.md) and [shared limiter](shared-rate-limiting.md).
+
+## Optional Bouncer provider (Phase 4.1B)
+
+Use the protected `db:scans:usage` worker-only CLI for current free-month usage.
+Monitor `scanner_budget` reserved/observed counts and blocked-until time plus
+`document_scans` provider status, result category, poll count, failures and age using
+the guarded owner context. No upload credentials or document names belong in logs.
+Alert before 500 scans and investigate ambiguous/held jobs without resetting them.
+The Bouncer path has one external scan in flight and different polling/recovery
+bounds; [the runbook](bouncer-scanning.md) supersedes ClamAV-only limits for it.
+Actual alert delivery and approved external acceptance remain open.

@@ -1,3 +1,4 @@
+import { MAX_PDF_BYTES } from "./validation.ts";
 import { constants } from "node:fs";
 import { link, lstat, mkdir, open, realpath, unlink } from "node:fs/promises";
 import { resolve, parse, join } from "node:path";
@@ -37,12 +38,12 @@ export function validateFileName(input: string): string {
 export class LocalPrivateStorageProvider implements StorageProvider {
   private root: string;
   private maxBytes: number;
-  constructor(root: string, maxBytes = 20 * 1024 * 1024) {
+  constructor(root: string, maxBytes = MAX_PDF_BYTES) {
     this.root = resolve(root);
     this.maxBytes = maxBytes;
     if (this.root.split("/").some((p) => ["public", "dist", ".output", "node_modules"].includes(p)))
       throw new Error("Private storage configuration rejected");
-    if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 20 * 1024 * 1024)
+    if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_PDF_BYTES)
       throw new Error("Upload limit must be between 1 byte and 20 MiB");
   }
   private async directory() {
@@ -217,6 +218,6 @@ export function configuredStorage() {
     throw new Error("Only PDF validation is implemented");
   return new LocalPrivateStorageProvider(
     process.env["CAPE_STORAGE_ROOT"] ?? ".local/storage",
-    Number(process.env["CAPE_MAX_UPLOAD_BYTES"] ?? 20 * 1024 * 1024),
+    Number(process.env["CAPE_MAX_UPLOAD_BYTES"] ?? MAX_PDF_BYTES),
   );
 }

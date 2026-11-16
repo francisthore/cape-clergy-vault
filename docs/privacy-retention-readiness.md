@@ -125,3 +125,13 @@ contain only purpose and random correlation ID; their log retention/access still
 organizational approval. A party holding the auth secret can compute candidate HMACs,
 so treat database/log access as protected; no claim of irreversible anonymization is made.
 See the [approval register](privacy-approval-register.md) for all pending policy decisions.
+
+## Phase 4.1B external scanner candidate
+
+Bouncer is an optional external processor candidate. [Its operations runbook](bouncer-scanning.md)
+records the verified API contract and provider-stated Mumbai location, temporary file
+retention and persistent scan metadata. No live scan or real-document transfer was
+authorized/executed during development. The Diocese must approve processor terms,
+cross-border arrangements, appropriate notice/lawful basis, confidentiality scope,
+retention/rights and incident handling before real clergy use. Existing repository
+consent is not claimed as approval for this new external transfer.

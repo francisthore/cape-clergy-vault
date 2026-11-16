@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { auditFixtureState } from "../../database/test-fixture-audit.ts";
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -14,7 +15,7 @@ try {
     ),
   );
   const ledger = await owner.client`select hash from cape_migrations.__drizzle_migrations`;
-  assert.equal(ledger.length, 33);
+  assert.equal(ledger.length, 35);
   assert.deepEqual(new Set(ledger.map((r) => r["hash"])), new Set(hashes));
   const [grants] =
     await owner.client`select has_any_column_privilege('cape_clergy_runtime','app.submissions','UPDATE') as status_write,
@@ -35,19 +36,15 @@ try {
   assert.equal(publicFunctions.length, 0);
   const [rls] =
     await owner.client`select count(*)::int as n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='app' and c.relkind='r' and c.relrowsecurity`;
-  assert.equal(rls!["n"], 25);
+  assert.equal(rls!["n"], 26);
   const disabled =
     await owner.client`select t.oid from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='app' and not t.tgisinternal and t.tgenabled='D'`;
   assert.equal(disabled.length, 0);
-  const [rows] = await owner.client`select (select count(*)::int from auth.users) as identities,
- (select count(*)::int from app.submissions) as submissions,(select count(*)::int from app.documents) as documents,
- (select count(*)::int from app.reviewer_events) as reviewer_history,(select count(*)::int from app.reviewer_invitations) as invitations,
- (select count(*)::int from app.reviewer_assignments) as assignments,(select count(*)::int from app.reviewer_notifications) as outbox,
- (select count(*)::int from app.review_decisions) as decisions,(select count(*)::int from app.audit_events) as audits`;
-  assert.ok(rows && Object.values(rows).every((v) => v === 0), "Disposable local fixtures cleaned");
+  await auditFixtureState(owner.client);
   const secrets = [
     "BETTER_AUTH_SECRET",
     "RESEND_API_KEY",
+    "BOUNCER_API_KEY",
     "CAPE_RUNTIME_DATABASE_URL",
     "CAPE_DATABASE_URL",
     "CAPE_NOTIFICATION_DATABASE_URL",
@@ -75,7 +72,7 @@ try {
   }
   await scan(".output/public");
   console.log(
-    `PASS: ${ledger.length} migration hashes, 25 RLS tables, reviewed grants/functions, enabled immutable triggers, empty disposable fixtures and ${artifacts} public artifacts without configured private credentials.`,
+    `PASS: ${ledger.length} migration hashes, 26 RLS tables, reviewed grants/functions, enabled immutable triggers, no live disposable fixtures, preserved append-only evidence and ${artifacts} public artifacts without configured private credentials.`,
   );
 } finally {
   await owner.close();

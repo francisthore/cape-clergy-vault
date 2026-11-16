@@ -23,6 +23,14 @@ describe("privacy-safe operational readiness", () => {
     expect(
       await readiness({
         ...deps,
+        scanner: () => {
+          throw Error("Missing worker-only Bouncer key");
+        },
+      }),
+    ).toBe("degraded");
+    expect(
+      await readiness({
+        ...deps,
         database: async () => {
           throw Error("secret connection");
         },

@@ -6,3 +6,4 @@ REVOKE ALL ON ALL TABLES IN SCHEMA app,auth,cape_migrations FROM cape_clergy_sca
 REVOKE ALL ON ALL SEQUENCES IN SCHEMA app,auth,cape_migrations FROM cape_clergy_scanner;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA app FROM cape_clergy_scanner;
 GRANT EXECUTE ON FUNCTION app.claim_document_scan(uuid),app.finish_document_scan(uuid,uuid,text,text,text,text,timestamptz,text) TO cape_clergy_scanner;
+GRANT EXECUTE ON FUNCTION app.claim_bouncer_scan(uuid),app.reserve_bouncer_scan(uuid,uuid,integer,integer,text),app.accept_bouncer_scan(uuid,uuid,text),app.finish_bouncer_scan(uuid,uuid,text,text,text,text,bigint,boolean) TO cape_clergy_scanner;

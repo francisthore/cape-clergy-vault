@@ -238,6 +238,50 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
       );
     });
     await t.test(
+      "exact 20 MiB is accepted; actual oversized stream with forged length is rejected",
+      async () => {
+        const exact = Buffer.alloc(20 * 1024 * 1024, 32);
+        exact.write("%PDF-1.7\n");
+        exact.write("\n%%EOF\n", exact.length - 7);
+        assert.equal((await upload("owner", exact)).status, 201);
+        if (!http) {
+          const oversized = Buffer.concat([exact, Buffer.from("x")]);
+          assert.equal(
+            (await upload("owner", oversized, randomUUID(), submission, { "content-length": "1" }))
+              .status,
+            413,
+          );
+        }
+        if (http) {
+          // Chunked transport without Content-Length exercises actual streamed enforcement over HTTP.
+          const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(exact);
+              controller.enqueue(new Uint8Array([32]));
+              controller.close();
+            },
+          });
+          const request = new Request(
+            `${baseURL}/api/documents?submissionId=${submission}&requestId=${randomUUID()}`,
+            {
+              method: "POST",
+              headers: {
+                cookie: cookies.get("owner")!,
+                origin: baseURL,
+                "content-type": "application/pdf",
+                "x-document-name": "chunked.pdf",
+              },
+              body: stream,
+              duplex: "half",
+            } as RequestInit,
+          );
+          assert.equal((await send(request)).status, 413);
+        }
+        // HTTP also checks an ordinary crafted oversized request independently of the React UI.
+        assert.equal((await upload("owner", Buffer.alloc(20 * 1024 * 1024 + 1))).status, 413);
+      },
+    );
+    await t.test(
       "invalid/empty/mismatched/oversized files and forged metadata fail safely",
       async () => {
         for (const body of [

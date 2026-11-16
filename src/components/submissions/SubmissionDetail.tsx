@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { SubmissionRow } from "@/lib/submissions/validation";
 import { submissionRequest } from "@/lib/submissions/client";
+import { validatePdfSelection } from "@/lib/documents/validation";
 import { SubmissionForm } from "./SubmissionForm";
 type Detail = {
   submission: SubmissionRow;
@@ -29,6 +30,15 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
     [busy, setBusy] = useState(false),
     [confirm, setConfirm] = useState(false),
     [progress, setProgress] = useState<number | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState("");
+  const selectFile = (file: File | undefined) => {
+    if (xhr.current) return;
+    const error = file ? validatePdfSelection(file) : null;
+    setFileError(error ?? "");
+    setSelectedFile(error ? null : (file ?? null));
+    intent.current = null;
+  };
   const xhr = useRef<XMLHttpRequest | null>(null),
     intent = useRef<string | null>(null),
     generation = useRef(0);
@@ -106,8 +116,9 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
   }
   function upload(file: File) {
     if (xhr.current || !data) return;
-    if (!/\.pdf$/i.test(file.name) || !file.size || file.size > 20 * 1024 * 1024) {
-      setMessage("Choose a nonempty PDF up to 20 MiB.");
+    const error = validatePdfSelection(file);
+    if (error) {
+      setFileError(error);
       return;
     }
     intent.current ??= crypto.randomUUID();
@@ -134,7 +145,10 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
       } catch {
         /* safe fallback */
       }
-      if (x.status === 201) intent.current = null;
+      if (x.status === 201) {
+        intent.current = null;
+        setSelectedFile(null);
+      }
       setMessage(m);
       void load();
     };
@@ -242,7 +256,14 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
               <p>Showing the first 100 attachments. Contact the operator for older records.</p>
             )}
             {editable && s.kind === "document" && (
-              <>
+              <div
+                className="space-y-3"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (!busy && progress === null && !editing) selectFile(e.dataTransfer.files[0]);
+                }}
+              >
                 <label className="block" htmlFor="pdf">
                   Attach a PDF (maximum 20 MiB)
                 </label>
@@ -250,14 +271,28 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                   id="pdf"
                   type="file"
                   accept=".pdf,application/pdf"
+                  aria-describedby="pdf-limit pdf-error"
+                  aria-invalid={Boolean(fileError)}
                   disabled={busy || progress !== null || editing}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    intent.current = null;
-                    if (f) upload(f);
+                    selectFile(f);
                     e.target.value = "";
                   }}
                 />
+                <p id="pdf-limit">Choose or drop one PDF. Maximum 20 MiB (20,971,520 bytes).</p>
+                <p id="pdf-error" role="alert" aria-atomic="true">
+                  {fileError}
+                </p>
+                {selectedFile && <p className="break-all">Selected: {selectedFile.name}</p>}
+                <Button
+                  disabled={
+                    !selectedFile || Boolean(fileError) || busy || progress !== null || editing
+                  }
+                  onClick={() => selectedFile && upload(selectedFile)}
+                >
+                  Upload PDF
+                </Button>
                 {progress !== null && (
                   <>
                     <progress aria-label="Upload progress" max={100} value={progress} />
@@ -268,7 +303,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                   </>
                 )}
                 <p>PDFs remain private and unavailable until the required security checks pass.</p>
-              </>
+              </div>
             )}
           </section>
           {editable && !editing && (

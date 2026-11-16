@@ -21,6 +21,8 @@ const child = spawn(process.execPath, [".output/server/index.mjs"], {
     BETTER_AUTH_URL: origin,
     BETTER_AUTH_SECRET: secret,
     CAPE_STORAGE_ROOT: root,
+    // Probe Bouncer without exposing a worker-only key to the web process.
+    CAPE_SCANNER: process.env["CAPE_SCANNER"] ?? "clamav",
     EMAIL_PROVIDER: "development",
     CAPE_LOCAL_EMAIL_CAPTURE: "true",
     CAPE_TRUSTED_PROXY_IPS: "127.0.0.1",
@@ -69,7 +71,9 @@ try {
   const [invalid] =
     await owner.client`select hits from app.rate_limits where key=${key("invalid-proxy")}`;
   assert.equal(invalid?.["hits"], 1);
-  assert.equal((await fetch(origin + "/health/ready")).status, 200);
+  const readiness = await fetch(origin + "/health/ready");
+  assert.equal(readiness.status, 200);
+  assert.deepEqual(await readiness.json(), { status: "degraded" });
   console.log(
     "PASS: built Node trusted socket peer, explicit single-hop forwarding, isolated client buckets, malformed chain fallback and scanner-degraded HTTP 200.",
   );

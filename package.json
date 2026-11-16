@@ -56,7 +56,10 @@
     "db:notifications:setup": "node --env-file=.env.db.local scripts/db/notification-setup.ts",
     "db:test:phase4": "node --env-file=.env.db.local --env-file=.env.db.runtime.local --env-file=.env.db.scanner.local --env-file=.env.db.notifications.local database/phase4.test.ts",
     "test:recovery": "node scripts/db/recovery-drill.ts",
-    "db:smoke:phase4": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase4-http.ts"
+    "db:smoke:phase4": "node --env-file=.env.db.local --env-file=.env.db.runtime.local scripts/db/phase4-http.ts",
+    "test:bouncer": "node src/lib/scanning/bouncer.integration.ts",
+    "db:test:phase41b": "node scripts/db/phase41b-test.ts",
+    "db:scans:usage": "node --env-file=.env.db.scanner.local scripts/db/scanner-usage.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

@@ -173,6 +173,7 @@ test("quarantine, exact revision review, author feedback and repository download
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.7\nDisposable acceptance PDF\n%%EOF\n"),
   });
+  await page.getByRole("button", { name: "Upload PDF", exact: true }).click();
   await expect(page.getByText("Security checks pending", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: "Submit for review", exact: true })).toBeDisabled();
   await assess(page);

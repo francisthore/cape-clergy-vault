@@ -4,6 +4,11 @@ No supervisor/service was installed or enabled. See `ops/ecosystem.config.cjs` a
 `ops/nginx.conf.example` for review-only web templates. All paths/users/ports are
 proposals. Do not apply to existing VPS services without separate authorization.
 
+For the optional Bouncer provider, see [Phase 4.1B operations](bouncer-scanning.md):
+one globally active external scan (including between leases), durable ID polling,
+120 poll claims/two-hour bounds and conservative free-quota holds. ClamAV retains
+the existing two-lease behavior. No external service was enabled.
+
 ## Schedule and recovery
 
 | Work             | Entry                                                  | Batch / concurrency                                        | Cadence and recovery                                                             |

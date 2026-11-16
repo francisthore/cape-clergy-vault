@@ -1,5 +1,9 @@
 # Private PDF quarantine and scanning
 
+Phase 4.1B adds the optional [Bouncer asynchronous provider](bouncer-scanning.md).
+That runbook supersedes the ClamAV-only configuration and worker limits below for
+Bouncer jobs; existing private access and audit guarantees remain in force.
+
 Phase 3F adds a logical quarantine inside the existing private StorageProvider. No
 public bucket, alternate viewer, file copies to a scanner directory, shell command,
 production daemon installation or automatic disposal is introduced. Malware scanning
@@ -75,7 +79,7 @@ cannot be recalled by later revocation.
 
 ## ClamAV integration and operational prerequisites
 
-Only `CAPE_SCANNER=clamav` is configurable. Tests inject `TestScanner` explicitly;
+`CAPE_SCANNER=clamav` and `CAPE_SCANNER=bouncer` are configurable; see the Bouncer runbook for external-transfer approval and separate evidence. Tests inject `TestScanner` explicitly;
 it cannot be selected by environment and refuses production. The production adapter
 uses an absolute server-configured Unix socket, never a user path or TCP endpoint.
 World-accessible or symlink socket files are rejected. Provision a protected socket/parent with access limited to worker/readiness identities.

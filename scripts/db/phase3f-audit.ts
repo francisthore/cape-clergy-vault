@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { auditFixtureState } from "../../database/test-fixture-audit.ts";
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -14,7 +15,7 @@ try {
     ),
   );
   const ledger = await owner.client`select hash from cape_migrations.__drizzle_migrations`;
-  assert.equal(ledger.length, 33);
+  assert.equal(ledger.length, 35);
   assert.deepEqual(new Set(ledger.map((r) => r["hash"])), new Set(hashes));
   const [grants] =
     await owner.client`select has_any_column_privilege('cape_clergy_runtime','app.submissions','UPDATE') as status_write,
@@ -35,12 +36,18 @@ try {
   assert.equal(publicFunctions.length, 0);
   const [rls] =
     await owner.client`select count(*)::int as n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='app' and c.relkind='r' and c.relrowsecurity`;
-  assert.equal(rls!["n"], 25);
+  assert.equal(rls!["n"], 26);
   const disabled =
     await owner.client`select t.oid from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='app' and not t.tgisinternal and t.tgenabled='D'`;
   assert.equal(disabled.length, 0);
   const [scanGrants] = await owner.client`select
     has_function_privilege('cape_clergy_runtime','app.claim_document_scan(uuid)','EXECUTE') as runtime_claim,
+    has_function_privilege('cape_clergy_runtime','app.claim_bouncer_scan(uuid)','EXECUTE') as runtime_bouncer_claim,
+    has_function_privilege('cape_clergy_runtime','app.reserve_bouncer_scan(uuid,uuid,integer,integer,text)','EXECUTE') as runtime_bouncer_reserve,
+    has_function_privilege('cape_clergy_runtime','app.accept_bouncer_scan(uuid,uuid,text)','EXECUTE') as runtime_bouncer_accept,
+    has_function_privilege('cape_clergy_runtime','app.finish_bouncer_scan(uuid,uuid,text,text,text,text,bigint,boolean)','EXECUTE') as runtime_bouncer_finish,
+    has_table_privilege('cape_clergy_runtime','app.scanner_budget','SELECT') as runtime_budget,
+    has_any_column_privilege('cape_clergy_scanner','app.document_scans','UPDATE') as worker_scan_write,
     has_function_privilege('cape_clergy_runtime','app.finish_document_scan(uuid,uuid,text,text,text,text,timestamptz,text)','EXECUTE') as runtime_finish,
     has_any_column_privilege('cape_clergy_runtime','app.documents','UPDATE') as runtime_promote,
     has_table_privilege('cape_clergy_runtime','app.document_scans','SELECT') as runtime_evidence,
@@ -58,12 +65,7 @@ try {
   const unsafeDefiners =
     await owner.client`select p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='app' and p.prosecdef and not coalesce(p.proconfig @> array['search_path=pg_catalog'],false)`;
   assert.equal(unsafeDefiners.length, 0);
-  const [rows] = await owner.client`select (select count(*)::int from auth.users) as identities,
- (select count(*)::int from app.submissions) as submissions,(select count(*)::int from app.documents) as documents,
- (select count(*)::int from app.reviewer_events) as reviewer_history,(select count(*)::int from app.reviewer_invitations) as invitations,
- (select count(*)::int from app.reviewer_assignments) as assignments,(select count(*)::int from app.reviewer_notifications) as outbox,
- (select count(*)::int from app.review_decisions) as decisions,(select count(*)::int from app.audit_events) as audits`;
-  assert.ok(rows && Object.values(rows).every((v) => v === 0), "Disposable local fixtures cleaned");
+  await auditFixtureState(owner.client);
   const [tokens] = await owner.client`select count(*)::int as retained_expired,
     count(*) filter(where expires_at>now())::int as active from auth.verifications`;
   assert.equal(tokens!["active"], 0, "No active test verification/reset records remain");
@@ -77,6 +79,7 @@ try {
   const secrets = [
     "BETTER_AUTH_SECRET",
     "RESEND_API_KEY",
+    "BOUNCER_API_KEY",
     "CAPE_RUNTIME_DATABASE_URL",
     "CAPE_DATABASE_URL",
     "CAPE_NOTIFICATION_DATABASE_URL",
@@ -101,6 +104,10 @@ try {
       else if (/\.(js|mjs|html|json|map)$/.test(file.name)) {
         const content = await readFile(p, "utf8");
         assert.ok(
+          !/BOUNCER_API_KEY|api\.usebouncer\.dev|BouncerScanner/.test(content),
+          "Bouncer implementation remains server-only",
+        );
+        assert.ok(
           secrets.every((s) => !content.includes(s)),
           "No configured private credential in browser artifacts",
         );
@@ -110,7 +117,7 @@ try {
   }
   await scan(".output/public");
   console.log(
-    `PASS: ${ledger.length} migration hashes, 25 RLS tables, reviewed grants/functions, enabled immutable triggers, empty disposable fixtures and ${artifacts} public artifacts without configured private credentials.`,
+    `PASS: ${ledger.length} migration hashes, 26 RLS tables, reviewed grants/functions, enabled immutable triggers, no live disposable fixtures, preserved append-only evidence and ${artifacts} public artifacts without configured private credentials.`,
   );
 } finally {
   await owner.close();

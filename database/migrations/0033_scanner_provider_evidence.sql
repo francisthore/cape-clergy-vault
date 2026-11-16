@@ -1,0 +1,17 @@
+ALTER TABLE "app"."document_scans" DROP CONSTRAINT "document_scan_clean_evidence";--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "provider" text DEFAULT 'clamav' NOT NULL;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "external_scan_id" text;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "expected_byte_size" bigint;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "submission_revision" integer;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "submitted_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "last_poll_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "provider_status" text DEFAULT 'new' NOT NULL;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "result_category" text;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "provider_sha256" text;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "provider_byte_size" bigint;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "poll_count" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD COLUMN "failure_count" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD CONSTRAINT "document_scan_provider" CHECK ("app"."document_scans"."provider" in ('clamav','bouncer'));--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD CONSTRAINT "document_scan_provider_bounds" CHECK ("app"."document_scans"."poll_count" between 0 and 120 and "app"."document_scans"."failure_count" between 0 and 5 and ("app"."document_scans"."expected_byte_size" is null or "app"."document_scans"."expected_byte_size" between 1 and 20971520));--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD CONSTRAINT "document_scan_provider_status" CHECK ("app"."document_scans"."provider_status" in ('new','submitting','pending','scanning','completed','failed','ambiguous','held'));--> statement-breakpoint
+ALTER TABLE "app"."document_scans" ADD CONSTRAINT "document_scan_clean_evidence" CHECK ("app"."document_scans"."state"<>'clean' or ("app"."document_scans"."scanned_sha256" is not null and "app"."document_scans"."scanned_sha256"="app"."document_scans"."expected_sha256" and "app"."document_scans"."completed_at" is not null and (("app"."document_scans"."provider"='clamav' and "app"."document_scans"."engine" is not null and "app"."document_scans"."definitions_version" is not null and "app"."document_scans"."definitions_at" is not null) or ("app"."document_scans"."provider"='bouncer' and "app"."document_scans"."external_scan_id" is not null and "app"."document_scans"."provider_status"='completed' and "app"."document_scans"."result_category"='clean' and "app"."document_scans"."provider_sha256"="app"."document_scans"."expected_sha256" and "app"."document_scans"."provider_byte_size"="app"."document_scans"."expected_byte_size" and "app"."document_scans"."provider_sha256" is not null and "app"."document_scans"."provider_byte_size" is not null and "app"."document_scans"."expected_byte_size" is not null and "app"."document_scans"."submission_revision" is not null))));

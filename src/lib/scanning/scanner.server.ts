@@ -2,7 +2,9 @@ import { scannerProbePdf } from "./probe.server.ts";
 import { lstat } from "node:fs/promises";
 import { createConnection } from "node:net";
 import { isAbsolute } from "node:path";
-export const MAX_SCAN_BYTES = 20 * 1024 * 1024;
+import { MAX_PDF_BYTES } from "../documents/validation.ts";
+import { BouncerScanner } from "./bouncer.server.ts";
+export const MAX_SCAN_BYTES = MAX_PDF_BYTES;
 export type ScanErrorCategory =
   | "unavailable"
   | "timeout"
@@ -273,8 +275,16 @@ export class ClamAvScanner implements MalwareScanner {
   }
 }
 export function configuredScanner(): MalwareScanner {
-  if ((process.env["CAPE_SCANNER"] ?? "clamav") !== "clamav")
-    throw Error("Only ClamAV may be configured; test doubles require explicit test injection");
+  const provider = process.env["CAPE_SCANNER"] ?? "clamav";
+  if (provider === "bouncer")
+    return new BouncerScanner({
+      apiKey: process.env["BOUNCER_API_KEY"] ?? "",
+      uploadHost: process.env["BOUNCER_UPLOAD_HOST"] ?? "",
+    });
+  if (provider !== "clamav")
+    throw Error(
+      "Only ClamAV or Bouncer may be configured; test doubles require explicit test injection",
+    );
   return new ClamAvScanner({
     socketPath: process.env["CAPE_CLAMD_SOCKET"] ?? "/run/clamav/clamd.sock",
     maxDefinitionAgeHours: Number(process.env["CAPE_SCAN_MAX_DEFINITION_AGE_HOURS"] ?? 48),

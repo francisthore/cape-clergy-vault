@@ -232,6 +232,20 @@
       "when": 1793957099164,
       "tag": "0032_operational_boundaries",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794847763455,
+      "tag": "0033_scanner_provider_evidence",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794847798915,
+      "tag": "0034_bouncer_orchestration",
+      "breakpoints": true
     }
   ]
 }

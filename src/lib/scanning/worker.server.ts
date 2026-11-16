@@ -1,7 +1,14 @@
+import { BouncerScanner } from "./bouncer.server.ts";
+import { runBouncerWorker } from "./bouncer-worker.server.ts";
 import { createHash } from "node:crypto";
 import type { Sql } from "postgres";
 import type { StorageProvider } from "../documents/storage.server.ts";
-import { MAX_SCAN_BYTES, type MalwareScanner, type ScanResult } from "./scanner.server.ts";
+import {
+  ClamAvScanner,
+  MAX_SCAN_BYTES,
+  type MalwareScanner,
+  type ScanResult,
+} from "./scanner.server.ts";
 export type ScanClaim = {
   documentId: string;
   storageKey: string;
@@ -20,8 +27,14 @@ export async function runScanWorker(
 ) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100)
     throw Error("Bounded scan batch required");
-  if (process.env["NODE_ENV"] === "production" && scanner.name !== "ClamAV")
-    throw Error("Production requires ClamAV");
+  if (
+    process.env["NODE_ENV"] === "production" &&
+    !(scanner instanceof ClamAvScanner) &&
+    !(scanner instanceof BouncerScanner)
+  )
+    throw Error("Production requires ClamAV or Bouncer");
+  if (scanner instanceof BouncerScanner)
+    return runBouncerWorker(db, storage, scanner, limit, onlyId);
   let claimed = 0,
     completed = 0;
   for (let i = 0; i < limit; i++) {
