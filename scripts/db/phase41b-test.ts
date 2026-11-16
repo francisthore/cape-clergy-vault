@@ -16,7 +16,11 @@ import {
   readDisposableManifest,
 } from "../../database/disposable-phase41b.server.ts";
 const phase42 = process.argv[2] === "--phase42";
-assert.ok(process.argv.length === 2 || (phase42 && process.argv.length === 3), "Unknown test mode");
+const phase43 = process.argv[2] === "--phase43";
+assert.ok(
+  process.argv.length === 2 || ((phase42 || phase43) && process.argv.length === 3),
+  "Unknown test mode",
+);
 const repository = fileURLToPath(new URL("../../", import.meta.url));
 const bin = [
   process.env["CAPE_PG_BIN"],
@@ -127,14 +131,16 @@ try {
     "Verified fresh disposable cluster; the preserved project environment was not modified.",
   );
   // Explicit environment: no inherited live provider key, owner env file or SMTP configuration.
-  const targets = phase42
-    ? [
-        ["database/phase42.test.ts"],
-        ["database/phase421.test.ts"],
-        ["database/phase422.test.ts"],
-        ["node_modules/@playwright/test/cli.js", "test", "--config=playwright.phase42.config.ts"],
-      ]
-    : [["database/phase41b.test.ts"]];
+  const targets = phase43
+    ? [["database/phase43.test.ts"]]
+    : phase42
+      ? [
+          ["database/phase42.test.ts"],
+          ["database/phase421.test.ts"],
+          ["database/phase422.test.ts"],
+          ["node_modules/@playwright/test/cli.js", "test", "--config=playwright.phase42.config.ts"],
+        ]
+      : [["database/phase41b.test.ts"]];
   for (const target of targets) {
     const child = spawn(process.execPath, target, {
       cwd: repository,

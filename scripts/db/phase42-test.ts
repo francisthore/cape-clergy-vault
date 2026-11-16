@@ -65,9 +65,14 @@ try {
   assert.equal(source.split("port: 55432,").length, 2);
   await writeFile(safety, source.replace("port: 55432,", "port: 55433,"));
   // Only the isolated copy permits 55433, with all original role/marker/RLS checks.
-  await run(["node_modules/vite/bin/vite.js", "build"], "build.log");
-  await run(["scripts/db/phase41b-test.ts"], "bouncer-database.log");
-  await run(["scripts/db/phase41b-test.ts", "--phase42"], "integration-browser.log");
+  if (process.argv[2] === "--phase43") {
+    // Phase 4.3 audit probes need only the fresh disposable cluster, not the browser stack.
+    await run(["scripts/db/phase41b-test.ts", "--phase43"], "phase43-security.log");
+  } else {
+    await run(["node_modules/vite/bin/vite.js", "build"], "build.log");
+    await run(["scripts/db/phase41b-test.ts"], "bouncer-database.log");
+    await run(["scripts/db/phase41b-test.ts", "--phase42"], "integration-browser.log");
+  }
 } finally {
   // Interrupted Playwright runs can leave a web-server grandchild. Target only
   // processes inside this exact disposable source tree, before removing it.

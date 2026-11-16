@@ -8,7 +8,22 @@ import { Input } from "@/components/ui/input";
 import { verifyDean } from "@/lib/reviewer.functions";
 
 export const Route = createFileRoute("/_authenticated/verify-reviewer")({
-  head: () => ({ meta: [{ title: "Verify reviewer account — Theological Repository" }, { name: "description", content: "Confirm the Dean's account before review access is granted." }, { property: "og:title", content: "Verify reviewer account — Theological Repository" }, { property: "og:description", content: "Confirm the Dean's account before review access is granted." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  head: () => ({
+    meta: [
+      { title: "Verify reviewer account — Theological Repository" },
+      {
+        name: "description",
+        content: "Confirm the Dean's account before review access is granted.",
+      },
+      { property: "og:title", content: "Verify reviewer account — Theological Repository" },
+      {
+        property: "og:description",
+        content: "Confirm the Dean's account before review access is granted.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: Verify,
 });
 
@@ -19,14 +34,23 @@ function Verify() {
   const [busy, setBusy] = useState(false);
   const verify = useServerFn(verifyDean);
   const navigate = useNavigate();
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? "")); }, []);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
+  }, []);
 
   const send = async () => {
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    setSent(true); toast.success("Code sent to your email");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSent(true);
+    toast.success("Code sent to your email");
   };
   const confirm = async () => {
     setBusy(true);
@@ -36,20 +60,34 @@ function Verify() {
       await verify();
       toast.success("Verified — review access granted");
       navigate({ to: "/review" });
-    } catch (e: any) { toast.error(e.message ?? "Verification failed"); }
+    } catch (e) {
+      toast.error(e instanceof Error && e.message ? e.message : "Verification failed");
+    }
     setBusy(false);
   };
 
   return (
     <main className="mx-auto max-w-md px-6 py-12">
       <h1 className="text-3xl font-semibold text-primary">Verify reviewer account</h1>
-      <p className="mt-3 text-sm text-muted-foreground">The review queue opens only for accounts authorised by the Diocese, after confirming a one-time code sent to <strong>{email}</strong>.</p>
+      <p className="mt-3 text-sm text-muted-foreground">
+        The review queue opens only for accounts authorised by the Diocese, after confirming a
+        one-time code sent to <strong>{email}</strong>.
+      </p>
       {!sent ? (
-        <Button className="mt-6 w-full" disabled={busy || !email} onClick={send}>Email me a code</Button>
+        <Button className="mt-6 w-full" disabled={busy || !email} onClick={send}>
+          Email me a code
+        </Button>
       ) : (
         <div className="mt-6 space-y-3">
-          <Input inputMode="numeric" placeholder="Enter the code from the email" value={code} onChange={(e) => setCode(e.target.value)} />
-          <Button className="w-full" disabled={busy || code.trim().length < 6} onClick={confirm}>Verify</Button>
+          <Input
+            inputMode="numeric"
+            placeholder="Enter the code from the email"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
+          <Button className="w-full" disabled={busy || code.trim().length < 6} onClick={confirm}>
+            Verify
+          </Button>
         </div>
       )}
     </main>

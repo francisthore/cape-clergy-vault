@@ -67,7 +67,8 @@
     "test:dev": "node scripts/dev-all.test.mjs",
     "test:phase421": "node scripts/db/phase42-test.ts",
     "db:administration:operator": "node --env-file=.env.db.local scripts/db/administration-operator.ts",
-    "test:phase422": "node scripts/db/phase42-test.ts"
+    "test:phase422": "node scripts/db/phase42-test.ts",
+    "test:phase43": "node scripts/db/phase42-test.ts --phase43"
   },
   "overrides": {
     "rolldown": "1.2.1"

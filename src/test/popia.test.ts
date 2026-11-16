@@ -1,7 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { registerSchema, fileAllowed } from "@/lib/popia";
 
-const base = { title: "Rev.", full_name: "Thabo Mokoena", parish: "St George's", email: "t@x.org", password: "longpass1" };
+const base = {
+  title: "Rev.",
+  full_name: "Thabo Mokoena",
+  parish: "St George's",
+  email: "t@x.org",
+  password: "longpass1",
+};
 
 describe("POPIA registration", () => {
   it("rejects registration without POPIA acknowledgement", () => {

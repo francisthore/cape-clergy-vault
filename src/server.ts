@@ -81,6 +81,9 @@ export default {
         if (denied) return denied;
       }
       if (
+        path === "/admin" ||
+        path === "/admin/intake" ||
+        path === "/admin/access" ||
         path === "/submissions" ||
         path.startsWith("/submissions/") ||
         path === "/repository" ||
@@ -94,7 +97,7 @@ export default {
       const response = await handler.fetch(request, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
       if (
-        ["/auth", "/account", "/documents"].includes(path) ||
+        ["/auth", "/account", "/documents", "/admin"].includes(path) ||
         path.startsWith("/admin/") ||
         path.startsWith("/submissions") ||
         path.startsWith("/repository") ||
