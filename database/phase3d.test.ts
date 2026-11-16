@@ -1,3 +1,4 @@
+import { registrationNotice } from "../src/lib/auth/registration.ts";
 import { scanTestDocument, cleanTestScanRows } from "./test-scanning.ts";
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes } from "node:crypto";
@@ -485,7 +486,7 @@ test("Phase 3D restricted runtime", async (t) => {
               fullName: "Disposable Sequence",
               parish: "Test parish",
               acknowledged: true,
-              noticeVersion: "repository-v1",
+              noticeVersion: registrationNotice.version,
             }),
           }),
         );

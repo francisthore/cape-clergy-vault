@@ -37,32 +37,44 @@ export function ProfileFields() {
     </>
   );
 }
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 export function PrivacyAcknowledgement() {
   return (
-    <>
-      <section
-        aria-label="Registration privacy notice"
-        className="rounded border bg-muted p-4 text-sm"
-      >
-        <p className="font-semibold">{registrationNotice.label}</p>
-        <p>Version: {registrationNotice.version}</p>
-        <ul className="mt-2 list-disc space-y-2 pl-5">
-          {registrationNotice.points.map((p) => (
-            <li key={p}>{p}</li>
+    <div className="space-y-3 text-sm">
+      <p className="rounded border bg-muted p-3">{registrationNotice.warning}</p>
+      <Dialog>
+        <DialogTrigger asChild>
+          <button type="button" className="text-primary underline underline-offset-4">
+            {registrationNotice.label}
+          </button>
+        </DialogTrigger>
+        <DialogContent className="max-h-[85dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{registrationNotice.label}</DialogTitle>
+            <DialogDescription>{registrationNotice.warning}</DialogDescription>
+          </DialogHeader>
+          {registrationNotice.sections.map((section) => (
+            <section key={section.heading} className="space-y-2 text-sm">
+              <h3 className="font-semibold">{section.heading}</h3>
+              <p>{section.text}</p>
+            </section>
           ))}
-        </ul>
-        <p className="mt-3">
-          This acknowledgement covers repository processing. Private chat consent is separate. Do
-          not enter real personal or confidential information in this local test application.
-        </p>
-      </section>
-      <label className="flex items-start gap-3 text-sm">
-        <input className="mt-1" type="checkbox" name="acknowledged" required />
-        <span>
-          I have read the displayed draft notice and explicitly acknowledge processing for this
-          local registration test.
-        </span>
+          <p className="break-words text-xs text-muted-foreground">
+            Acknowledgement reference: {registrationNotice.version}
+          </p>
+        </DialogContent>
+      </Dialog>
+      <label className="flex items-start gap-3">
+        <input className="mt-1 h-4 w-4 shrink-0" type="checkbox" name="acknowledged" required />
+        <span>I have read and acknowledge the Cape Clergy Vault Privacy Notice (Version 1).</span>
       </label>
-    </>
+    </div>
   );
 }

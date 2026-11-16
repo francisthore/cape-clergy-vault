@@ -1,41 +1,133 @@
-import { Link } from "@tanstack/react-router";
-import crestAsset from "@/assets/logo-diocese-of-cape-town.png.asset.json";
+import { Link, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
+import { useAccount } from "@/lib/auth/account-context";
+import { accountRequest } from "@/lib/auth/client";
+import { Crest } from "./branding/Crest";
 
 export function SiteHeader() {
+  const account = useAccount();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const checking = ["loading", "error"].includes(account.status);
+  const guest = account.status === "signed-out";
+  const linkClass =
+    "block rounded px-3 py-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary";
   return (
     <header className="border-b border-border bg-card/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-        <Link to="/" className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-crest">
-            <img
-              src={crestAsset.url}
-              alt="Coat of arms of the Anglican Diocese of Cape Town"
-              className="h-8 w-auto"
-            />
-          </span>
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <Link to="/" className="flex min-w-0 items-center gap-3" onClick={() => setOpen(false)}>
+          <Crest size="header" />
           <span className="min-w-0 leading-tight">
             <span className="block font-serif text-lg font-semibold">TEFT Repository</span>
-            <span className="block text-xs text-muted-foreground">
+            <span className="block max-w-56 text-xs text-muted-foreground sm:max-w-none">
               Theological Education Formation and Training
             </span>
           </span>
         </Link>
-        <nav className="flex flex-wrap items-center gap-1 text-sm">
-          <a href="/submissions" className="rounded px-3 py-2 hover:bg-accent">
-            My submissions
-          </a>
-          <a href="/repository" className="rounded px-3 py-2 hover:bg-accent">
-            Repository
-          </a>
-          <a href="/account" className="rounded px-3 py-2 hover:bg-accent">
-            My account
-          </a>
-          <a href="/auth?view=login" className="rounded px-3 py-2 hover:bg-accent">
-            Sign in
-          </a>
-          <a href="/auth?view=register" className="rounded px-3 py-2 hover:bg-accent">
-            Register
-          </a>
+        <button
+          type="button"
+          className={`${linkClass} border lg:hidden`}
+          aria-expanded={open}
+          aria-controls="site-navigation"
+          onClick={() => setOpen(!open)}
+        >
+          Menu
+        </button>
+        <nav
+          id="site-navigation"
+          aria-label="Main navigation"
+          className={`${open ? "flex" : "hidden"} w-full flex-col gap-1 text-sm lg:flex lg:w-auto lg:flex-row lg:flex-wrap lg:items-center`}
+          onClick={(event) => {
+            if ((event.target as HTMLElement).closest("a")) setOpen(false);
+          }}
+        >
+          <Link to="/" className={linkClass}>
+            Home
+          </Link>
+          {guest ? (
+            <>
+              <Link
+                to="/auth"
+                search={{ view: "login", token: "", error: "" }}
+                className={linkClass}
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/auth"
+                search={{ view: "register", token: "", error: "" }}
+                className={linkClass}
+              >
+                Register
+              </Link>
+            </>
+          ) : (
+            !checking && (
+              <>
+                {account.canUseRepository && (
+                  <>
+                    <Link to="/submissions" className={linkClass}>
+                      My submissions
+                    </Link>
+                    <Link to="/repository" className={linkClass}>
+                      Repository
+                    </Link>
+                  </>
+                )}
+                {account.canApprove && (
+                  <Link to="/admin/registrations" className={linkClass}>
+                    Manage registrations
+                  </Link>
+                )}
+                {account.canReview && (
+                  <Link to="/reviewer" className={linkClass}>
+                    Reviewer workspace
+                  </Link>
+                )}
+                {account.canManageSettings && (
+                  <Link to="/admin/settings/email" className={linkClass}>
+                    Email settings
+                  </Link>
+                )}
+                <Link to="/account" className={linkClass}>
+                  My account
+                </Link>
+                <button
+                  type="button"
+                  className={`${linkClass} text-left`}
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    setError("");
+                    try {
+                      await accountRequest("sign-out", {});
+                      setOpen(false);
+                      await router.navigate({
+                        to: "/auth",
+                        search: { view: "login", token: "", error: "" },
+                      });
+                    } catch {
+                      setError("Sign-out failed. Please try again.");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  {busy ? "Signing out…" : "Sign out"}
+                </button>
+              </>
+            )
+          )}
+          {checking && (
+            <span className="px-3 py-2">
+              {account.status === "error"
+                ? "Account check unavailable. Refresh to retry."
+                : "Checking account…"}
+            </span>
+          )}
+          {error && <p role="alert">{error}</p>}
         </nav>
       </div>
     </header>

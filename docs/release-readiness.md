@@ -66,3 +66,20 @@ not authorized by this report.
 
 Live delivery, host restore/alert/supervision acceptance and all organizational/human
 approval rows remain open. No existing service was changed and no real emails sent.
+
+## Phase 4.2 follow-up
+
+See [implementation evidence](phase-42-report.md). Proposed notice/contact/retention
+and international-transfer approval, controlled live Resend/Bouncer acceptance,
+real supervision, infrastructure isolation, physical devices and human accessibility
+remain open. The genuine crest is locally served; the supplied original is 250 × 343,
+so a higher-resolution original remains desirable. Google Fonts still needs review
+or self-hosting. No deployment or unrestricted confidential readiness is authorised.
+
+| Check                                                         | Phase 4.2 evidence                                                                     | Remaining gate                                                     |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Capability-aware header and expired sessions                  | Built Chromium checks in Phase 4.2 report                                              | Physical devices and human screen-reader testing                   |
+| Privacy Version 1 and immutable acknowledgement compatibility | Server validation, forward migration and dialog tests                                  | Diocese legal approval/contact and deliberate production cutover   |
+| Verified-registration approver alerts and outcome delivery    | Actual restricted outbox with capture, revocation/rollback/retry tests                 | Supervised worker and separately authorised real inbox acceptance  |
+| Visible PDF picker / exact 20 MiB / quarantine and Bouncer    | Browser upload and zero-request rejection plus existing restricted scanner regressions | Controlled live provider acceptance and external-transfer approval |
+| Local Diocese branding                                        | Original plus reproducible padded PNG derivatives                                      | Higher-resolution original; physical installation checks           |

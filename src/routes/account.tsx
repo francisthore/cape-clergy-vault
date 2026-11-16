@@ -21,7 +21,12 @@ function AccountPage() {
           setCanReview(r.canReview === true);
           setCanManageSettings(r.canManageSettings === true);
         })
-        .catch(() => setStatus("error"));
+        .catch(() => {
+          setStatus("error");
+          setCanApprove(false);
+          setCanReview(false);
+          setCanManageSettings(false);
+        });
     };
     refresh();
     const timer = setInterval(refresh, 30_000);
@@ -52,7 +57,7 @@ function AccountPage() {
     pending:
       "Your registration is awaiting Diocese approval. You will be notified once your account has been approved.",
     approved:
-      "Your account is approved. Create drafts, attach PDFs and submit your work, or browse accepted resources.",
+      "Your account is approved. Prepare submissions, attach PDFs and send your work for theological review, or browse accepted resources.",
     rejected:
       "Your account is not eligible for application access. Contact the Diocese for assistance.",
     suspended: "Your account is unavailable. Contact the Diocese for assistance.",

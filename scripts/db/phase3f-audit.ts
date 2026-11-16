@@ -15,7 +15,7 @@ try {
     ),
   );
   const ledger = await owner.client`select hash from cape_migrations.__drizzle_migrations`;
-  assert.equal(ledger.length, 35);
+  assert.equal(ledger.length, 36);
   assert.deepEqual(new Set(ledger.map((r) => r["hash"])), new Set(hashes));
   const [grants] =
     await owner.client`select has_any_column_privilege('cape_clergy_runtime','app.submissions','UPDATE') as status_write,
@@ -26,7 +26,7 @@ try {
   assert.ok(grants && Object.values(grants).every((v) => v === false));
   const forbidden =
     await owner.client`select p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace
- where n.nspname='app' and p.proname in ('reviewer_operator','reviewer_operator_internal','reviewer_operator_event','invalidate_reviewer_invitation','snapshot_submission')
+ where n.nspname='app' and p.proname in ('reviewer_operator','reviewer_operator_internal','reviewer_operator_event','invalidate_reviewer_invitation','snapshot_submission','notification_eligible','notification_eligible_before_phase42','queue_registration_received','require_notification_worker')
  and has_function_privilege('cape_clergy_runtime',p.oid,'EXECUTE')`;
   assert.equal(forbidden.length, 0);
   const publicFunctions =
@@ -116,6 +116,7 @@ try {
     }
   }
   await scan(".output/public");
+  assert.ok(artifacts > 0, "Build browser artifacts before running this audit");
   console.log(
     `PASS: ${ledger.length} migration hashes, 26 RLS tables, reviewed grants/functions, enabled immutable triggers, no live disposable fixtures, preserved append-only evidence and ${artifacts} public artifacts without configured private credentials.`,
   );

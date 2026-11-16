@@ -11,6 +11,7 @@ import {
 import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { AccountProvider } from "@/lib/auth/account-state";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -86,7 +87,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Institutional repository of the Dean of Theological Studies for clergy documents and ideas.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:image", content: "/app-icon-512.png" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -125,8 +127,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SiteHeader />
-      <Outlet />
+      <AccountProvider>
+        <SiteHeader />
+        <Outlet />
+      </AccountProvider>
       <Toaster richColors />
     </QueryClientProvider>
   );

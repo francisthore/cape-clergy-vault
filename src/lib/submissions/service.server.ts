@@ -75,7 +75,7 @@ export function createSubmissionService(
             await tx`select app.save_draft(${v.id ?? null},${v.version},${v.kind},${v.title},${v.category},${v.abstract},${v.keywords},${v.confidential}) as id`;
           return row!["id"];
         });
-        return json({ id, message: "Draft saved." });
+        return json({ id, message: "Submission saved. You can return later." });
       }
       const v = transitionSchema.parse(input);
       await authorize(request.headers, async (tx) =>
@@ -86,9 +86,9 @@ export function createSubmissionService(
       return json({
         message:
           v.action === "submit"
-            ? "Submitted for review."
+            ? "Sent to TEFT for theological review."
             : v.action === "amend"
-              ? "Amendment draft created."
+              ? "Revision started. Edit your submission, then send it to TEFT again."
               : "Attachment excluded; retained privately for history.",
       });
     } catch (error) {

@@ -83,3 +83,11 @@ Workers execute the reviewed TypeScript/import tree with Node 24.12+ and locked 
 dependencies; a web-only `.output` archive is insufficient for these CLI entries.
 Package the worker source/dependencies as immutable artifacts with no private environments,
 captures or storage. Run from its reviewed release root with only per-worker configuration.
+
+## Phase 4.2 registration alerts
+
+The approval worker now also delivers minimal new-verified-registration alerts to
+currently eligible approvers. It needs no extra scheduler or table privileges.
+See [registration notification operation and diagnosis](registration-notifications.md)
+for zero-recipient evidence, no-backfill behavior, safe capture tests and read-only
+queue diagnostics. Do not drain the configured real queue during automated tests.

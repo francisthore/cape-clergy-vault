@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { SubmissionRow } from "@/lib/submissions/validation";
 import { submissionRequest } from "@/lib/submissions/client";
-import { validatePdfSelection } from "@/lib/documents/validation";
+import { validatePdfSelection, validatePdfContents } from "@/lib/documents/validation";
+import { formatFileSize } from "@/lib/documents/validation";
+import { submissionStatusLabel, submissionHelp, lifecycleLabel } from "@/lib/submissions/wording";
 import { SubmissionForm } from "./SubmissionForm";
 type Detail = {
   submission: SubmissionRow;
@@ -32,34 +34,58 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
     [progress, setProgress] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
-  const selectFile = (file: File | undefined) => {
+  const selectionGeneration = useRef(0);
+  const [checkingFile, setCheckingFile] = useState(false);
+  const selectFile = async (file: File | undefined) => {
     if (xhr.current) return;
+    const current = ++selectionGeneration.current;
     const error = file ? validatePdfSelection(file) : null;
     setFileError(error ?? "");
-    setSelectedFile(error ? null : (file ?? null));
+    setSelectedFile(null);
+    setCheckingFile(false);
     intent.current = null;
+    if (!file || error) return;
+    setCheckingFile(true);
+    try {
+      const contentError = await validatePdfContents(file);
+      if (current !== selectionGeneration.current) return;
+      setFileError(contentError ?? "");
+      setSelectedFile(contentError ? null : file);
+    } catch {
+      if (current === selectionGeneration.current)
+        setFileError("This file could not be read. Please select it again.");
+    } finally {
+      if (current === selectionGeneration.current) setCheckingFile(false);
+    }
   };
   const xhr = useRef<XMLHttpRequest | null>(null),
     intent = useRef<string | null>(null),
     generation = useRef(0);
   const load = useCallback(async () => {
     const g = ++generation.current;
-    setData(null);
     try {
       const v = await submissionRequest(
         `/api/${repository ? "repository" : "submissions"}?id=${encodeURIComponent(id)}`,
       );
       if (g === generation.current) setData(v);
     } catch (e) {
-      if (g === generation.current) setMessage(e instanceof Error ? e.message : "Unavailable");
+      if (g === generation.current) {
+        setData(null);
+        setMessage(e instanceof Error ? e.message : "Unavailable");
+      }
     }
   }, [id, repository]);
   useEffect(() => {
+    setData(null);
+    setSelectedFile(null);
     void load();
     return () => {
       // This is an async generation counter, intentionally invalidated at cleanup.
       // eslint-disable-next-line react-hooks/exhaustive-deps
       generation.current++;
+      // Invalidate pending local file reads on route change/unmount.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      selectionGeneration.current++;
       xhr.current?.abort();
     };
   }, [load]);
@@ -148,6 +174,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
       if (x.status === 201) {
         intent.current = null;
         setSelectedFile(null);
+        m = "Upload complete. Security screening is separate; see the current PDF status above.";
       }
       setMessage(m);
       void load();
@@ -175,7 +202,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
         <>
           <h1 className="text-3xl text-primary">{s.title}</h1>
           <p className="capitalize">
-            {s.status.replace("_", " ")} · {s.kind} · {s.category} · Revision {s.revision}
+            {submissionStatusLabel(s.status)} · {s.kind} · {s.category} · Revision {s.revision}
           </p>
           <p>
             {s.confidential ? "Confidential" : "Non-confidential"} ·{" "}
@@ -183,6 +210,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
               ? `Submitted ${new Date(s.submitted_at).toLocaleString()}`
               : "Not yet submitted"}
           </p>
+          {editable && <p>{submissionHelp}</p>}
           <p className="whitespace-pre-wrap">{s.abstract}</p>
           <p>Keywords: {s.keywords.join(", ") || "None"}</p>
           {editable && (
@@ -195,7 +223,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                   setConfirm(false);
                 }}
               >
-                {editing ? "Close editor" : "Edit draft"}
+                {editing ? "Close editor" : "Edit submission"}
               </Button>
               {editing && (
                 <SubmissionForm
@@ -203,7 +231,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                   submission={s}
                   onSaved={() => {
                     setEditing(false);
-                    setMessage("Draft saved.");
+                    setMessage("Submission saved. You can return later.");
                     void load();
                   }}
                 />
@@ -219,14 +247,16 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
             <ul className="space-y-3 break-words" aria-live="polite">
               {data.documents.map((d) => (
                 <li key={d.id}>
-                  {d.file_name} · {Number(d.byte_size).toLocaleString()} bytes ·{" "}
+                  {d.file_name} · {formatFileSize(Number(d.byte_size))} ·{" "}
                   {d.excluded
                     ? "Excluded from this revision"
-                    : ["quarantined", "scanning", "legacy_unscanned"].includes(d.state)
-                      ? "Security checks pending"
+                    : ["quarantined", "scanning"].includes(d.state)
+                      ? "PDF security check in progress"
                       : ["infected", "scan_failed"].includes(d.state)
                         ? "This document could not pass the required security checks. Please contact the administrator or upload a different PDF."
-                        : d.state}
+                        : d.state === "available" && d.clean
+                          ? "PDF security check passed — available"
+                          : "PDF unavailable"}
                   {d.state === "available" && d.clean && !d.excluded && (
                     <>
                       {" "}
@@ -261,7 +291,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
-                  if (!busy && progress === null && !editing) selectFile(e.dataTransfer.files[0]);
+                  if (!busy && progress === null) selectFile(e.dataTransfer.files[0]);
                 }}
               >
                 <label className="block" htmlFor="pdf">
@@ -273,7 +303,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                   accept=".pdf,application/pdf"
                   aria-describedby="pdf-limit pdf-error"
                   aria-invalid={Boolean(fileError)}
-                  disabled={busy || progress !== null || editing}
+                  disabled={busy || progress !== null}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     selectFile(f);
@@ -284,14 +314,21 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                 <p id="pdf-error" role="alert" aria-atomic="true">
                   {fileError}
                 </p>
-                {selectedFile && <p className="break-all">Selected: {selectedFile.name}</p>}
+                {selectedFile && (
+                  <p className="break-all">
+                    Selected: {selectedFile.name} · {formatFileSize(selectedFile.size)}
+                  </p>
+                )}
+                {editing && (
+                  <p>Save your changes or close the editor before uploading the selected PDF.</p>
+                )}
                 <Button
                   disabled={
                     !selectedFile || Boolean(fileError) || busy || progress !== null || editing
                   }
                   onClick={() => selectedFile && upload(selectedFile)}
                 >
-                  Upload PDF
+                  {checkingFile ? "Checking PDF…" : "Upload PDF"}
                 </Button>
                 {progress !== null && (
                   <>
@@ -318,7 +355,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                 }
                 onClick={() => setConfirm(true)}
               >
-                Submit for review
+                Send to TEFT for review
               </Button>
               {confirm && (
                 <div
@@ -327,7 +364,8 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                   className="space-y-3 rounded border p-4"
                 >
                   <p>
-                    Submit this saved revision? Metadata and attachments will be locked for review.
+                    Send this saved revision to TEFT for theological review? Metadata and
+                    attachments will be locked for review.
                   </p>
                   <Button
                     disabled={busy || progress !== null}
@@ -336,7 +374,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                     Confirm submission
                   </Button>
                   <Button variant="outline" disabled={busy} onClick={() => setConfirm(false)}>
-                    Keep draft
+                    Continue later
                   </Button>
                 </div>
               )}
@@ -344,7 +382,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
           )}
           {!repository && s.status === "returned" && (
             <Button disabled={busy} onClick={() => void action("amend")}>
-              Start an amended draft
+              Revise and resubmit
             </Button>
           )}
           {!repository && (
@@ -353,7 +391,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
               <ul>
                 {data.history.map((h) => (
                   <li key={`${h.version}-${h.event}`}>
-                    {h.event.replaceAll("_", " ")} · Revision {h.revision} ·{" "}
+                    {lifecycleLabel(h.event)} · Revision {h.revision} ·{" "}
                     {new Date(h.created_at).toLocaleString()}
                   </li>
                 ))}

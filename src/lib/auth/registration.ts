@@ -1,12 +1,7 @@
 import { z } from "zod";
-import { POPIA_POINTS } from "../popia.ts";
+import { registrationNotice } from "../privacy/notice.ts";
+export { registrationNotice } from "../privacy/notice.ts";
 
-// Existing project wording, explicitly a local draft; no claim of legal approval.
-export const registrationNotice = {
-  version: "repository-v1",
-  label: "Draft privacy notice — local testing only; legal approval outstanding",
-  points: POPIA_POINTS,
-};
 export const emailSchema = z
   .string()
   .trim()

@@ -73,7 +73,7 @@ export function createDocumentService(
       await auth.withApprovedDatabase(request.headers, async (tx) => {
         await tx`select app.finalize_document(${id},${object.byteSize},${object.sha256})`;
       });
-      return json({ id, message: "Document uploaded. Security checks are pending." }, 201);
+      return json({ id, message: "Upload complete. PDF security check in progress." }, 201);
     } catch (error) {
       // Never remove a finalized quarantined/available object after an uncertain DB commit.
       try {

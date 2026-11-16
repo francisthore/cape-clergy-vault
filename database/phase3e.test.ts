@@ -1,3 +1,4 @@
+import { registrationNotice } from "../src/lib/auth/registration.ts";
 import { connectLocalNotifications } from "./notifications.server.ts";
 import { expireFixtureLimits } from "./test-rate-limits.ts";
 import { scanTestDocument, cleanTestScanRows } from "./test-scanning.ts";
@@ -128,7 +129,7 @@ test(`Phase 3E ${http ? "built Node HTTP" : "restricted runtime"} reviewer workf
           parish: "Test parish",
           phone: "",
           acknowledged: true,
-          noticeVersion: "repository-v1",
+          noticeVersion: registrationNotice.version,
         })
       ).status,
       200,

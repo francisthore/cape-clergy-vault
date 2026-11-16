@@ -102,3 +102,20 @@ evidence for every included attachment. The author page announces pending/error
 statuses, polls pending scans, hides unsafe download links and disables final submit
 until checks pass. Exclusion retains bytes/history. Legacy available documents are
 reconciled explicitly and never assumed scanned. See [scanning](document-scanning.md).
+
+## Phase 4.2 interface wording and PDF selection
+
+The database still calls editable work `draft`; clergy now see “Not yet submitted”,
+“Edit submission”, “Save and continue later”, “Revise and resubmit” and “Send to TEFT
+for review”. Saving never sends work for review. Registration approval, theological
+acceptance and PDF security clearance remain separate states and permissions.
+
+Save the initial metadata before attaching a PDF. The detail screen allows selection
+while editing, with an explicit instruction to save/close the editor before upload.
+File-picker focus refreshes keep the input mounted; failed authorization removes the
+protected view. Selection checks exact 20 MiB, emptiness, extension/MIME and bounded
+local PDF signature/trailer reads. None replaces streamed backend validation or
+Bouncer/ClamAV evidence. Selected filename and readable size, progress and upload
+completion are separate from the current PDF screening status. A quarantined file
+has no download link and cannot be sent for review. Invalid selections can be replaced
+without any upload request. See [Phase 4.2 evidence](phase-42-report.md).

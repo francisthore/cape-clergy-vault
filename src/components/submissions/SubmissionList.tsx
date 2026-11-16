@@ -1,3 +1,4 @@
+import { submissionStatusLabel } from "@/lib/submissions/wording";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,14 +52,14 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
         </a>
         {!repository && (
           <a href="/submissions/new" className="text-primary underline">
-            Create a draft
+            Create a submission
           </a>
         )}
       </nav>
       <p>
         {repository
           ? "Discover accepted, non-confidential resources. Current repository consent and account approval are required."
-          : "Save your work as a draft, attach PDFs, then submit when ready."}
+          : "Save your work and return later. Attach a PDF, wait for its security check, then send to TEFT when ready."}
       </p>
       <form
         className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2"
@@ -108,7 +109,7 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
               <option value="">All statuses</option>
               {["draft", "submitted", "under_review", "accepted", "returned"].map((s) => (
                 <option key={s} value={s}>
-                  {s.replace("_", " ")}
+                  {submissionStatusLabel(s)}
                 </option>
               ))}
             </select>
@@ -128,7 +129,7 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
               No items match.{" "}
               {repository
                 ? "Accepted resources will appear here when available."
-                : "Create a draft to begin, or adjust your filters."}
+                : "Create a submission to begin, or adjust your filters."}
             </p>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">
@@ -146,7 +147,7 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
                     {s.kind} · {s.category}
                   </p>
                   <p className="capitalize">
-                    {s.status.replace("_", " ")} ·{" "}
+                    {submissionStatusLabel(s.status)} ·{" "}
                     {s.confidential ? "Confidential" : "Non-confidential"}
                   </p>
                   <p>
@@ -159,7 +160,7 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
                     className="text-primary underline"
                     href={`/${repository ? "repository" : "submissions"}/${s.id}`}
                   >
-                    {s.status === "draft" && !repository ? "Continue draft" : "View details"}
+                    {s.status === "draft" && !repository ? "Continue submission" : "View details"}
                   </a>
                 </li>
               ))}

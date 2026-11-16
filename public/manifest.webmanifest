@@ -2,8 +2,8 @@
   "id": "/",
   "name": "TEFT \u2014 Theological Education Formation and Training",
   "short_name": "TEFT",
-  "description": "Theological repository and private clergy\u2013TEFT chat for the Anglican Diocese of Cape Town.",
-  "start_url": "/dashboard",
+  "description": "Theological repository for the Anglican Diocese of Cape Town.",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "lang": "en",
@@ -14,13 +14,13 @@
       "src": "/app-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/app-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

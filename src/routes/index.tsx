@@ -1,14 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import crestAsset from "@/assets/logo-diocese-of-cape-town.png.asset.json";
+import { Crest } from "@/components/branding/Crest";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Theological Repository — TEFT, Cape Town" },
-      { name: "description", content: "Clergy of the Anglican Diocese of Cape Town register, acknowledge POPIA, and submit theological documents and ideas to the Dean." },
+      {
+        name: "description",
+        content:
+          "Clergy of the Anglican Diocese of Cape Town register, acknowledge POPIA, and submit theological documents and ideas to the Dean.",
+      },
       { property: "og:title", content: "Theological Repository — Anglican Diocese of Cape Town" },
-      { property: "og:description", content: "A secure place for clergy to submit documents and ideas to the Dean of Theological Studies." },
+      {
+        property: "og:description",
+        content:
+          "A secure place for clergy to submit documents and ideas to the Dean of Theological Studies.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -18,17 +26,20 @@ export const Route = createFileRoute("/")({
 
 const steps = [
   ["Register", "Create your clergy account with your title, parish and contact details."],
-  ["Acknowledge POPIA", "Read and accept how your personal information is processed before any access is granted."],
+  ["Acknowledge POPIA", "Read and acknowledge the privacy notice before any access is granted."],
   ["Submit", "Upload sermons, papers, liturgical resources, or share ideas with the Dean."],
-  ["Review & share", "The Dean reviews each submission; accepted works join the repository for fellow clergy."],
+  [
+    "Review & share",
+    "Assigned TEFT reviewers assess submissions; accepted non-confidential works can join the clergy repository.",
+  ],
 ];
 
 function Index() {
   return (
     <main>
       <section className="mx-auto max-w-4xl px-6 pb-16 pt-16 text-center">
-        <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border border-gold/40 bg-crest shadow-sm">
-          <img src={crestAsset.url} alt="Coat of arms of the Anglican Diocese of Cape Town" className="h-24 w-auto" />
+        <div className="flex justify-center">
+          <Crest size="hero" />
         </div>
         <p className="mt-7 text-sm font-bold uppercase tracking-[0.16em] text-primary md:text-base">
           Theological Education Formation and Training (TEFT)
@@ -37,11 +48,18 @@ function Index() {
           A repository for the theological work of our clergy
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
-          Preserve and share sermons, research, liturgical writing and new ideas across the Anglican Diocese of Cape Town — with care for every contributor's privacy under POPIA.
+          Preserve and share sermons, research, liturgical writing and new ideas across the Anglican
+          Diocese of Cape Town — with care for every contributor's privacy under POPIA.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button asChild size="lg"><Link to="/auth" search={{ view: "register", token: "", error: "" }}>Register as clergy</Link></Button>
-          <Button asChild size="lg" variant="outline"><Link to="/repository">Browse the repository</Link></Button>
+          <Button asChild size="lg">
+            <Link to="/auth" search={{ view: "register", token: "", error: "" }}>
+              Register as clergy
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link to="/repository">Browse the repository</Link>
+          </Button>
         </div>
       </section>
       <section className="border-t border-border bg-card">
@@ -56,7 +74,8 @@ function Index() {
         </div>
       </section>
       <footer className="mx-auto max-w-6xl px-6 py-8 text-xs text-muted-foreground">
-        Personal information is processed in accordance with the Protection of Personal Information Act 4 of 2013.
+        Personal information is processed in accordance with the Protection of Personal Information
+        Act 4 of 2013.
       </footer>
     </main>
   );

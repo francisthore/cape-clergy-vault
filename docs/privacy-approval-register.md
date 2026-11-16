@@ -57,3 +57,14 @@ Current retention preview remains read-only, with no adopted arbitrary durations
 automatic deletion, history purge or backup rotation. Hold investigation/release must
 be approved and recorded before any future disposal design. Updating this register
 requires real decision evidence; an engineering test cannot close an approval row.
+
+## Phase 4.2 notice review attachment
+
+Review the complete proposed Version 1 wording in `src/lib/privacy/notice.ts` and
+the compatibility treatment in [privacy readiness](privacy-retention-readiness.md).
+The acknowledgement reference is `repository-v1-proposed-2026-11-16`. Approve the
+responsible office/contact, lawful bases, provider/transfer arrangements (including
+Bouncer, Resend and Google Fonts), retention/holds and rights workflow before real
+collection. Existing `repository-v1` records are retained exactly as recorded; their
+continued local eligibility does not establish acceptance of this new text. All
+organizational decisions in the register remain pending.

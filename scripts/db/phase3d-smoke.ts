@@ -1,3 +1,4 @@
+import { registrationNotice } from "../../src/lib/auth/registration.ts";
 import { scanTestDocument, cleanTestScanRows } from "../../database/test-scanning.ts";
 import { LocalPrivateStorageProvider } from "../../src/lib/documents/storage.server.ts";
 import assert from "node:assert/strict";
@@ -130,7 +131,7 @@ try {
         parish: "Test parish",
         phone: "",
         acknowledged: true,
-        noticeVersion: "repository-v1",
+        noticeVersion: registrationNotice.version,
       })
     ).status,
     200,

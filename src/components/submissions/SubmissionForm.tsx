@@ -96,8 +96,8 @@ export function SubmissionForm({
         />
       </label>
       <p id="description-help">
-        You can save an unfinished draft. Final submission requires at least 20 characters of
-        description; documents also require an available PDF.
+        You can save unfinished work and return later. Sending to TEFT requires at least 20
+        characters of description; documents also require an available PDF.
       </p>
       <label className="block" htmlFor="keywords">
         Keywords (comma separated, up to 20)
@@ -117,7 +117,7 @@ export function SubmissionForm({
         />
         Confidential — restrict this item to you and authorized reviewers
       </label>
-      <Button disabled={busy}>{busy ? "Saving…" : "Save draft"}</Button>
+      <Button disabled={busy}>{busy ? "Saving…" : "Save and continue later"}</Button>
       {message && <p role="alert">{message}</p>}
     </form>
   );

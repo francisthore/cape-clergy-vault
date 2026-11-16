@@ -15,6 +15,8 @@ import {
   disposablePurpose,
   readDisposableManifest,
 } from "../../database/disposable-phase41b.server.ts";
+const phase42 = process.argv[2] === "--phase42";
+assert.ok(process.argv.length === 2 || (phase42 && process.argv.length === 3), "Unknown test mode");
 const repository = fileURLToPath(new URL("../../", import.meta.url));
 const bin = [
   process.env["CAPE_PG_BIN"],
@@ -121,33 +123,43 @@ try {
   } finally {
     await owner.close();
   }
-  console.log("Verified fresh disposable Phase 4.1B cluster; preserved cluster remains stopped.");
+  console.log(
+    "Verified fresh disposable cluster; the preserved project environment was not modified.",
+  );
   // Explicit environment: no inherited live provider key, owner env file or SMTP configuration.
-  const child = spawn(process.execPath, ["database/phase41b.test.ts"], {
-    cwd: repository,
-    stdio: "inherit",
-    env: {
-      PATH: process.env["PATH"],
-      NODE_ENV: "test",
-      CAPE_PHASE41B_TEST_ROOT: root,
-      CAPE_DATABASE_URL: url("cape_clergy_dev"),
-      CAPE_RUNTIME_DATABASE_URL: url("cape_clergy_runtime"),
-      CAPE_SCANNER_DATABASE_URL: url("cape_clergy_scanner"),
-      CAPE_NOTIFICATION_DATABASE_URL: url("cape_clergy_notifications"),
-    },
-  });
-  const stop = () => child.kill("SIGTERM");
-  process.once("SIGTERM", stop);
-  process.once("SIGINT", stop);
-  try {
-    const code = await new Promise<number>((resolve, reject) => {
-      child.once("error", reject);
-      child.once("exit", (code) => resolve(code ?? 1));
+  const targets = phase42
+    ? [
+        ["database/phase42.test.ts"],
+        ["node_modules/@playwright/test/cli.js", "test", "--config=playwright.phase42.config.ts"],
+      ]
+    : [["database/phase41b.test.ts"]];
+  for (const target of targets) {
+    const child = spawn(process.execPath, target, {
+      cwd: repository,
+      stdio: "inherit",
+      env: {
+        PATH: process.env["PATH"],
+        NODE_ENV: "test",
+        CAPE_PHASE41B_TEST_ROOT: root,
+        CAPE_DATABASE_URL: url("cape_clergy_dev"),
+        CAPE_RUNTIME_DATABASE_URL: url("cape_clergy_runtime"),
+        CAPE_SCANNER_DATABASE_URL: url("cape_clergy_scanner"),
+        CAPE_NOTIFICATION_DATABASE_URL: url("cape_clergy_notifications"),
+      },
     });
-    assert.equal(code, 0, "Isolated Phase 4.1B tests must pass");
-  } finally {
-    process.removeListener("SIGTERM", stop);
-    process.removeListener("SIGINT", stop);
+    const stop = () => child.kill("SIGTERM");
+    process.once("SIGTERM", stop);
+    process.once("SIGINT", stop);
+    try {
+      const code = await new Promise<number>((resolve, reject) => {
+        child.once("error", reject);
+        child.once("exit", (code) => resolve(code ?? 1));
+      });
+      assert.equal(code, 0, "Isolated database/browser checks must pass");
+    } finally {
+      process.removeListener("SIGTERM", stop);
+      process.removeListener("SIGINT", stop);
+    }
   }
 } finally {
   // Before whole-environment disposal verify the exact fresh tree and live server identity.

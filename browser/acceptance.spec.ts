@@ -151,7 +151,7 @@ test("quarantine, exact revision review, author feedback and repository download
 }) => {
   await f.login(page, "author", password, true);
   await page.goto("/submissions/new");
-  await expect(page.getByRole("button", { name: "Save draft" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save and continue later" })).toBeVisible();
   await assess(page);
   const title = "Disposable browser theological resource";
   await page.getByLabel("Title", { exact: true }).fill(title);
@@ -159,31 +159,35 @@ test("quarantine, exact revision review, author feedback and repository download
     .getByLabel("Abstract or description")
     .fill("A meaningful theological description for disposable browser acceptance testing.");
   await page.getByLabel("Keywords", { exact: false }).fill("browser, phase3f");
-  await page.getByRole("button", { name: "Save draft" }).click();
+  await page.getByRole("button", { name: "Save and continue later" }).click();
   await page.waitForURL(/\/submissions\/[0-9a-f-]+$/);
   const id = page.url().split("/").at(-1)!;
-  await page.getByRole("button", { name: "Edit draft" }).click();
+  await page.getByRole("button", { name: "Edit submission" }).click();
   await page
     .getByLabel("Abstract or description")
     .fill("An edited theological description with supporting sources for disposable testing.");
-  await page.getByRole("button", { name: "Save draft" }).click();
-  await expect(page.getByRole("button", { name: "Edit draft" })).toBeVisible();
+  await page.getByRole("button", { name: "Save and continue later" }).click();
+  await expect(page.getByRole("button", { name: "Edit submission" })).toBeVisible();
   await page.getByLabel("Attach a PDF", { exact: false }).setInputFiles({
     name: "disposable.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.7\nDisposable acceptance PDF\n%%EOF\n"),
   });
   await page.getByRole("button", { name: "Upload PDF", exact: true }).click();
-  await expect(page.getByText("Security checks pending", { exact: false })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Submit for review", exact: true })).toBeDisabled();
+  await expect(page.getByText("PDF security check in progress", { exact: false })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Send to TEFT for review", exact: true }),
+  ).toBeDisabled();
   await assess(page);
   const [d] = await f.owner.client`select id from app.documents where submission_id=${id}`;
   await f.scan(String(d!["id"]));
   await expect(page.getByRole("link", { name: "Download PDF", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Submit for review", exact: true }).click();
+  await page.getByRole("button", { name: "Send to TEFT for review", exact: true }).click();
   await page.getByRole("button", { name: "Confirm submission", exact: true }).click();
-  await expect(page.getByText("Submitted for review.", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Edit draft" })).not.toBeVisible();
+  await expect(
+    page.getByText("Sent to TEFT for theological review.", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit submission" })).not.toBeVisible();
   await page.goto("/submissions");
   await expect(page.getByRole("link", { name: title, exact: true })).toBeVisible();
   await assess(page);
@@ -229,10 +233,12 @@ test("quarantine, exact revision review, author feedback and repository download
   ).toHaveCount(0);
   await assess(page);
   await page.getByRole("button", { name: "Start an amended draft" }).click();
-  await expect(page.getByRole("button", { name: "Edit draft" })).toBeVisible();
-  await page.getByRole("button", { name: "Submit for review", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Edit submission" })).toBeVisible();
+  await page.getByRole("button", { name: "Send to TEFT for review", exact: true }).click();
   await page.getByRole("button", { name: "Confirm submission", exact: true }).click();
-  await expect(page.getByText("Submitted for review.", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Sent to TEFT for theological review.", { exact: true }),
+  ).toBeVisible();
   await f.assign(id);
   await page.context().clearCookies();
   await f.login(page, "reviewer", password, true);

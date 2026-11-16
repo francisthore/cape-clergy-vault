@@ -1,4 +1,5 @@
 export type EmailKind =
+  | "registration_pending_alert"
   | "reviewer_invitation"
   | "review_assigned"
   | "submission_accepted"
@@ -12,6 +13,11 @@ export type EmailKind =
   | "suspended"
   | "reactivated";
 const content: Record<EmailKind, [string, string, string]> = {
+  registration_pending_alert: [
+    "New clergy registration awaiting review",
+    "A verified clergy registration is awaiting review. Sign in to Manage registrations to check current applications. The dashboard is the source of truth; an application may already have been processed.",
+    "Manage registrations",
+  ],
   reviewer_invitation: [
     "Reviewer invitation",
     "You have been invited to undertake assigned theological reviews. Sign in with your invited account, then open this one-time link and explicitly accept. It expires one hour after issue. Treat this link as private. Clergy approval and reviewer authorization are separate.",

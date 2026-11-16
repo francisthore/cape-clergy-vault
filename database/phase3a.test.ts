@@ -1,3 +1,4 @@
+import { registrationNotice } from "../src/lib/auth/registration.ts";
 import assert from "node:assert/strict";
 import { randomBytes, randomUUID, createHash, createHmac } from "node:crypto";
 import { test } from "node:test";
@@ -20,7 +21,7 @@ const profile = {
   parish: "Local test ministry",
   phone: "",
   acknowledged: true,
-  noticeVersion: "repository-v1",
+  noticeVersion: registrationNotice.version,
 };
 
 test("Phase 3A HTTP auth, email and negative authorization using restricted PostgreSQL", async (t) => {

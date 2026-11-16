@@ -19,7 +19,7 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
   await page
     .getByLabel("Abstract or description")
     .fill("A meaningful description for disposable PDF selection validation.");
-  await page.getByRole("button", { name: "Save draft" }).click();
+  await page.getByRole("button", { name: "Save and continue later" }).click();
   await page.waitForURL(/\/submissions\/[0-9a-f-]+$/);
   const id = page.url().split("/").at(-1)!;
   const file = page.getByLabel("Attach a PDF", { exact: false });
@@ -44,11 +44,14 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
     await expect(file).toHaveAttribute("aria-describedby", "pdf-limit pdf-error");
     await expect(upload).toBeDisabled();
   }
+  const exact = Buffer.alloc(MAX_PDF_BYTES);
+  exact.write("%PDF-1.4\n");
+  exact.write("\n%%EOF\n", exact.length - 7);
   // Exercise the same input used by native mobile selection and replacement after rejection.
   await file.setInputFiles({
     name: "exact.pdf",
     mimeType: "application/pdf",
-    buffer: Buffer.alloc(MAX_PDF_BYTES),
+    buffer: exact,
   });
   await expect(upload).toBeEnabled();
   await expect(page.getByRole("alert")).toBeEmpty();
@@ -86,7 +89,7 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
     button.click();
     button.click();
   });
-  await expect(page.getByText("Security checks pending", { exact: false })).toBeVisible();
+  await expect(page.getByText("PDF security check in progress", { exact: false })).toBeVisible();
   expect(requests).toBe(1);
   expect(
     (

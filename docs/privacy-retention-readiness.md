@@ -26,29 +26,36 @@ migration or confidential-use authorization is implied.
 | backups/derived copies       | DB auth/metadata/audits/settings/outbox plus paired private volume and separately protected secrets      | disaster recovery; encrypted restricted backups and isolated restore                                         | backup expiry, restored holds/deletion handling, provider copies and RPO/RTO pending               |
 | legacy deferred chat/offline | isolated historical chat/mute rows and user-scoped IndexedDB/outbox                                      | remains outside active migration; no private-response service-worker cache                                   | separate authorization and privacy work; do not activate under Phase 3F                            |
 
-Existing page chrome also requests Google Fonts and a configured crest asset host.
-Those services can receive browser network metadata even though active private pages
-set no-referrer. Review/self-host these assets and their provider/notice implications
-before confidential launch; Phase 3F preserves the existing design/attribution.
+Current page chrome requests Google Fonts, which can receive browser network metadata.
+The owner-supplied Diocese crest is now served locally. Review/self-host the fonts
+before confidential launch; the proposed notice identifies this remaining processor.
 
 ## Consent and notice versioning
 
-Registration displays the existing clearly labelled draft repository notice and
-requires an explicit acknowledgement. Versioned append-only consent events record
-acceptance/withdrawal. Live authorization uses the latest event ordered by timestamp
-and ID and the current repository notice version (`repository-v1`); withdrawn or
-obsolete consent denies content access. Pending/approved identities can acknowledge
-the current draft under existing onboarding rules. Private-chat consent remains
-separate and is not enabled by this phase. Consent does not substitute for verified
-identity, approval, capabilities, revision assignment or scan safety.
+Phase 4.2 displays proposed Privacy Notice (Version 1) in an accessible dialog.
+`src/lib/privacy/notice.ts` is the single authoritative content/version source. Its
+identifier is `repository-v1-proposed-2026-11-16`; the server requires both that exact
+identifier and explicit acknowledgement for new registration/profile completion.
+The interface prominently retains the synthetic-data-only pre-launch warning.
+This is proposed wording, without Diocese or legal approval.
 
-Before launch, Diocese/legal owners must approve processing purposes, notice text,
-controller/responsible-party contact details, recipients/operators, subject-rights
-channels and notice version/cutover procedure. Adopt approved wording/version through
-a reviewed forward change with deliberate re-consent behavior; do not relabel existing
-acceptance as acceptance of text never shown. Password/session security and operational
-processing grounds also need legal review; this technical consent gate does not decide
-all lawful-processing questions.
+Forward migration 0035 preserves every historical `repository-v1` acknowledgement
+unchanged. Both that legacy identifier and the new proposed identifier remain eligible
+for this local workflow; the latest event still controls withdrawal. This compatibility
+is not a claim that earlier registrants saw or agreed to the revised notice. New
+acknowledgements record the new identifier; none is retroactively inserted. The
+reviewer assignment consent gate recognises the same explicit versions. Private-chat
+versions and gates are unchanged and chat remains outside the active workflow.
+
+A production policy must be separately approved with a deliberate cutover/re-consent
+procedure. Responsible-party identity, contact details (currently an explicit placeholder),
+lawful bases, retention/holds, rights handling, providers and cross-border transfers
+remain for the Diocese Information Officer/legal/records offices. The checkbox is
+acknowledgement, not blanket consent or approval of legal wording. It cannot replace
+verified identity, clergy approval, required capabilities, revision assignment or
+scan evidence. No unrestricted deletion promise or active private-chat claim remains
+in the current notice. The old `src/lib/popia.ts` notice is retained only in isolated
+historical interfaces, not imported by active registration.
 
 ## Typed policy and read-only preview
 

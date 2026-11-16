@@ -29,7 +29,7 @@ export async function deliverNotifications(
         await connection.client`select app.prepare_notification(${queue},${id},${lease},${sender.from},${sender.replyTo ?? ""}) as data`;
       const payload = prepared?.["data"];
       if (!payload) continue;
-      let url = `${origin}/account`;
+      let url = `${origin}/${kind === "registration_pending_alert" ? "admin/registrations" : "account"}`;
       if (queue === "reviewer") {
         if (kind === "reviewer_invitation") {
           const proof = openInvitationProof(

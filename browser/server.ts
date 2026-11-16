@@ -12,7 +12,7 @@ await writeFile(
 // Construct the server environment explicitly. Operator/scanner credentials never enter web runtime.
 const child = spawn(process.execPath, ["--import", guard, ".output/server/index.mjs"], {
   cwd: root,
-  stdio: ["ignore", "ignore", "ignore"],
+  stdio: ["ignore", "ignore", "inherit"],
   env: {
     PATH: process.env["PATH"],
     HOME: process.env["HOME"],

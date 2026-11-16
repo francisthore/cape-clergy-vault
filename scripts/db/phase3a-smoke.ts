@@ -1,3 +1,4 @@
+import { registrationNotice } from "../../src/lib/auth/registration.ts";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -63,7 +64,7 @@ try {
     parish: "Local test",
     phone: "",
     acknowledged: true,
-    noticeVersion: "repository-v1",
+    noticeVersion: registrationNotice.version,
     email: address,
     password,
     confirmPassword: password,

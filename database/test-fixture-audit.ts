@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { Sql, TransactionSql } from "postgres";
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-export const fixtureIdentityPattern = `^(phase3[a-f]|phase4|p3e-boundary|p3f-scan|p3f-notice|p41b|browser-p3f|smoke3[a-d]|smoke3b-target)-${uuid}(-[a-z0-9]+)*$`;
+export const fixtureIdentityPattern = `^(phase3[a-f]|phase4|p3e-boundary|p3f-scan|p3f-notice|p41b|p42|p42-browser|browser-p3f|smoke3[a-d]|smoke3b-target)-${uuid}(-[a-z0-9]+)*$`;
 const fixtureEmailPattern = fixtureIdentityPattern.slice(0, -1) + "@example\\.invalid$";
 
 export const appendOnlyTables = [
