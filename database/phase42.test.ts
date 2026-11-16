@@ -175,7 +175,7 @@ test("Phase 4.2 disposable registration, consent, authorization and durable mail
         assert.equal(await deliverApprovalNotifications(worker, email, origin, 1, alertId), 1);
         const mail = provider.messages[count]!;
         assert.equal(mail.to, approver + "@example.invalid");
-        assert.equal(mail.subject, "New clergy registration awaiting review — Cape Clergy Vault");
+        assert.equal(mail.subject, "A clergy registration is awaiting review");
         assert.ok(mail.text.includes(origin + "/admin/registrations"));
         assert.ok(!mail.text.includes(candidate));
         assert.equal(await deliverApprovalNotifications(worker, email, origin, 1, alertId), 0);
@@ -272,7 +272,7 @@ test("Phase 4.2 disposable registration, consent, authorization and durable mail
         assert.equal(mail.key, `approval:${notice}`);
         assert.equal(mail.from, failed!["sender_from"]);
         assert.ok(!mail.text.includes("Private reason"));
-        assert.equal(mail.subject, "Registration update — Cape Clergy Vault");
+        assert.equal(mail.subject, "An update on your clergy registration");
       },
     );
     await t.test(

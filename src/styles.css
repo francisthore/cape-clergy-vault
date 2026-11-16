@@ -26,6 +26,10 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-gold: var(--gold);
+  --color-gold-accent: var(--gold-accent);
+  --color-crest-red: var(--crest-red);
+  --color-success: var(--status-ready);
+  --color-warning: var(--status-waiting);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
@@ -40,31 +44,38 @@
   --space-page: clamp(1rem, 4vw, 2.5rem);
   --control-height: 2.75rem;
   --content-width: 72rem;
+  /*
+   * Diocese palette, taken from the crest in public/dct-crest-source.png.
+   * Values are starting references, not certified brand colours. Each text pairing
+   * is checked against WCAG AA; see docs/communications-branding-privacy-report.md.
+   */
   --surface-raised: #fffefa;
-  --status-ready: #226044;
-  --status-waiting: #68522b;
-  --status-failed: #913d38;
-  --background: oklch(0.975 0.012 85);
-  --foreground: oklch(0.22 0.03 20);
-  --card: oklch(0.99 0.008 85);
-  --card-foreground: oklch(0.22 0.03 20);
-  --popover: oklch(0.99 0.008 85);
-  --popover-foreground: oklch(0.22 0.03 20);
-  --primary: oklch(0.36 0.12 20);
-  --primary-foreground: oklch(0.97 0.015 85);
-  --secondary: oklch(0.93 0.02 85);
-  --secondary-foreground: oklch(0.3 0.06 20);
-  --muted: oklch(0.94 0.015 85);
-  --muted-foreground: oklch(0.48 0.03 30);
-  --accent: oklch(0.92 0.04 85);
-  --accent-foreground: oklch(0.3 0.08 20);
-  --gold: oklch(0.48 0.08 80);
-  --destructive: oklch(0.55 0.22 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.87 0.025 80);
-  --input: oklch(0.87 0.025 80);
-  --ring: oklch(0.36 0.12 20);
-  --crest: oklch(1 0 0);
+  --status-ready: #1f6b45; /* success: 6.1:1 on ivory */
+  --status-waiting: #7a5210; /* warning: 6.5:1 on ivory */
+  --status-failed: #a3282e; /* error: 6.8:1 on ivory, distinct from crest red */
+  --background: #faf8f2; /* warm ivory page */
+  --foreground: #242632; /* dark text: 14.1:1 on ivory */
+  --card: #fffefb;
+  --card-foreground: #242632;
+  --popover: #fffefb;
+  --popover-foreground: #242632;
+  --primary: #263a91; /* crest blue: links, primary buttons, active navigation */
+  --primary-foreground: #ffffff; /* 10.0:1 */
+  --secondary: #efebdf; /* warm neutral surface */
+  --secondary-foreground: #242632;
+  --muted: #f1ede3;
+  --muted-foreground: #5c5a66; /* 5.8:1 on muted, 6.4:1 on ivory */
+  --accent: #e7ebf7; /* pale blue tint for selection and hover */
+  --accent-foreground: #1f2f78;
+  --gold: #7a6220; /* antique gold for text: 5.5:1 on ivory */
+  --gold-accent: #a4862b; /* crest gold: decorative rules and separators only */
+  --crest-red: #832d32; /* institutional emphasis, e.g. eyebrows: 8.3:1 on ivory */
+  --destructive: #a3282e;
+  --destructive-foreground: #ffffff;
+  --border: #ddd6c5; /* decorative borders only */
+  --input: #8a8476; /* form control boundaries: 3.5:1 on ivory (WCAG 1.4.11) */
+  --ring: #263a91; /* focus indicator: 9.4:1 on ivory */
+  --crest: #ffffff;
 }
 
 @layer base {
@@ -161,7 +172,7 @@
     justify-content: space-between;
     gap: 1.25rem;
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--gold-accent);
   }
   .page-heading h1 {
     color: var(--primary);
@@ -169,7 +180,7 @@
   }
   .eyebrow {
     margin-bottom: 0.6rem;
-    color: var(--muted-foreground);
+    color: var(--crest-red);
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.09em;
