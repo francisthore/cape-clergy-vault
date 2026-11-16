@@ -12,6 +12,7 @@ export async function deliverNotifications(
   secret: string,
   limit = 20,
   onlyId: string | null = null,
+  onFailure: () => void = () => {},
 ) {
   let delivered = 0;
   if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw Error("Invalid batch size");
@@ -60,6 +61,7 @@ export async function deliverNotifications(
         await connection.client`select app.finish_notification(${queue},${id},${lease},true) as finished`;
       if (finished?.["finished"]) delivered++;
     } catch {
+      onFailure();
       // Only safe categories cross the DB boundary; never provider payloads/proof.
       await connection.client`select app.finish_notification(${queue},${id},${lease},false)`;
     }

@@ -59,7 +59,7 @@ export function createReviewService(auth: ReturnType<typeof createAuthService>, 
                 await tx`select created_at as assigned_at from app.reviewer_assignments where submission_id=${q.id} and reviewer_id=app.request_user_id() and status='active' and revision=${s["revision"]}`;
               const [author] = await tx`select app.reviewer_author(${q.id}) as author`;
               const documents =
-                await tx`select id,file_name,byte_size::text from app.documents where submission_id=${q.id} and state='available' and not excluded order by created_at,id limit 100`;
+                await tx`select id,file_name,byte_size::text,state,excluded,app.document_is_clean(id) as clean from app.documents where submission_id=${q.id} and state='available' and not excluded order by created_at,id limit 100`;
               const history =
                 await tx`select id,outcome,notes,author_feedback,revision,created_at from app.review_decisions where submission_id=${q.id} order by created_at desc,id desc limit 100`;
               return {

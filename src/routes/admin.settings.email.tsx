@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/workspace";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -78,8 +79,12 @@ function EmailSettingsPage() {
     }
   }
   return (
-    <main className="mx-auto max-w-2xl space-y-6 px-6 py-12">
-      <h1 className="text-3xl text-primary">Application email settings</h1>
+    <main className="workspace-shell !max-w-3xl">
+      <PageHeader
+        eyebrow="Application settings"
+        title="Application email settings"
+        description="Manage sender details and notification delivery for the Diocese."
+      />
       <a href="/account" className="text-primary underline">
         Account
       </a>
@@ -105,7 +110,7 @@ function EmailSettingsPage() {
               .join(", ") || "Awaiting operator verification"}
           </p>
           <form
-            className="space-y-4 rounded-lg border bg-card p-5"
+            className="workspace-section space-y-5"
             onSubmit={(e) => {
               e.preventDefault();
               void send();

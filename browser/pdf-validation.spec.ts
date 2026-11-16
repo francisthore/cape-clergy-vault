@@ -19,7 +19,7 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
   await page
     .getByLabel("Abstract or description")
     .fill("A meaningful description for disposable PDF selection validation.");
-  await page.getByRole("button", { name: "Save and continue later" }).click();
+  await page.getByRole("button", { name: "Save resource details" }).click();
   await page.waitForURL(/\/submissions\/[0-9a-f-]+$/);
   const id = page.url().split("/").at(-1)!;
   const file = page.getByLabel("Attach a PDF", { exact: false });
@@ -29,10 +29,8 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
     if (request.method() === "POST" && new URL(request.url()).pathname === "/api/documents")
       requests++;
   });
-  await expect(upload).toBeDisabled();
-  await expect(
-    page.getByText("Maximum 20 MiB (20,971,520 bytes).", { exact: false }),
-  ).toBeVisible();
+  await expect(upload).toHaveCount(0);
+  await expect(page.getByText("Maximum 20 MiB.", { exact: false })).toBeVisible();
   for (const [name, size, mime, message] of [
     ["oversize.pdf", MAX_PDF_BYTES + 1, "application/pdf", "exceeds the 20 MiB"],
     ["empty.pdf", 0, "application/pdf", "empty"],
@@ -42,7 +40,7 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
     await expect(page.getByRole("alert")).toContainText(message);
     await expect(file).toHaveAttribute("aria-invalid", "true");
     await expect(file).toHaveAttribute("aria-describedby", "pdf-limit pdf-error");
-    await expect(upload).toBeDisabled();
+    await expect(upload).toHaveCount(0);
   }
   const exact = Buffer.alloc(MAX_PDF_BYTES);
   exact.write("%PDF-1.4\n");
@@ -60,10 +58,10 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
     dt.items.add(new File([new Uint8Array(max + 1)], "dropped.pdf", { type: "application/pdf" }));
     return dt;
   }, MAX_PDF_BYTES);
-  await file.locator("..").dispatchEvent("drop", { dataTransfer: transfer });
+  await page.locator(".upload-area").dispatchEvent("drop", { dataTransfer: transfer });
   await transfer.dispose();
   await expect(page.getByRole("alert")).toContainText("exceeds the 20 MiB");
-  await expect(upload).toBeDisabled();
+  await expect(upload).toHaveCount(0);
   // A full browser event cycle plus a database query proves rejection creates no upload or reservation.
   await page.evaluate(
     () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
@@ -89,7 +87,7 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
     button.click();
     button.click();
   });
-  await expect(page.getByText("PDF security check in progress", { exact: false })).toBeVisible();
+  await expect(page.getByText("Awaiting verification", { exact: false })).toBeVisible();
   expect(requests).toBe(1);
   expect(
     (

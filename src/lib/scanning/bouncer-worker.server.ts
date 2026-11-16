@@ -46,6 +46,7 @@ export async function runBouncerWorker(
   scanner: BouncerScanner,
   limit: number,
   onlyId: string | null,
+  onFailure: () => void = () => {},
 ) {
   let claimed = 0,
     completed = 0;
@@ -113,6 +114,7 @@ export async function runBouncerWorker(
                 ? "integrity_mismatch"
                 : "unavailable";
     }
+    if (!["submitted", "pending", "scanning", "clean", "malicious"].includes(result)) onFailure();
     // Never retry an unknown database commit in-process. The durable lease/ID resolves recovery.
     const [done] =
       await db`select app.finish_bouncer_scan(${c.documentId},${c.lease},${c.externalScanId},${result},${localHash},${reportedHash},${reportedSize},${polled}) as ok`;

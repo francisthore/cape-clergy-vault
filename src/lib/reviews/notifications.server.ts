@@ -8,6 +8,16 @@ export function deliverReviewerNotifications(
   secret: string,
   limit = 20,
   onlyId: string | null = null,
+  onFailure: () => void = () => {},
 ) {
-  return deliverNotifications(connection, email, origin, "reviewer", secret, limit, onlyId);
+  return deliverNotifications(
+    connection,
+    email,
+    origin,
+    "reviewer",
+    secret,
+    limit,
+    onlyId,
+    onFailure,
+  );
 }

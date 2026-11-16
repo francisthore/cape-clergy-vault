@@ -58,7 +58,7 @@ test("visitor, genuine local crest assets, privacy dialog keyboard access and re
   await expect(dialog).toContainText("Proposed for Diocese approval");
   for (let i = 0; i < 4; i++) {
     await page.keyboard.press("Tab");
-    expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+    expect(await dialog.evaluate((el) => el.contains(window.document.activeElement))).toBe(true);
   }
   expect(await dialog.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
   await assess(page);
@@ -138,6 +138,18 @@ test("capabilities combine without duplicates, refresh fails closed, expiry and 
   ])
     await expect(nav.getByRole("link", { name, exact: true })).toHaveCount(1);
   await assess(page);
+  for (const [path, heading] of [
+    ["/submissions", "My submissions"],
+    ["/repository", "Clergy repository"],
+    ["/reviewer", "Theological review"],
+    ["/admin/settings/email", "Application email settings"],
+  ]) {
+    await page.goto(path!);
+    await expect(page.getByRole("heading", { name: heading!, exact: true })).toBeVisible();
+    await assess(page);
+  }
+  await page.goto("/account");
+  nav = await menu(page);
   await page.route("**/api/auth/account", (route) =>
     route.fulfill({
       status: 503,
@@ -183,7 +195,7 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
   await page
     .getByLabel("Abstract or description", { exact: true })
     .fill("Synthetic meaningful description for a harmless PDF browser acceptance journey.");
-  await page.getByRole("button", { name: "Save and continue later", exact: true }).click();
+  await page.getByRole("button", { name: "Save resource details", exact: true }).click();
   await page.waitForURL(/\/submissions\/[0-9a-f-]+$/);
   const submission = page.url().split("/").at(-1)!;
   const input = page.getByLabel("Attach a PDF", { exact: false });
@@ -200,7 +212,7 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
   ] as const) {
     await input.setInputFiles({ name, buffer, mimeType: mime });
     await expect(page.locator("#pdf-error")).toContainText(expected);
-    await expect(upload).toBeDisabled();
+    await expect(upload).toHaveCount(0);
   }
   expect(requests).toBe(0);
   const dropped = await page.evaluateHandle((max) => {
@@ -208,19 +220,31 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
     dt.items.add(new File([new Uint8Array(max + 1)], "large.pdf", { type: "application/pdf" }));
     return dt;
   }, MAX_PDF_BYTES);
-  await input.locator("..").dispatchEvent("drop", { dataTransfer: dropped });
+  await page.locator(".upload-area").dispatchEvent("drop", { dataTransfer: dropped });
   await dropped.dispose();
   await expect(page.locator("#pdf-error")).toContainText("exceeds");
+  expect(requests).toBe(0);
+  const exactLimitPdf = Buffer.alloc(MAX_PDF_BYTES);
+  exactLimitPdf.write("%PDF-1.4\n");
+  exactLimitPdf.write("\n%%EOF\n", exactLimitPdf.length - 7);
+  await input.setInputFiles({
+    name: "exact-limit.pdf",
+    mimeType: "application/pdf",
+    buffer: exactLimitPdf,
+  });
+  await expect(upload).toBeEnabled();
   expect(requests).toBe(0);
   await page.getByRole("button", { name: "Edit submission", exact: true }).click();
   await expect(input).toBeEnabled();
   const picker = page.waitForEvent("filechooser");
-  await input.click();
+  const choosePdf = page.getByRole("button", { name: "Choose PDF", exact: true });
+  if (test.info().project.use.hasTouch) await choosePdf.tap();
+  else await choosePdf.click();
   const chooser = await picker;
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   const pdf = Buffer.from("%PDF-1.4\nSynthetic harmless Phase42 browser PDF\n%%EOF\n");
   await chooser.setFiles({ name: "synthetic.pdf", mimeType: "application/pdf", buffer: pdf });
-  await expect(page.getByText("Selected: synthetic.pdf", { exact: false })).toBeVisible();
+  await expect(page.getByText("synthetic.pdf", { exact: false })).toBeVisible();
   await expect(upload).toBeDisabled();
   await expect(
     page.getByText("Save your changes or close the editor", { exact: false }),
@@ -242,10 +266,31 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
   expect(document!["state"]).toBe("quarantined");
   expect((await page.request.get(`/api/documents/${document!["id"]}/download`)).status()).toBe(404);
   await expect(page.getByRole("link", { name: "Download PDF" })).toHaveCount(0);
+  await expect(page.getByText("Awaiting verification", { exact: true })).toBeVisible();
+  await assess(page);
+  await page.locator("main").focus();
+  await page.screenshot({ path: test.info().outputPath("submission-waiting.png"), fullPage: true });
+  await page.getByRole("button", { name: "Edit submission", exact: true }).click();
+  await page
+    .getByLabel("Title", { exact: true })
+    .fill("Unsaved title retained through scan polling");
   await f.scan(String(document!["id"]));
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  // Read-only polling updates attachment evidence while the editor stays mounted.
+  await expect(page.getByText("Ready for submission", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Title", { exact: true })).toHaveValue(
+    "Unsaved title retained through scan polling",
+  );
+  await page.getByRole("button", { name: "Close editor", exact: true }).click();
   await expect(page.getByRole("link", { name: "Download PDF" })).toBeVisible();
+  await page.locator("main").focus();
+  await page.screenshot({ path: test.info().outputPath("submission-ready.png"), fullPage: true });
   await page.getByRole("button", { name: "Send to TEFT for review", exact: true }).click();
+  const confirmation = page.getByRole("alertdialog");
+  await expect(confirmation).toBeVisible();
+  await page.keyboard.press("Tab");
+  expect(await confirmation.evaluate((el) => el.contains(window.document.activeElement))).toBe(
+    true,
+  );
   await page.getByRole("button", { name: "Confirm submission", exact: true }).click();
   await expect(
     page.getByText("Sent to TEFT for theological review.", { exact: true }),
@@ -266,12 +311,85 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
   await f.login(page, "author");
   await page.goto(`/submissions/${submission}`);
   await expect(
-    page.getByText("Accepted for sharing where permitted", { exact: false }),
+    page.getByText("Accepted for sharing where permitted", { exact: true }),
   ).toBeVisible();
   const detail = await (await page.request.get(`/api/submissions?id=${submission}`)).text();
   expect(detail).not.toContain("Synthetic private assessment");
   const download = await page.request.get(`/api/documents/${document!["id"]}/download`);
   expect(download.status()).toBe(200);
   expect(await download.body()).toEqual(pdf);
+  await assess(page);
+});
+
+test("waiting, active, delayed and failed checks remain gated, exclusion confirms retained history", async ({
+  page,
+}) => {
+  await f.login(page, "author");
+  const saved = await page.request.post("/api/submissions", {
+    headers: { origin },
+    data: {
+      action: "save",
+      version: 0,
+      kind: "document",
+      title: "Synthetic verification status journey",
+      category: "General",
+      abstract: "A meaningful description for the verification status acceptance checks.",
+      keywords: [],
+      confidential: false,
+    },
+  });
+  expect(saved.status()).toBe(200);
+  const { id } = await saved.json();
+  const pdf = Buffer.from("%PDF-1.4\nHarmless verification fixture\n%%EOF\n");
+  const uploaded = await page.request.post(
+    `/api/documents?submissionId=${id}&requestId=${crypto.randomUUID()}`,
+    {
+      headers: { origin, "content-type": "application/pdf", "x-document-name": "verification.pdf" },
+      data: pdf,
+    },
+  );
+  expect(uploaded.status()).toBe(201);
+  await page.goto(`/submissions/${id}`);
+  await expect(page.getByText("Awaiting verification", { exact: true })).toBeVisible();
+  await assess(page);
+  const [doc] = await f.owner.client`select id from app.documents where submission_id=${id}`;
+  const documentId = String(doc!["id"]);
+  // Only disposable fixture state changes. Production transition functions and
+  // no-network worker behavior are independently checked by the database suites.
+  for (const [state, jobState, expected] of [
+    ["scanning", "scanning", "Being checked"],
+    ["quarantined", "queued", "Taking longer than expected"],
+    ["scan_failed", "exhausted", "Verification unsuccessful"],
+  ] as const) {
+    await f.owner.client`update app.documents set state=${state} where id=${documentId}`;
+    await f.owner
+      .client`update app.document_scans set state=${jobState}, lease_token=case when ${jobState}='scanning' then gen_random_uuid() else null end, lease_until=case when ${jobState}='scanning' then now()+interval '5 minutes' else null end, error_category=case when ${expected}='Taking longer than expected' then 'unavailable' else null end where document_id=${documentId}`;
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page.getByText(expected, { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Send to TEFT for review", exact: true }),
+    ).toBeDisabled();
+    await expect(page.getByRole("link", { name: "Download PDF", exact: true })).toHaveCount(0);
+    expect((await page.request.get(`/api/documents/${documentId}/download`)).status()).toBe(404);
+    await expect(page.getByRole("progressbar")).toHaveCount(0);
+  }
+  await assess(page);
+  await page.getByRole("button", { name: "Exclude attachment", exact: true }).click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("not permanently deleted");
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "Exclude attachment", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Exclude attachment", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm exclusion", exact: true }).click();
+  await expect(page.getByText("Excluded from this revision", { exact: true })).toBeVisible();
+  expect(
+    (await f.owner.client`select excluded from app.documents where id=${documentId}`)[0]![
+      "excluded"
+    ],
+  ).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Send to TEFT for review", exact: true }),
+  ).toBeDisabled();
   await assess(page);
 });

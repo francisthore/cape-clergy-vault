@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/workspace";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -88,18 +89,22 @@ function RegistrationPage() {
           ? ["reactivate"]
           : [];
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-6 py-10">
+    <main className="workspace-shell !max-w-4xl">
       <Link className="text-primary underline" to="/admin/registrations">
         All registrations
       </Link>
-      <h1 className="text-4xl font-semibold text-primary">Registration review</h1>
+      <PageHeader
+        eyebrow="Registration administration"
+        title="Registration review"
+        description="Review clergy details, record your decision and retain a clear account history."
+      />
       {error ? (
         <p role="alert">{error}</p>
       ) : !data ? (
         <p role="status">Loading registration…</p>
       ) : (
         <>
-          <section className="space-y-3 rounded-lg border bg-card p-6" aria-label="Clergy profile">
+          <section className="workspace-section space-y-3" aria-label="Clergy profile">
             <h2 className="text-2xl">
               {data.title} {data.full_name}
             </h2>
@@ -109,7 +114,7 @@ function RegistrationPage() {
             <p className="font-semibold">Status: {data.approval_status}</p>
             <p>Registered {new Date(data.created_at).toLocaleString("en-ZA")}</p>
           </section>
-          <section className="space-y-3" aria-label="Approval decision">
+          <section className="workspace-section space-y-4" aria-label="Approval decision">
             <p>
               Approval manages clergy access. Reviewer and system permissions are managed
               separately.

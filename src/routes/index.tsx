@@ -37,37 +37,45 @@ const steps = [
 function Index() {
   return (
     <main>
-      <section className="mx-auto max-w-4xl px-6 pb-16 pt-16 text-center">
-        <div className="flex justify-center">
-          <Crest size="hero" />
+      <section className="mx-auto grid max-w-6xl items-center gap-8 px-6 py-12 md:grid-cols-[1fr_auto] md:py-16">
+        <div>
+          <p className="eyebrow">Anglican Diocese of Cape Town</p>
+          <h1 className="max-w-2xl text-4xl font-semibold text-primary md:text-5xl">
+            Theological work,
+            <br />
+            shared with care.
+          </h1>
+          <p className="mt-5 max-w-xl text-lg text-muted-foreground">
+            A home for the sermons, research, liturgical writing and ideas of our clergy. Contribute
+            your work to TEFT and discover resources for your ministry.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Button asChild size="lg">
+              <Link to="/auth" search={{ view: "register", token: "", error: "" }}>
+                Register as clergy
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link to="/repository">Browse the repository</Link>
+            </Button>
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Already registered?{" "}
+            <a className="text-primary underline underline-offset-4" href="/auth?view=login">
+              Sign in to your account
+            </a>
+          </p>
         </div>
-        <p className="mt-7 text-sm font-bold uppercase tracking-[0.16em] text-primary md:text-base">
-          Theological Education Formation and Training (TEFT)
-        </p>
-        <h1 className="mx-auto mt-3 max-w-2xl text-3xl font-semibold leading-snug text-primary md:text-4xl">
-          A repository for the theological work of our clergy
-        </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
-          Preserve and share sermons, research, liturgical writing and new ideas across the Anglican
-          Diocese of Cape Town — with care for every contributor's privacy under POPIA.
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button asChild size="lg">
-            <Link to="/auth" search={{ view: "register", token: "", error: "" }}>
-              Register as clergy
-            </Link>
-          </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link to="/repository">Browse the repository</Link>
-          </Button>
+        <div className="hidden justify-center md:flex">
+          <Crest size="hero" />
         </div>
       </section>
       <section className="border-t border-border bg-card">
-        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-14 md:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-10 md:grid-cols-4">
           {steps.map(([t, d], i) => (
             <div key={t}>
-              <div className="font-serif text-4xl text-gold">{["I", "II", "III", "IV"][i]}</div>
-              <h3 className="mt-2 text-xl font-semibold">{t}</h3>
+              <div className="text-sm font-semibold text-gold">{["I", "II", "III", "IV"][i]}</div>
+              <h3 className="mt-2 text-lg font-semibold">{t}</h3>
               <p className="mt-2 text-sm text-muted-foreground">{d}</p>
             </div>
           ))}

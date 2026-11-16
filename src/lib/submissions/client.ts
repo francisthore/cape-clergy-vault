@@ -10,6 +10,6 @@ export async function submissionRequest(path: string, body?: unknown) {
         }),
   });
   const v = await r.json();
-  if (!r.ok) throw Error(v.message ?? "Request unavailable.");
+  if (!r.ok) throw Object.assign(Error(v.message ?? "Request unavailable."), { status: r.status });
   return v;
 }

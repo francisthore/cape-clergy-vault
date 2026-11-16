@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/workspace";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -37,18 +38,17 @@ function Registrations() {
     };
   }, []);
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-6 py-10">
+    <main className="workspace-shell">
       <a className="text-primary underline" href="/account">
         Your account
       </a>
-      <div>
-        <h1 className="text-4xl font-semibold text-primary">Clergy registrations</h1>
-        <p className="mt-2 text-muted-foreground">
-          Review registrations and manage clergy account access.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Registration administration"
+        title="Clergy registrations"
+        description="Review registrations and manage clergy account access."
+      />
       <form
-        className="flex flex-wrap items-end gap-3"
+        className="workspace-section flex flex-wrap items-end gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           setSearch(draft);

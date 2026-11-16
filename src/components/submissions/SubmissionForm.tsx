@@ -14,7 +14,7 @@ export function SubmissionForm({
     [message, setMessage] = useState("");
   return (
     <form
-      className="space-y-4 rounded-lg border bg-card p-5"
+      className="space-y-5"
       onSubmit={async (e) => {
         e.preventDefault();
         if (busy) return;
@@ -87,7 +87,7 @@ export function SubmissionForm({
         <textarea
           id="abstract"
           name="abstract"
-          rows={8}
+          rows={6}
           maxLength={20000}
           defaultValue={submission?.abstract}
           disabled={busy}
@@ -95,7 +95,7 @@ export function SubmissionForm({
           aria-describedby="description-help"
         />
       </label>
-      <p id="description-help">
+      <p id="description-help" className="text-sm text-muted-foreground">
         You can save unfinished work and return later. Sending to TEFT requires at least 20
         characters of description; documents also require an available PDF.
       </p>
@@ -115,9 +115,15 @@ export function SubmissionForm({
           defaultChecked={submission?.confidential}
           disabled={busy}
         />
-        Confidential — restrict this item to you and authorized reviewers
+        <span>
+          Confidential
+          <span className="mt-1 block text-sm font-normal text-muted-foreground">
+            Restrict this item to you and authorized assigned reviewers. It will stay outside the
+            shared repository.
+          </span>
+        </span>
       </label>
-      <Button disabled={busy}>{busy ? "Saving…" : "Save and continue later"}</Button>
+      <Button disabled={busy}>{busy ? "Saving…" : "Save resource details"}</Button>
       {message && <p role="alert">{message}</p>}
     </form>
   );

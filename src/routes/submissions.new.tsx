@@ -1,9 +1,14 @@
+import { PageHeader, WorkspaceSection } from "@/components/workspace";
 import { createFileRoute } from "@tanstack/react-router";
 import { SubmissionForm } from "@/components/submissions/SubmissionForm";
 export const Route = createFileRoute("/submissions/new")({
   component: () => (
-    <main className="mx-auto max-w-2xl space-y-6 px-6 py-12">
-      <h1 className="text-3xl text-primary">Create a submission</h1>
+    <main className="workspace-shell !max-w-3xl">
+      <PageHeader
+        eyebrow="My submissions"
+        title="Create a submission"
+        description="Start with the resource details. You can save a draft at any time, then attach PDFs on the next screen."
+      />
       <a className="text-primary underline" href="/submissions">
         My submissions
       </a>
@@ -11,7 +16,9 @@ export const Route = createFileRoute("/submissions/new")({
         Save your initial information first. The PDF selector appears on the next screen. You can
         also develop an idea without a file.
       </p>
-      <SubmissionForm onSaved={(id) => window.location.assign(`/submissions/${id}`)} />
+      <WorkspaceSection title="Resource details">
+        <SubmissionForm onSaved={(id) => window.location.assign(`/submissions/${id}`)} />
+      </WorkspaceSection>
     </main>
   ),
 });

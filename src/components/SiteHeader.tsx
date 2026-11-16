@@ -15,7 +15,24 @@ export function SiteHeader() {
   const linkClass =
     "block rounded px-3 py-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary";
   return (
-    <header className="border-b border-border bg-card/80 backdrop-blur">
+    <header className="border-b border-border bg-card">
+      <a
+        className="skip-link"
+        href="#main-content"
+        onClick={() => {
+          setOpen(false);
+          requestAnimationFrame(() => {
+            const main = document.querySelector("main");
+            if (main) {
+              main.id = "main-content";
+              main.tabIndex = -1;
+              main.focus();
+            }
+          });
+        }}
+      >
+        Skip to main content
+      </a>
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <Link to="/" className="flex min-w-0 items-center gap-3" onClick={() => setOpen(false)}>
           <Crest size="header" />
@@ -43,7 +60,11 @@ export function SiteHeader() {
             if ((event.target as HTMLElement).closest("a")) setOpen(false);
           }}
         >
-          <Link to="/" className={linkClass}>
+          <Link
+            to="/"
+            className={linkClass}
+            activeProps={{ "aria-current": "page", className: "bg-secondary font-semibold" }}
+          >
             Home
           </Link>
           {guest ? (
@@ -52,6 +73,7 @@ export function SiteHeader() {
                 to="/auth"
                 search={{ view: "login", token: "", error: "" }}
                 className={linkClass}
+                activeProps={{ "aria-current": "page", className: "bg-secondary font-semibold" }}
               >
                 Sign in
               </Link>
@@ -59,6 +81,7 @@ export function SiteHeader() {
                 to="/auth"
                 search={{ view: "register", token: "", error: "" }}
                 className={linkClass}
+                activeProps={{ "aria-current": "page", className: "bg-secondary font-semibold" }}
               >
                 Register
               </Link>
@@ -68,30 +91,69 @@ export function SiteHeader() {
               <>
                 {account.canUseRepository && (
                   <>
-                    <Link to="/submissions" className={linkClass}>
+                    <Link
+                      to="/submissions"
+                      className={linkClass}
+                      activeProps={{
+                        "aria-current": "page",
+                        className: "bg-secondary font-semibold",
+                      }}
+                    >
                       My submissions
                     </Link>
-                    <Link to="/repository" className={linkClass}>
+                    <Link
+                      to="/repository"
+                      className={linkClass}
+                      activeProps={{
+                        "aria-current": "page",
+                        className: "bg-secondary font-semibold",
+                      }}
+                    >
                       Repository
                     </Link>
                   </>
                 )}
                 {account.canApprove && (
-                  <Link to="/admin/registrations" className={linkClass}>
+                  <Link
+                    to="/admin/registrations"
+                    className={linkClass}
+                    activeProps={{
+                      "aria-current": "page",
+                      className: "bg-secondary font-semibold",
+                    }}
+                  >
                     Manage registrations
                   </Link>
                 )}
                 {account.canReview && (
-                  <Link to="/reviewer" className={linkClass}>
+                  <Link
+                    to="/reviewer"
+                    className={linkClass}
+                    activeProps={{
+                      "aria-current": "page",
+                      className: "bg-secondary font-semibold",
+                    }}
+                  >
                     Reviewer workspace
                   </Link>
                 )}
                 {account.canManageSettings && (
-                  <Link to="/admin/settings/email" className={linkClass}>
+                  <Link
+                    to="/admin/settings/email"
+                    className={linkClass}
+                    activeProps={{
+                      "aria-current": "page",
+                      className: "bg-secondary font-semibold",
+                    }}
+                  >
                     Email settings
                   </Link>
                 )}
-                <Link to="/account" className={linkClass}>
+                <Link
+                  to="/account"
+                  className={linkClass}
+                  activeProps={{ "aria-current": "page", className: "bg-secondary font-semibold" }}
+                >
                   My account
                 </Link>
                 <button

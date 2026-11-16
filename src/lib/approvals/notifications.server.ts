@@ -7,6 +7,7 @@ export function deliverApprovalNotifications(
   origin: string,
   limit = 20,
   onlyId: string | null = null,
+  onFailure: () => void = () => {},
 ) {
-  return deliverNotifications(connection, email, origin, "approval", "", limit, onlyId);
+  return deliverNotifications(connection, email, origin, "approval", "", limit, onlyId, onFailure);
 }

@@ -179,3 +179,10 @@ pre-launch; no deployment or unrestricted confidential readiness is authorized.
 See [Phase 3F report](docs/phase-3f-report.md), [scanning](docs/document-scanning.md),
 [monitoring](docs/operations-monitoring.md), [privacy/retention](docs/privacy-retention-readiness.md)
 and [browser acceptance](docs/browser-acceptance.md).
+
+### Phase 4.2.1 local development
+
+Use `bun run dev:all` with explicit provider opt-ins to start the existing marked
+PostgreSQL cluster, local web app and the three restricted worker loops. See
+[local development and diagnostics](docs/local-development.md) for configuration,
+queue effects, shutdown, migration prerequisites and isolated regression tests.

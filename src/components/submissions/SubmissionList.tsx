@@ -1,3 +1,4 @@
+import { PageHeader, EmptyState } from "@/components/workspace";
 import { submissionStatusLabel } from "@/lib/submissions/wording";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
   useEffect(() => {
     let active = true;
     const load = () => {
-      setRows(null);
       setMessage("");
       void submissionRequest(
         `/api/${repository ? "repository" : "submissions"}?${new URLSearchParams({ ...filter, page: String(page) })}`,
@@ -30,7 +30,9 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
         });
     };
     load();
-    const timer = window.setInterval(load, 30000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "hidden") load();
+    }, 30000);
     window.addEventListener("focus", load);
     return () => {
       active = false;
@@ -39,10 +41,23 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
     };
   }, [filter, page, repository]);
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-6 py-12">
-      <h1 className="text-3xl text-primary">
-        {repository ? "Clergy repository" : "My submissions"}
-      </h1>
+    <main className="workspace-shell">
+      <PageHeader
+        eyebrow="TEFT · Cape Town"
+        title={repository ? "Clergy repository" : "My submissions"}
+        description={
+          repository
+            ? "Explore theological resources shared by clergy across the Diocese."
+            : "Your work, from first draft to review. Save a resource and return whenever you are ready."
+        }
+        actions={
+          !repository && (
+            <Button asChild>
+              <a href="/submissions/new">Create a submission</a>
+            </Button>
+          )
+        }
+      />
       <nav className="flex flex-wrap gap-5">
         <a className="text-primary underline" href="/account">
           Account
@@ -50,11 +65,6 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
         <a className="text-primary underline" href={repository ? "/submissions" : "/repository"}>
           {repository ? "My submissions" : "Browse repository"}
         </a>
-        {!repository && (
-          <a href="/submissions/new" className="text-primary underline">
-            Create a submission
-          </a>
-        )}
       </nav>
       <p>
         {repository
@@ -62,7 +72,7 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
           : "Save your work and return later. Attach a PDF, wait for its security check, then send to TEFT when ready."}
       </p>
       <form
-        className="grid gap-3 rounded-lg border p-4 sm:grid-cols-2"
+        className="workspace-section grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
         onSubmit={(e) => {
           e.preventDefault();
           setPage(1);
@@ -125,16 +135,16 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
         <>
           <p>{total} matching items</p>
           {rows.length === 0 ? (
-            <p>
+            <EmptyState title="No matching resources">
               No items match.{" "}
               {repository
                 ? "Accepted resources will appear here when available."
                 : "Create a submission to begin, or adjust your filters."}
-            </p>
+            </EmptyState>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">
               {rows.map((s) => (
-                <li key={s.id} className="space-y-2 rounded-lg border bg-card p-5">
+                <li key={s.id} className="workspace-section space-y-3">
                   <h2 className="text-xl">
                     <a
                       className="text-primary underline"
@@ -166,7 +176,7 @@ export function SubmissionList({ repository = false }: { repository?: boolean })
               ))}
             </ul>
           )}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Button variant="outline" disabled={page === 1} onClick={() => setPage(page - 1)}>
               Previous
             </Button>

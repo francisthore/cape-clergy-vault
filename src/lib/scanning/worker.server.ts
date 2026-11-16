@@ -24,6 +24,7 @@ export async function runScanWorker(
   scanner: MalwareScanner,
   limit = 20,
   onlyId: string | null = null,
+  onFailure: () => void = () => {},
 ) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 100)
     throw Error("Bounded scan batch required");
@@ -34,7 +35,7 @@ export async function runScanWorker(
   )
     throw Error("Production requires ClamAV or Bouncer");
   if (scanner instanceof BouncerScanner)
-    return runBouncerWorker(db, storage, scanner, limit, onlyId);
+    return runBouncerWorker(db, storage, scanner, limit, onlyId, onFailure);
   let claimed = 0,
     completed = 0;
   for (let i = 0; i < limit; i++) {
@@ -110,6 +111,7 @@ export async function runScanWorker(
     } finally {
       await object?.close();
     }
+    if (!["clean", "infected"].includes(result.verdict)) onFailure();
     // A lost connection/uncertain commit leaves the lease recoverable; never fabricate success.
     const [finished] =
       await db`select app.finish_document_scan(${claim.documentId},${claim.lease},${result.verdict},${checksum},${result.engine ?? null},${result.definitionsVersion ?? null},${result.definitionsAt ?? null},${result.category ?? null}) as finished`;

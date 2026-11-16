@@ -30,7 +30,8 @@ export function createSubmissionService(
        (case when ${repository} then status::text='accepted' and not confidential else owner_id=app.request_user_id() end)`;
               if (!rows.length) throw new RequestError(404, "Item unavailable or access denied.");
               const documents =
-                await tx`select id,file_name,byte_size::text,state,excluded,app.document_is_clean(id) as clean from app.documents where submission_id=${q.id}
+                await tx`select id,file_name,byte_size::text,state,excluded,app.document_is_clean(id) as clean,
+       case when not ${repository} then app.owner_document_verification(id) else null end as verification_status from app.documents where submission_id=${q.id}
        and (not ${repository} or (app.document_is_clean(id) and not excluded)) order by created_at,id limit 100`;
               const history = repository
                 ? []

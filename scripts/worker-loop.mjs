@@ -1,6 +1,8 @@
-// Proposed supervisor entrypoint. Environment must contain only this worker's
+import { supervise } from "./worker-supervisor.mjs";
+// Local and host supervisor entrypoint. Environment must contain only this worker's
 // credential/configuration. No env files or owner connection are loaded here.
 import { spawn } from "node:child_process";
+import { mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 const paths = {
   scanner: "scripts/db/document-scans.ts",
@@ -9,6 +11,32 @@ const paths = {
 };
 const kind = process.argv[2];
 if (!Object.hasOwn(paths, kind)) throw Error("Choose scanner, approval or reviewer");
+if (process.argv[3] !== "--locked") {
+  mkdirSync(".local", { recursive: true, mode: 0o700 });
+  const holder = spawn(
+    "flock",
+    [
+      "-n",
+      "-F",
+      "-E",
+      "73",
+      `.local/worker-${kind}.lock`,
+      process.execPath,
+      import.meta.filename,
+      kind,
+      "--locked",
+    ],
+    { stdio: "inherit", env: process.env },
+  );
+  for (const signal of ["SIGTERM", "SIGINT"]) process.on(signal, () => holder.kill(signal));
+  const code = await new Promise((resolve) => {
+    holder.once("error", () => resolve(1));
+    holder.once("exit", (code) => resolve(code ?? 1));
+  });
+  if (code === 73) console.error(`Another ${kind} worker loop is already running.`);
+  process.exit(code);
+}
+
 let stopping = false,
   child,
   timer,
@@ -24,29 +52,26 @@ for (const signal of ["SIGTERM", "SIGINT"])
       deadline.unref();
     }
   });
-let failures = 0;
-while (!stopping) {
-  const correlationId = randomUUID();
-  const code = await new Promise((resolve) => {
-    child = spawn(process.execPath, [paths[kind]], { stdio: "inherit", env: process.env });
-    child.on("error", () => resolve(1));
-    child.on("exit", (code) => resolve(code ?? 1));
-  });
-  child = undefined;
-  failures = code === 0 ? 0 : failures + 1;
-  console.log(
-    JSON.stringify({
-      event: "worker.cycle",
-      kind,
-      correlationId,
-      exit: code,
-      consecutiveFailures: failures,
-      alert: failures >= 3,
+process.exitCode = await supervise({
+  stopping: () => stopping,
+  cycle: () =>
+    new Promise((resolve) => {
+      child = spawn(process.execPath, [paths[kind]], { stdio: "inherit", env: process.env });
+      child.once("error", () => resolve(1));
+      child.once("exit", (code) => resolve(code ?? 1));
+    }).finally(() => {
+      child = undefined;
     }),
-  );
-  if (!stopping)
-    await new Promise((resolve) => {
+  report: (status) => {
+    console.log(
+      JSON.stringify({ event: "worker.cycle", kind, correlationId: randomUUID(), ...status }),
+    );
+    if (status.alert)
+      console.error(`Worker ${kind} failed three consecutive cycles; supervision is unhealthy.`);
+  },
+  pause: () =>
+    new Promise((resolve) => {
       wake = resolve;
       timer = setTimeout(resolve, 60000 + Math.floor(Math.random() * 5000));
-    });
-}
+    }),
+});

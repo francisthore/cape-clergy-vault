@@ -1,3 +1,6 @@
+import type { Attachment } from "@/lib/documents/status";
+import { PageHeader } from "@/components/workspace";
+import { DocumentAttachmentCard } from "@/components/submissions/DocumentAttachmentCard";
 import { reviewRequest } from "@/lib/reviews/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +31,7 @@ type Detail = {
   submission: Row & { abstract: string; keywords: string[]; version: number };
   assignment: { assigned_at: string };
   author: { name: string; title: string; parish: string };
-  documents: { id: string; file_name: string; byte_size: string }[];
+  documents: Attachment[];
   history: {
     id: string;
     outcome: string;
@@ -70,11 +73,15 @@ export function ReviewerWorkspace() {
     };
   }, [search, status, page]);
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-6 py-12">
+    <main className="workspace-shell">
       <a className="text-primary underline" href="/account">
         My account
       </a>
-      <h1 className="text-4xl font-semibold text-primary">Theological review</h1>
+      <PageHeader
+        eyebrow="TEFT review"
+        title="Theological review"
+        description="Open the current revisions assigned to you. Author feedback and private reviewer notes are kept separate."
+      />
       <p>
         Review your assigned resources. Access applies to the stated revision and is checked while
         you work.
@@ -255,7 +262,7 @@ export function ReviewerDetail({ id }: { id: string }) {
   }
   const s = data?.submission;
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+    <main className="workspace-shell !max-w-4xl">
       <a className="text-primary underline" href="/reviewer">
         Back to reviewer workspace
       </a>
@@ -263,7 +270,7 @@ export function ReviewerDetail({ id }: { id: string }) {
         <p role="status">{message || "Loading review…"}</p>
       ) : (
         <>
-          <h1 className="text-3xl text-primary">{s.title}</h1>
+          <PageHeader eyebrow="Assigned theological review" title={s.title} />
           <p className="capitalize">
             {s.category} · {s.kind} · Revision {s.revision} · {s.status.replaceAll("_", " ")}
           </p>
@@ -276,19 +283,13 @@ export function ReviewerDetail({ id }: { id: string }) {
           </p>
           <p className="whitespace-pre-wrap">{s.abstract}</p>
           <p>Keywords: {s.keywords.join(", ") || "None"}</p>
-          <section
-            className="space-y-3 rounded-lg border bg-card p-5"
-            aria-label="Review documents"
-          >
+          <section className="workspace-section space-y-4" aria-label="Review documents">
             <h2 className="text-xl">Documents</h2>
             {!data.documents.length && <p>No document attachments.</p>}
-            <ul>
+            <ul className="space-y-3">
               {data.documents.map((d) => (
                 <li key={d.id}>
-                  <a className="text-primary underline" href={`/api/documents/${d.id}/download`}>
-                    Download {d.file_name}
-                  </a>{" "}
-                  · {Number(d.byte_size).toLocaleString()} bytes
+                  <DocumentAttachmentCard document={d} />
                 </li>
               ))}
             </ul>
@@ -297,10 +298,7 @@ export function ReviewerDetail({ id }: { id: string }) {
             )}
           </section>
           {["submitted", "under_review"].includes(s.status) && (
-            <section
-              className="space-y-4 rounded-lg border bg-card p-5"
-              aria-label="Review decision"
-            >
+            <section className="workspace-section space-y-5" aria-label="Review decision">
               <h2 className="text-xl">Review decision</h2>
               <label className="block" htmlFor="feedback">
                 Feedback for the author

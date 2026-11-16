@@ -151,7 +151,7 @@ test("quarantine, exact revision review, author feedback and repository download
 }) => {
   await f.login(page, "author", password, true);
   await page.goto("/submissions/new");
-  await expect(page.getByRole("button", { name: "Save and continue later" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save resource details" })).toBeVisible();
   await assess(page);
   const title = "Disposable browser theological resource";
   await page.getByLabel("Title", { exact: true }).fill(title);
@@ -159,14 +159,14 @@ test("quarantine, exact revision review, author feedback and repository download
     .getByLabel("Abstract or description")
     .fill("A meaningful theological description for disposable browser acceptance testing.");
   await page.getByLabel("Keywords", { exact: false }).fill("browser, phase3f");
-  await page.getByRole("button", { name: "Save and continue later" }).click();
+  await page.getByRole("button", { name: "Save resource details" }).click();
   await page.waitForURL(/\/submissions\/[0-9a-f-]+$/);
   const id = page.url().split("/").at(-1)!;
   await page.getByRole("button", { name: "Edit submission" }).click();
   await page
     .getByLabel("Abstract or description")
     .fill("An edited theological description with supporting sources for disposable testing.");
-  await page.getByRole("button", { name: "Save and continue later" }).click();
+  await page.getByRole("button", { name: "Save resource details" }).click();
   await expect(page.getByRole("button", { name: "Edit submission" })).toBeVisible();
   await page.getByLabel("Attach a PDF", { exact: false }).setInputFiles({
     name: "disposable.pdf",
@@ -174,7 +174,7 @@ test("quarantine, exact revision review, author feedback and repository download
     buffer: Buffer.from("%PDF-1.7\nDisposable acceptance PDF\n%%EOF\n"),
   });
   await page.getByRole("button", { name: "Upload PDF", exact: true }).click();
-  await expect(page.getByText("PDF security check in progress", { exact: false })).toBeVisible();
+  await expect(page.getByText("Awaiting verification", { exact: false })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Send to TEFT for review", exact: true }),
   ).toBeDisabled();
@@ -232,7 +232,8 @@ test("quarantine, exact revision review, author feedback and repository download
     page.getByText("PRIVATE FIXTURE NOTES NEVER AUTHOR VISIBLE", { exact: true }),
   ).toHaveCount(0);
   await assess(page);
-  await page.getByRole("button", { name: "Start an amended draft" }).click();
+  await page.getByRole("button", { name: "Revise and resubmit" }).click();
+  await page.getByRole("button", { name: "Start revision", exact: true }).click();
   await expect(page.getByRole("button", { name: "Edit submission" })).toBeVisible();
   await page.getByRole("button", { name: "Send to TEFT for review", exact: true }).click();
   await page.getByRole("button", { name: "Confirm submission", exact: true }).click();

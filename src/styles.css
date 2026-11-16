@@ -35,7 +35,15 @@
 }
 
 :root {
-  --radius: 0.375rem;
+  --radius: 0.625rem;
+  --space-section: 1.5rem;
+  --space-page: clamp(1rem, 4vw, 2.5rem);
+  --control-height: 2.75rem;
+  --content-width: 72rem;
+  --surface-raised: #fffefa;
+  --status-ready: #226044;
+  --status-waiting: #68522b;
+  --status-failed: #913d38;
   --background: oklch(0.975 0.012 85);
   --foreground: oklch(0.22 0.03 20);
   --card: oklch(0.99 0.008 85);
@@ -50,7 +58,7 @@
   --muted-foreground: oklch(0.48 0.03 30);
   --accent: oklch(0.92 0.04 85);
   --accent-foreground: oklch(0.3 0.08 20);
-  --gold: oklch(0.7 0.12 80);
+  --gold: oklch(0.48 0.08 80);
   --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.87 0.025 80);
@@ -60,11 +68,246 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * {
+    border-color: var(--color-border);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3 { font-family: var(--font-serif); }
+  h1,
+  h2 {
+    font-family: var(--font-serif);
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+  h1 {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  h3 {
+    font-family: var(--font-sans);
+  }
+  main {
+    min-width: 0;
+  }
+  :where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+  }
+  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select) {
+    min-height: var(--control-height);
+  }
+  :where(select, textarea) {
+    width: 100%;
+    border-radius: var(--radius);
+    background-color: var(--card);
+    font: inherit;
+  }
+  :where(label) {
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+  :where(label > input, label > select, label > textarea) {
+    margin-top: 0.375rem;
+  }
+  :where(input[type="checkbox"], input[type="radio"]) {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+    margin-top: 0.25rem;
+  }
+  :where(progress) {
+    accent-color: var(--primary);
+  }
+  :where(button, a) {
+    touch-action: manipulation;
+  }
+  ::selection {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .workspace-shell {
+    width: 100%;
+    max-width: var(--content-width);
+    margin-inline: auto;
+    padding: var(--space-page);
+    padding-block: clamp(1.5rem, 4vw, 3rem);
+  }
+  .workspace-shell > * + * {
+    margin-top: var(--space-section);
+  }
+  .page-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-heading h1 {
+    color: var(--primary);
+    font-size: clamp(2rem, 4vw, 2.75rem);
+  }
+  .eyebrow {
+    margin-bottom: 0.6rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .workspace-grid {
+    display: grid;
+    gap: var(--space-section);
+    align-items: start;
+  }
+  .workspace-section {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    padding: clamp(1rem, 3vw, 1.75rem);
+  }
+  .workspace-section > * + * {
+    margin-top: 1.25rem;
+  }
+  .section-heading h2 {
+    font-size: 1.625rem;
+    font-weight: 600;
+  }
+  .section-heading p {
+    margin-top: 0.5rem;
+    font-size: 0.9375rem;
+    color: var(--muted-foreground);
+  }
+  .attachment-card {
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-raised);
+    padding: 1.125rem;
+  }
+  .attachment-name {
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .document-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .status-ready {
+    color: var(--status-ready);
+  }
+  .status-waiting,
+  .status-delayed,
+  .status-checking {
+    color: var(--status-waiting);
+  }
+  .status-unsuccessful {
+    color: var(--status-failed);
+  }
+  .upload-area {
+    display: grid;
+    justify-items: center;
+    gap: 0.875rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--background);
+    padding: 1.5rem 1rem;
+    text-align: center;
+  }
+  .empty-state {
+    padding: 1.5rem;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--background);
+  }
+  .back-link {
+    display: inline-block;
+    color: var(--primary);
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    padding-block: 0.5rem;
+  }
+  .notice {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--primary);
+    border-radius: var(--radius);
+    background: var(--card);
+    padding: 1rem 1.25rem;
+  }
+  .history-list {
+    border-left: 1px solid var(--border);
+    padding-left: 1.25rem;
+  }
+  .history-list > li + li {
+    margin-top: 1rem;
+  }
+  .account-action {
+    display: block;
+    min-height: 6rem;
+    padding: 1.25rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .account-action:hover {
+    border-color: var(--primary);
+  }
+  .account-action strong {
+    display: block;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .account-action span {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+  }
+  .skip-link {
+    position: fixed;
+    top: -8rem;
+    left: 1rem;
+    z-index: 100;
+    background: var(--card);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+  }
+  .skip-link:focus {
+    top: 1rem;
+  }
+  @media (min-width: 64rem) {
+    .workspace-grid {
+      grid-template-columns: minmax(0, 1fr) 20rem;
+    }
+  }
 }

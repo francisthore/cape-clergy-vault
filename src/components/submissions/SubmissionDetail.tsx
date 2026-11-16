@@ -1,22 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import type { SubmissionRow } from "@/lib/submissions/validation";
 import { submissionRequest } from "@/lib/submissions/client";
 import { validatePdfSelection, validatePdfContents } from "@/lib/documents/validation";
-import { formatFileSize } from "@/lib/documents/validation";
-import { submissionStatusLabel, submissionHelp, lifecycleLabel } from "@/lib/submissions/wording";
+import { DocumentAttachmentCard } from "./DocumentAttachmentCard";
+import { PdfUpload } from "./PdfUpload";
+import { needsVerification, type Attachment } from "@/lib/documents/status";
+import { PageHeader, WorkspaceSection, EmptyState } from "@/components/workspace";
+import { CheckCircle2, Circle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { submissionStatusLabel, lifecycleLabel } from "@/lib/submissions/wording";
 import { SubmissionForm } from "./SubmissionForm";
 type Detail = {
   submission: SubmissionRow;
-  documents: {
-    id: string;
-    file_name: string;
-    byte_size: string;
-    state: string;
-    excluded: boolean;
-    clean: boolean;
-  }[];
+  documents: Attachment[];
   feedback: {
     id: string;
     outcome: string;
@@ -30,16 +36,25 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
   const [data, setData] = useState<Detail | null>(null),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
-    [confirm, setConfirm] = useState(false),
+    [confirm, setConfirm] = useState<"submit" | "amend" | string | null>(null),
     [progress, setProgress] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
+  const [editorSnapshot, setEditorSnapshot] = useState<SubmissionRow | null>(null);
+  const [authorized, setAuthorized] = useState(false);
+  const workspace = useRef<HTMLElement>(null);
+  const confirmationTrigger = useRef<HTMLElement | null>(null);
+  function openConfirmation(value: string) {
+    confirmationTrigger.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setConfirm(value);
+  }
   const selectionGeneration = useRef(0);
   const [checkingFile, setCheckingFile] = useState(false);
   const selectFile = async (file: File | undefined) => {
     if (xhr.current) return;
     const current = ++selectionGeneration.current;
-    const error = file ? validatePdfSelection(file) : null;
+    const error = file ? validatePdfSelection(file) : "Choose or drop one PDF at a time.";
     setFileError(error ?? "");
     setSelectedFile(null);
     setCheckingFile(false);
@@ -67,17 +82,31 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
       const v = await submissionRequest(
         `/api/${repository ? "repository" : "submissions"}?id=${encodeURIComponent(id)}`,
       );
-      if (g === generation.current) setData(v);
+      if (g === generation.current) {
+        setData(v);
+        setAuthorized(true);
+      }
     } catch (e) {
       if (g === generation.current) {
-        setData(null);
+        setAuthorized(false);
+        if ([401, 403, 404].includes((e as { status?: number }).status ?? 0)) {
+          xhr.current?.abort();
+          setData(null);
+          setEditorSnapshot(null);
+        }
         setMessage(e instanceof Error ? e.message : "Unavailable");
       }
     }
   }, [id, repository]);
   useEffect(() => {
     setData(null);
+    setAuthorized(false);
+    setEditorSnapshot(null);
     setSelectedFile(null);
+    setCheckingFile(false);
+    setConfirm(null);
+    setFileError("");
+    setMessage("");
     void load();
     return () => {
       // This is an async generation counter, intentionally invalidated at cleanup.
@@ -86,43 +115,43 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
       // Invalidate pending local file reads on route change/unmount.
       // eslint-disable-next-line react-hooks/exhaustive-deps
       selectionGeneration.current++;
-      xhr.current?.abort();
+      if (xhr.current) {
+        xhr.current.onload =
+          xhr.current.onerror =
+          xhr.current.ontimeout =
+          xhr.current.onabort =
+            null;
+        xhr.current.abort();
+        xhr.current = null;
+      }
     };
   }, [load]);
-  // Reload authorization while open. Explicit editing is kept in a separately mounted form.
-  const [editing, setEditing] = useState(false);
+  const editing = editorSnapshot !== null;
+  const waitingForScan = data?.documents.some(needsVerification) ?? false;
+  const refreshInFlight = useRef(false);
   useEffect(() => {
-    let active = true;
-    const refresh = () => {
-      if (!editing && progress === null) {
-        void load();
-        return;
+    const refresh = async () => {
+      if (document.visibilityState === "hidden" || refreshInFlight.current) return;
+      refreshInFlight.current = true;
+      try {
+        await load();
+      } finally {
+        refreshInFlight.current = false;
       }
-      // Keep unsaved input while still rechecking live permissions during editing/upload.
-      void submissionRequest(
-        `/api/${repository ? "repository" : "submissions"}?id=${encodeURIComponent(id)}`,
-      ).catch((error) => {
-        if (!active) return;
-        generation.current++;
-        xhr.current?.abort();
-        setData(null);
-        setEditing(false);
-        setMessage(error.message);
-      });
     };
-    const waitingForScan = data?.documents.some((d) =>
-      ["quarantined", "scanning"].includes(d.state),
-    );
-    const timer = setInterval(refresh, waitingForScan ? 3000 : 30000);
+    // Only outstanding verification needs periodic polling. Focus always rechecks
+    // authorization, including when idle. Hidden tabs perform no polling requests.
+    const timer = waitingForScan ? setInterval(() => void refresh(), 10000) : undefined;
     window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
     return () => {
-      active = false;
       clearInterval(timer);
       window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
     };
-  }, [load, editing, progress, id, repository, data?.documents]);
+  }, [load, waitingForScan]);
   async function action(action: "submit" | "amend" | "exclude", target = id) {
-    if (!data || busy) return;
+    if (!data || busy || !authorized) return;
     setBusy(true);
     setMessage("");
     try {
@@ -132,8 +161,9 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
         version: data.submission.version,
       });
       setMessage(v.message);
-      setConfirm(false);
+      setConfirm(null);
       await load();
+      requestAnimationFrame(() => workspace.current?.focus());
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Unavailable");
     } finally {
@@ -141,7 +171,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
     }
   }
   function upload(file: File) {
-    if (xhr.current || !data) return;
+    if (xhr.current || !data || !authorized || busy || editing) return;
     const error = validatePdfSelection(file);
     if (error) {
       setFileError(error);
@@ -174,7 +204,7 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
       if (x.status === 201) {
         intent.current = null;
         setSelectedFile(null);
-        m = "Upload complete. Security screening is separate; see the current PDF status above.";
+        m = "Upload complete. Your PDF has been saved.";
       }
       setMessage(m);
       void load();
@@ -191,229 +221,362 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
   }
   const s = data?.submission;
   const editable = !repository && s?.status === "draft";
+  const included = data?.documents.filter((d) => !d.excluded) ?? [];
+  const detailsReady =
+    !!s && s.title.trim().length > 0 && s.abstract.replace(/\s+/g, " ").trim().length >= 20;
+  const attached = s?.kind === "idea" || included.length > 0;
+  const verified =
+    s?.kind === "idea" ||
+    (included.length > 0 && included.every((d) => d.state === "available" && d.clean));
+  const blockedReason = !authorized
+    ? "Refresh to confirm your current access before continuing."
+    : busy
+      ? "Your current action is being saved."
+      : editing
+        ? "Save your resource details or close the editor before sending."
+        : progress !== null
+          ? "Wait for your PDF upload to finish."
+          : selectedFile || checkingFile
+            ? "Upload the selected PDF or clear the selection before sending."
+            : !detailsReady
+              ? "Save a title and a description of at least 20 characters."
+              : !attached
+                ? "Attach at least one PDF to this resource."
+                : !verified
+                  ? "Every included PDF must pass verification. Wait for pending checks, or exclude unsuccessful attachments."
+                  : "";
+  const confirmTitle =
+    confirm === "submit"
+      ? "Send this revision to TEFT?"
+      : confirm === "amend"
+        ? "Start an amended revision?"
+        : "Exclude this attachment?";
   return (
-    <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
-      <a className="text-primary underline" href={repository ? "/repository" : "/submissions"}>
-        Back to {repository ? "repository" : "my submissions"}
+    <main
+      ref={workspace}
+      tabIndex={-1}
+      className={`workspace-shell ${repository ? "!max-w-4xl" : ""}`}
+    >
+      <a className="back-link" href={repository ? "/repository" : "/submissions"}>
+        ← Back to {repository ? "repository" : "my submissions"}
       </a>
-      {!s ? (
-        <p role="status">{message || "Loading…"}</p>
+      {!s || !data ? (
+        <p role="status">{message || "Loading submission…"}</p>
       ) : (
         <>
-          <h1 className="text-3xl text-primary">{s.title}</h1>
-          <p className="capitalize">
-            {submissionStatusLabel(s.status)} · {s.kind} · {s.category} · Revision {s.revision}
-          </p>
-          <p>
-            {s.confidential ? "Confidential" : "Non-confidential"} ·{" "}
-            {s.submitted_at
-              ? `Submitted ${new Date(s.submitted_at).toLocaleString()}`
-              : "Not yet submitted"}
-          </p>
-          {editable && <p>{submissionHelp}</p>}
-          <p className="whitespace-pre-wrap">{s.abstract}</p>
-          <p>Keywords: {s.keywords.join(", ") || "None"}</p>
-          {editable && (
-            <>
-              <Button
-                variant="outline"
-                disabled={busy || progress !== null}
-                onClick={() => {
-                  setEditing(!editing);
-                  setConfirm(false);
-                }}
+          <PageHeader
+            eyebrow={repository ? "Clergy repository" : `My submissions · Revision ${s.revision}`}
+            title={s.title}
+            description={
+              editable
+                ? "Prepare your resource, attach your PDFs and send your saved revision to TEFT when it is ready."
+                : `${submissionStatusLabel(s.status)} · ${s.category}`
+            }
+          />
+          <div className={repository ? "space-y-6" : "workspace-grid"}>
+            <div className="min-w-0 space-y-6">
+              <WorkspaceSection
+                title="Resource details"
+                description={`${submissionStatusLabel(s.status)} · ${s.kind === "idea" ? "Idea / Proposal" : "Document"} · ${s.category}`}
               >
-                {editing ? "Close editor" : "Edit submission"}
-              </Button>
-              {editing && (
-                <SubmissionForm
-                  key={`${s.id}:${s.version}`}
-                  submission={s}
-                  onSaved={() => {
-                    setEditing(false);
-                    setMessage("Submission saved. You can return later.");
-                    void load();
-                  }}
-                />
-              )}
-            </>
-          )}
-          <section
-            className="space-y-4 rounded-lg border bg-card p-5"
-            aria-label="Attached documents"
-          >
-            <h2 className="text-xl">Documents</h2>
-            {data.documents.length === 0 && <p>No attached documents.</p>}
-            <ul className="space-y-3 break-words" aria-live="polite">
-              {data.documents.map((d) => (
-                <li key={d.id}>
-                  {d.file_name} · {formatFileSize(Number(d.byte_size))} ·{" "}
-                  {d.excluded
-                    ? "Excluded from this revision"
-                    : ["quarantined", "scanning"].includes(d.state)
-                      ? "PDF security check in progress"
-                      : ["infected", "scan_failed"].includes(d.state)
-                        ? "This document could not pass the required security checks. Please contact the administrator or upload a different PDF."
-                        : d.state === "available" && d.clean
-                          ? "PDF security check passed — available"
-                          : "PDF unavailable"}
-                  {d.state === "available" && d.clean && !d.excluded && (
-                    <>
-                      {" "}
-                      ·{" "}
-                      <a
-                        className="text-primary underline"
-                        href={`/api/documents/${d.id}/download`}
-                      >
-                        Download PDF
-                      </a>
-                    </>
-                  )}
-                  {editable && !d.excluded && d.state !== "pending" && (
-                    <Button
-                      className="ml-3"
-                      variant="outline"
-                      disabled={busy || progress !== null || editing}
-                      onClick={() => void action("exclude", d.id)}
-                    >
-                      Exclude attachment
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {data.documents.length === 100 && (
-              <p>Showing the first 100 attachments. Contact the operator for older records.</p>
-            )}
-            {editable && s.kind === "document" && (
-              <div
-                className="space-y-3"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (!busy && progress === null) selectFile(e.dataTransfer.files[0]);
-                }}
-              >
-                <label className="block" htmlFor="pdf">
-                  Attach a PDF (maximum 20 MiB)
-                </label>
-                <Input
-                  id="pdf"
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  aria-describedby="pdf-limit pdf-error"
-                  aria-invalid={Boolean(fileError)}
-                  disabled={busy || progress !== null}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    selectFile(f);
-                    e.target.value = "";
-                  }}
-                />
-                <p id="pdf-limit">Choose or drop one PDF. Maximum 20 MiB (20,971,520 bytes).</p>
-                <p id="pdf-error" role="alert" aria-atomic="true">
-                  {fileError}
+                <p className="text-sm text-muted-foreground">
+                  {s.confidential
+                    ? "Confidential · You and authorized assigned reviewers"
+                    : "Non-confidential · Eligible for the repository after acceptance"}
                 </p>
-                {selectedFile && (
-                  <p className="break-all">
-                    Selected: {selectedFile.name} · {formatFileSize(selectedFile.size)}
-                  </p>
-                )}
-                {editing && (
-                  <p>Save your changes or close the editor before uploading the selected PDF.</p>
-                )}
-                <Button
-                  disabled={
-                    !selectedFile || Boolean(fileError) || busy || progress !== null || editing
-                  }
-                  onClick={() => selectedFile && upload(selectedFile)}
-                >
-                  {checkingFile ? "Checking PDF…" : "Upload PDF"}
-                </Button>
-                {progress !== null && (
+                {editing && editorSnapshot ? (
+                  <SubmissionForm
+                    key={s.id}
+                    submission={editorSnapshot}
+                    onSaved={() => {
+                      setEditorSnapshot(null);
+                      setMessage("Submission saved. You can return later.");
+                      void load();
+                    }}
+                  />
+                ) : (
                   <>
-                    <progress aria-label="Upload progress" max={100} value={progress} />
-                    <p>{progress}% sent; validation follows.</p>
-                    <Button variant="outline" onClick={() => xhr.current?.abort()}>
-                      Cancel upload
-                    </Button>
+                    <p className="whitespace-pre-wrap leading-relaxed">
+                      {s.abstract || "Add a description to help TEFT understand your resource."}
+                    </p>
+                    {s.keywords.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Keywords: {s.keywords.join(", ")}
+                      </p>
+                    )}
                   </>
                 )}
-                <p>PDFs remain private and unavailable until the required security checks pass.</p>
-              </div>
-            )}
-          </section>
-          {editable && !editing && (
-            <>
-              <Button
-                disabled={
-                  busy ||
-                  progress !== null ||
-                  (s.kind === "document" &&
-                    (!data.documents.some((d) => !d.excluded && d.clean) ||
-                      data.documents.some((d) => !d.excluded && !d.clean)))
-                }
-                onClick={() => setConfirm(true)}
-              >
-                Send to TEFT for review
-              </Button>
-              {confirm && (
-                <div
-                  role="group"
-                  aria-label="Confirm final submission"
-                  className="space-y-3 rounded border p-4"
-                >
-                  <p>
-                    Send this saved revision to TEFT for theological review? Metadata and
-                    attachments will be locked for review.
-                  </p>
+                {editable && (
                   <Button
-                    disabled={busy || progress !== null}
-                    onClick={() => void action("submit")}
+                    variant="outline"
+                    disabled={busy || progress !== null || !authorized}
+                    onClick={() => {
+                      setEditorSnapshot(editing ? null : s);
+                      setConfirm(null);
+                    }}
                   >
-                    Confirm submission
+                    {editing ? "Close editor" : "Edit submission"}
                   </Button>
-                  <Button variant="outline" disabled={busy} onClick={() => setConfirm(false)}>
-                    Continue later
+                )}
+              </WorkspaceSection>
+              <WorkspaceSection
+                title="Attached documents"
+                description={
+                  s.kind === "idea"
+                    ? "This text proposal does not require a PDF."
+                    : "Attach your PDFs here. Each file must pass a security check before you send your work."
+                }
+              >
+                {!data.documents.length && (
+                  <EmptyState title="No PDFs attached yet">
+                    {s.kind === "idea"
+                      ? "Your proposal is saved in the resource details above."
+                      : "Choose a PDF below to add it to this submission."}
+                  </EmptyState>
+                )}
+                <ul className="space-y-3" aria-live="polite" aria-relevant="additions text">
+                  {data.documents.map((d) => (
+                    <li key={d.id}>
+                      <DocumentAttachmentCard
+                        document={d}
+                        allowDownload={authorized}
+                        disabled={busy || progress !== null || editing || !authorized}
+                        onExclude={editable ? () => openConfirmation(d.id) : undefined}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                {data.documents.length === 100 && (
+                  <p className="text-sm">
+                    Showing the first 100 attachments. Contact the operator for older records.
+                  </p>
+                )}
+                {editable && s.kind === "document" && (
+                  <PdfUpload
+                    selected={selectedFile}
+                    onSelect={(file) => void selectFile(file)}
+                    onUpload={() => selectedFile && upload(selectedFile)}
+                    onCancel={() => xhr.current?.abort()}
+                    error={fileError}
+                    checking={checkingFile}
+                    progress={progress}
+                    disabled={busy || progress !== null || !authorized}
+                    editing={editing}
+                    hasAttachments={included.length > 0}
+                  />
+                )}
+                {selectedFile && progress === null && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      selectionGeneration.current++;
+                      setSelectedFile(null);
+                      setFileError("");
+                      intent.current = null;
+                    }}
+                  >
+                    Clear selection
                   </Button>
-                </div>
-              )}
-            </>
-          )}
-          {!repository && s.status === "returned" && (
-            <Button disabled={busy} onClick={() => void action("amend")}>
-              Revise and resubmit
-            </Button>
-          )}
+                )}
+              </WorkspaceSection>
+            </div>
+            {!repository && (
+              <aside className="min-w-0 space-y-6">
+                {editable ? (
+                  <WorkspaceSection
+                    title="Submission readiness"
+                    description="A guide to preparing this saved revision."
+                  >
+                    <ul className="space-y-4 text-sm">
+                      {[
+                        [detailsReady && !editing, "Resource details saved"],
+                        [
+                          attached,
+                          s.kind === "idea"
+                            ? "Text proposal — no PDF required"
+                            : "Required document attached",
+                        ],
+                        [
+                          verified,
+                          s.kind === "idea"
+                            ? "No document verification required"
+                            : "Security verification complete",
+                        ],
+                        [!blockedReason, "Ready to send for review"],
+                      ].map(([complete, label]) => {
+                        const Icon = complete ? CheckCircle2 : Circle;
+                        return (
+                          <li key={String(label)} className="flex items-start gap-3">
+                            <Icon
+                              className={`mt-0.5 size-4 shrink-0 ${complete ? "text-emerald-800" : "text-muted-foreground"}`}
+                              aria-hidden="true"
+                            />
+                            <span>
+                              <span className="sr-only">
+                                {complete ? "Complete: " : "Incomplete: "}
+                              </span>
+                              {label}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <div className="space-y-3 border-t pt-5">
+                      <h3 className="font-semibold">Sending to TEFT</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Sending locks this revision for theological review.
+                      </p>
+                      <Button
+                        className="h-auto min-h-11 w-full whitespace-normal"
+                        aria-describedby="submission-blocked"
+                        disabled={!!blockedReason}
+                        onClick={() => openConfirmation("submit")}
+                      >
+                        {busy ? "Saving…" : "Send to TEFT for review"}
+                      </Button>
+                      <p
+                        id="submission-blocked"
+                        className="text-sm text-muted-foreground"
+                        role="status"
+                      >
+                        {blockedReason ||
+                          "Your saved revision is ready. TEFT will confirm eligibility when you send it."}
+                      </p>
+                    </div>
+                  </WorkspaceSection>
+                ) : (
+                  <WorkspaceSection title="Submission status">
+                    <p>{submissionStatusLabel(s.status)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {s.submitted_at
+                        ? `Submitted ${new Date(s.submitted_at).toLocaleString()}`
+                        : "Not yet submitted"}
+                    </p>
+                    {s.status === "returned" && (
+                      <Button
+                        disabled={busy || !authorized}
+                        onClick={() => openConfirmation("amend")}
+                      >
+                        Revise and resubmit
+                      </Button>
+                    )}
+                  </WorkspaceSection>
+                )}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={busy}
+                  onClick={() => void load()}
+                >
+                  Refresh attachment list
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  You can leave this page and return later. Saved details and uploaded PDFs will be
+                  kept.
+                </p>
+              </aside>
+            )}
+          </div>
           {!repository && (
-            <section>
-              <h2 className="text-xl">Lifecycle history</h2>
-              <ul>
-                {data.history.map((h) => (
-                  <li key={`${h.version}-${h.event}`}>
-                    {lifecycleLabel(h.event)} · Revision {h.revision} ·{" "}
-                    {new Date(h.created_at).toLocaleString()}
-                  </li>
-                ))}
-              </ul>
-              <h2 className="mt-6 text-xl">Review outcomes and feedback</h2>
-              {data.feedback.length === 0 && <p>No review outcomes yet.</p>}
-              <ul className="space-y-4">
-                {data.feedback.map((f) => (
-                  <li key={f.id} className="rounded border bg-card p-4">
-                    <p className="capitalize">
-                      {f.outcome.replaceAll("_", " ")} · Revision {f.revision} ·{" "}
-                      {new Date(f.created_at).toLocaleString()}
+            <WorkspaceSection
+              title="Submission history and feedback"
+              description="Your saved revisions, review outcomes and feedback from TEFT."
+            >
+              <div className="grid gap-8 md:grid-cols-2">
+                <div>
+                  <h3 className="mb-3 font-semibold">Submission history</h3>
+                  <ol className="history-list">
+                    {data.history.map((h) => (
+                      <li key={`${h.version}-${h.event}`}>
+                        <p>
+                          {lifecycleLabel(h.event)} · Revision {h.revision}
+                        </p>
+                        <time className="text-sm text-muted-foreground">
+                          {new Date(h.created_at).toLocaleString()}
+                        </time>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+                <div>
+                  <h3 className="mb-3 font-semibold">Review outcomes and feedback</h3>
+                  {!data.feedback.length && (
+                    <p className="text-sm text-muted-foreground">
+                      No review outcomes yet. Feedback will appear here after a review.
                     </p>
-                    <p className="whitespace-pre-wrap">
-                      {f.author_feedback || "No author-facing feedback for this action."}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </section>
+                  )}
+                  <ul className="space-y-4">
+                    {data.feedback.map((f) => (
+                      <li key={f.id} className="rounded-lg border p-4">
+                        <p className="font-medium">
+                          {submissionStatusLabel(f.outcome)} · Revision {f.revision}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(f.created_at).toLocaleString()}
+                        </p>
+                        <p className="mt-3 whitespace-pre-wrap">
+                          {f.author_feedback || "No author-facing feedback for this action."}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </WorkspaceSection>
           )}
-          {message && <p role="status">{message}</p>}
+          <AlertDialog
+            open={confirm !== null}
+            onOpenChange={(open) => {
+              if (!open && !busy) setConfirm(null);
+            }}
+          >
+            <AlertDialogContent
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                const trigger = confirmationTrigger.current;
+                if (trigger?.isConnected && !trigger.matches(":disabled")) trigger.focus();
+                else workspace.current?.focus();
+              }}
+            >
+              <AlertDialogHeader>
+                <AlertDialogTitle>{confirmTitle}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {confirm === "submit"
+                    ? "Send this saved revision to TEFT for theological review? Metadata and attachments will be locked for review."
+                    : confirm === "amend"
+                      ? "Your previous revision and its feedback will be retained. The amended revision must be sent for review again."
+                      : "This PDF will be excluded from the current revision. It is retained privately for history and is not permanently deleted."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={busy}>Continue later</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={busy || !authorized || (confirm === "submit" && !!blockedReason)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    if (confirm)
+                      void action(
+                        confirm === "submit" ? "submit" : confirm === "amend" ? "amend" : "exclude",
+                        confirm === "submit" || confirm === "amend" ? id : confirm,
+                      );
+                  }}
+                >
+                  {busy
+                    ? "Saving…"
+                    : confirm === "submit"
+                      ? "Confirm submission"
+                      : confirm === "amend"
+                        ? "Start revision"
+                        : "Confirm exclusion"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          {message && (
+            <p className="notice" role="status">
+              {message}
+            </p>
+          )}
         </>
       )}
     </main>

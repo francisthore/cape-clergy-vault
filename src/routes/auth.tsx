@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/workspace";
 import { profileValues } from "@/lib/auth/registration";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -81,10 +82,17 @@ function AuthPage() {
   }
   return (
     <main className="mx-auto max-w-xl px-6 py-12">
-      <h1 className="text-4xl font-semibold text-primary">{titles[view]}</h1>
-      <p className="mt-3 text-muted-foreground">
-        Anglican Diocese of Cape Town · Cape Clergy Vault
-      </p>
+      <PageHeader
+        eyebrow="Anglican Diocese of Cape Town"
+        title={titles[view]}
+        description={
+          view === "register"
+            ? "Create your clergy account. Verify your email, then the Diocese will review your registration."
+            : view === "login"
+              ? "Sign in to continue your work with TEFT."
+              : "Manage access to your clergy account."
+        }
+      />
       {view === "verified" ? (
         <div role="status" className="mt-6 rounded-lg border bg-card p-6">
           {error
@@ -95,7 +103,7 @@ function AuthPage() {
         !complete && (
           <form
             onSubmit={submit}
-            className="mt-8 space-y-4 rounded-lg border border-border bg-card p-6"
+            className="mt-6 space-y-5 rounded-lg border border-border bg-card p-5 sm:p-7"
           >
             {view === "register" && <ProfileFields />}
             {view !== "reset" && (

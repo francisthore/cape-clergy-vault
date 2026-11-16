@@ -57,3 +57,6 @@ REVOKE ALL ON app.document_scans,app.document_scan_events,app.scanner_budget FRO
 GRANT EXECUTE ON FUNCTION app.document_is_clean(uuid) TO cape_clergy_runtime;
 
 GRANT EXECUTE ON FUNCTION app.consume_rate_limit(text,text) TO cape_clergy_runtime;
+
+-- Owner-only safe status; scanner tables remain inaccessible.
+GRANT EXECUTE ON FUNCTION app.owner_document_verification(uuid) TO cape_clergy_runtime;

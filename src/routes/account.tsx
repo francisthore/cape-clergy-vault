@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/workspace";
 import { profileValues } from "@/lib/auth/registration";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -67,41 +68,63 @@ function AccountPage() {
       "We could not check your account. Refresh the page to try again. Access remains restricted.",
   };
   return (
-    <main className="mx-auto max-w-xl space-y-6 px-6 py-12">
-      <h1 className="text-4xl font-semibold text-primary">Clergy account</h1>
-      <p role="status">{messages[status] ?? messages["error"]}</p>
-      {status === "approved" && (
-        <a className="block text-primary underline" href="/submissions">
-          My submissions
-        </a>
-      )}
-      {status === "approved" && (
-        <a className="block text-primary underline" href="/repository">
-          Browse repository
-        </a>
-      )}
-      {canReview && (
-        <a className="block text-primary underline" href="/reviewer">
-          Reviewer workspace
-        </a>
-      )}
-      {canManageSettings && (
-        <a className="block text-primary underline" href="/admin/settings/email">
-          Manage application email
-        </a>
-      )}
-      {status === "incomplete" && (
-        <form onSubmit={complete} className="space-y-4 rounded-lg border bg-card p-6">
-          <ProfileFields />
-          <PrivacyAcknowledgement />
-          <Button disabled={busy}>{busy ? "Saving…" : "Complete registration"}</Button>
-        </form>
-      )}
-      {canApprove && (
-        <a className="block text-primary underline" href="/admin/registrations">
-          Manage clergy registrations
-        </a>
-      )}
+    <main className="workspace-shell !max-w-4xl">
+      <PageHeader
+        eyebrow="TEFT · Cape Town"
+        title="Clergy account"
+        description="Your submissions, shared resources and account access."
+      />
+      <div className="notice" role="status">
+        {status === "pending" && (
+          <h2 className="mb-2 text-xl font-semibold">Thank you for registering</h2>
+        )}
+        {messages[status] ?? messages["error"]}
+        {status === "pending" && (
+          <p className="mt-3 text-sm text-muted-foreground">
+            There is nothing further to submit here. Please contact the Diocese if your registration
+            details need to change.
+          </p>
+        )}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {status === "approved" && (
+          <a className="account-action" href="/submissions">
+            <strong>My submissions</strong>
+            <span>Prepare a resource, check your PDFs and follow feedback from TEFT.</span>
+          </a>
+        )}
+        {status === "approved" && (
+          <a className="account-action" href="/repository">
+            <strong>Browse repository</strong>
+            <span>Discover accepted, non-confidential resources for your ministry.</span>
+          </a>
+        )}
+        {canReview && (
+          <a className="account-action" href="/reviewer">
+            <strong>Reviewer workspace</strong>
+            <span>Open the current revisions assigned to you for theological review.</span>
+          </a>
+        )}
+        {canManageSettings && (
+          <a className="account-action" href="/admin/settings/email">
+            <strong>Manage application email</strong>
+            <span>Review sender details and notification settings.</span>
+          </a>
+        )}
+        {status === "incomplete" && (
+          <form onSubmit={complete} className="space-y-4 rounded-lg border bg-card p-6">
+            <ProfileFields />
+            <PrivacyAcknowledgement />
+            <Button disabled={busy}>{busy ? "Saving…" : "Complete registration"}</Button>
+          </form>
+        )}
+        {canApprove && (
+          <a className="account-action" href="/admin/registrations">
+            <strong>Manage clergy registrations</strong>
+            <span>Review pending registrations and account access.</span>
+          </a>
+        )}
+      </div>
       {message && <p role="alert">{message}</p>}
       {status === "signed-out" ? (
         <a className="text-primary underline" href="/auth?view=login">

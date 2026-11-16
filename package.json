@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "dev:all": "bash scripts/dev-all.sh",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
@@ -62,7 +63,9 @@
     "db:scans:usage": "node --env-file=.env.db.scanner.local scripts/db/scanner-usage.ts",
     "test:phase42": "node scripts/db/phase42-test.ts",
     "branding:generate": "node scripts/branding/generate.mjs",
-    "db:notifications:status": "node --env-file=.env.db.local scripts/db/notification-status.ts"
+    "db:notifications:status": "node --env-file=.env.db.local scripts/db/notification-status.ts",
+    "test:dev": "node scripts/dev-all.test.mjs",
+    "test:phase421": "node scripts/db/phase42-test.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"
