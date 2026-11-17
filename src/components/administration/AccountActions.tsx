@@ -12,10 +12,13 @@ export function AccountActions({ administration = false }: { administration?: bo
   if (a.status === "signed-out")
     return (
       <div className="flex flex-wrap gap-3">
-        <a className="account-action" href="/auth?view=register">
+        <a
+          className="account-action account-action-button account-action-primary"
+          href="/auth?view=register"
+        >
           Register as clergy
         </a>
-        <a className="account-action" href="/auth?view=login">
+        <a className="account-action account-action-button" href="/auth?view=login">
           Sign in to your account
         </a>
       </div>
