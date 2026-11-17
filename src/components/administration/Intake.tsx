@@ -31,6 +31,7 @@ type Item = {
   assignments: Assignment[];
 };
 type Inbox = {
+  actorId: string;
   total: number;
   unassigned: number;
   items: Item[];
@@ -90,8 +91,9 @@ export function Intake() {
               )}
               <p className="text-sm text-muted-foreground">
                 Reviewer choices show at most 200 eligible identities. Coordinators may explicitly
-                assign themselves to another author’s resource if independently activated as a
-                reviewer. Self-review is prohibited.
+                assign themselves to another author’s non-confidential resource if independently
+                activated as a reviewer. Confidential work requires assignment by another
+                coordinator. Self-review is prohibited.
               </p>
               {data.items.map((item) => (
                 <WorkspaceSection
@@ -154,14 +156,22 @@ export function Intake() {
                     >
                       <option value="">Choose an eligible reviewer</option>
                       {data.reviewers.map((r) => (
-                        <option key={r.user_id} value={r.user_id}>
+                        <option
+                          key={r.user_id}
+                          value={r.user_id}
+                          disabled={item.confidential && r.user_id === data.actorId}
+                        >
                           {r.full_name} · {r.parish} · {r.user_id}
                         </option>
                       ))}
                     </select>
                   </label>
                   <Button
-                    disabled={action.busy || !selected[item.id]}
+                    disabled={
+                      action.busy ||
+                      !selected[item.id] ||
+                      (item.confidential && selected[item.id] === data.actorId)
+                    }
                     onClick={() =>
                       setConfirmation({
                         body: {

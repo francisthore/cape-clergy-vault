@@ -5,6 +5,7 @@ import {
   type LimitPurpose,
 } from "../security/rate-limit.server.ts";
 import { createHash } from "node:crypto";
+import { readInput, RequestError } from "../server/http.server.ts";
 import { APIError } from "better-auth/api";
 import { z } from "zod";
 import { createLocalAuth } from "../../../database/auth/config.server.ts";
@@ -145,10 +146,7 @@ export function createAuthService(
         return auth.handler(request);
       }
       if (request.method !== "POST") return json({}, 404);
-      if (Number(request.headers.get("content-length")) > 16_384) return json({}, 413);
-      const raw = await request.text();
-      if (raw.length > 16_384) return json({}, 413);
-      const input: unknown = JSON.parse(raw);
+      const input = await readInput(request, config.baseURL, 16_384);
       if (path === "/register") {
         const data = registrationSchema.parse(input);
         const denied = await limit(request, "register");
@@ -268,6 +266,7 @@ export function createAuthService(
         console.error("auth.verification_feedback_failed");
         return Response.redirect(`${config.baseURL}/auth?view=verified&error=recovery`, 302);
       }
+      if (error instanceof RequestError) return json({ message: error.message }, error.status);
       if (error instanceof z.ZodError)
         return json({ message: error.issues[0]?.message ?? "Invalid input" }, 400);
       if (error instanceof SyntaxError) return json({ message: "Invalid request" }, 400);

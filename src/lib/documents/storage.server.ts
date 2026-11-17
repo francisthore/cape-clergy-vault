@@ -38,7 +38,9 @@ export function validateFileName(input: string): string {
 export class LocalPrivateStorageProvider implements StorageProvider {
   private root: string;
   private maxBytes: number;
-  constructor(root: string, maxBytes = MAX_PDF_BYTES) {
+  private readOnly: boolean;
+  constructor(root: string, maxBytes = MAX_PDF_BYTES, readOnly = false) {
+    this.readOnly = readOnly;
     this.root = resolve(root);
     this.maxBytes = maxBytes;
     if (this.root.split("/").some((p) => ["public", "dist", ".output", "node_modules"].includes(p)))
@@ -52,7 +54,7 @@ export class LocalPrivateStorageProvider implements StorageProvider {
     for (const segment of this.root.slice(current.length).split("/")) {
       current = join(current, segment);
       try {
-        await mkdir(current, { mode: 0o700 });
+        if (!this.readOnly) await mkdir(current, { mode: 0o700 });
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
       }
@@ -76,6 +78,7 @@ export class LocalPrivateStorageProvider implements StorageProvider {
     body: ReadableStream<Uint8Array>,
     signal: AbortSignal,
   ): Promise<StoredObject> {
+    if (this.readOnly) throw new Error("Read-only private storage");
     const temporary = this.path(key, "part"),
       final = this.path(key, "blob");
     await this.directory();
@@ -201,6 +204,7 @@ export class LocalPrivateStorageProvider implements StorageProvider {
     }
   }
   async delete(key: string) {
+    if (this.readOnly) throw new Error("Read-only private storage");
     const path = this.path(key, "blob");
     await this.directory();
     // Unlink never follows the leaf; only known failed-row keys reach this method.
@@ -211,7 +215,7 @@ export class LocalPrivateStorageProvider implements StorageProvider {
     }
   }
 }
-export function configuredStorage() {
+export function configuredStorage(readOnly = false) {
   if ((process.env["CAPE_STORAGE_PROVIDER"] ?? "local") !== "local")
     throw new Error("Unsupported storage provider");
   if ((process.env["CAPE_DOCUMENT_TYPES"] ?? "pdf") !== "pdf")
@@ -219,5 +223,6 @@ export function configuredStorage() {
   return new LocalPrivateStorageProvider(
     process.env["CAPE_STORAGE_ROOT"] ?? ".local/storage",
     Number(process.env["CAPE_MAX_UPLOAD_BYTES"] ?? MAX_PDF_BYTES),
+    readOnly,
   );
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { fixtures42, origin } from "./phase42-fixtures";
@@ -12,11 +13,21 @@ test.afterAll(async () => {
   await f?.close();
 });
 test.beforeEach(async ({ page }) => {
+  await f.paceAuth();
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/api/auth/account" && !response.ok())
+      console.log(
+        "Account check HTTP status:",
+        response.status(),
+        "Retry-After:",
+        response.headers()["retry-after"] ?? "none",
+      );
+  });
   await page.route("**/*", (route) =>
     new URL(route.request().url()).origin === origin ? route.continue() : route.abort(),
   );
 });
-test("two-account pilot uses web approvals, reviewer mailbox acceptance, explicit assignment and review", async ({
+test("independent managers activate reviewers and coordinate confidential review", async ({
   page,
 }, info) => {
   const coordinator = f.id("approver"),
@@ -27,6 +38,9 @@ test("two-account pilot uses web approvals, reviewer mailbox acceptance, explici
     .client`insert into app.operational_grants(user_id,capability,delegated) values(${coordinator},'access_manager',array['approver','review_coordinator','reviewer'])`;
   await f.owner
     .client`insert into app.operational_grants(user_id,capability) values(${coordinator},'review_coordinator')`;
+  const independent = f.id("multi");
+  await f.owner
+    .client`insert into app.operational_grants(user_id,capability,delegated) values(${independent},'access_manager',array['reviewer']),(${independent},'review_coordinator',array[]::text[])`;
   const worker = await connectLocalNotifications();
   async function deliver(who: string, kind: string) {
     const [row] = await f.owner
@@ -86,6 +100,35 @@ test("two-account pilot uses web approvals, reviewer mailbox acceptance, explici
     await page.screenshot({ path: info.outputPath("phase422-access.png"), fullPage: true });
     await page
       .getByLabel("Reason and identity verification evidence")
+      .fill("Synthetic forbidden self-invitation for boundary validation.");
+    await page.getByLabel(/^Type INVITE/).fill(`INVITE ${coordinator} reviewer`);
+    await expect(page.getByRole("button", { name: "Confirm access operation" })).toBeDisabled();
+    expect(
+      (
+        await page.request.post(origin + "/api/administration", {
+          headers: { origin },
+          data: {
+            action: "access",
+            operation: "invite",
+            identity: coordinator,
+            capability: "reviewer",
+            mailbox: f.address("approver"),
+            confirmation: `INVITE ${coordinator} reviewer`,
+            reason: "Synthetic forbidden self-invitation",
+            requestId: randomUUID(),
+          },
+        })
+      ).status(),
+    ).toBe(403);
+    await f.login(page, "multi");
+    await page.goto("/admin/access");
+    await page.getByLabel("Exact account ID").fill(coordinator);
+    await page.getByRole("button", { name: "Inspect identity" }).click();
+    await expect(
+      page.getByText("Mailbox: " + f.address("approver"), { exact: false }),
+    ).toBeVisible();
+    await page
+      .getByLabel("Reason and identity verification evidence")
       .fill(
         "Synthetic exact registered identity independently verified for pilot reviewer duties.",
       );
@@ -95,6 +138,7 @@ test("two-account pilot uses web approvals, reviewer mailbox acceptance, explici
     await expect(page.getByText("pending", { exact: false }).first()).toBeVisible();
     await deliver(coordinator, "reviewer_invitation");
     const invitation = await f.capture("approver", "reviewer invitation");
+    await f.login(page, "approver");
     await page.goto(invitation.text.match(/https?:\/\/[^\s]+/)![0]!);
     await expect(page).not.toHaveURL(/#token=/);
     await page.getByRole("checkbox").check();
@@ -151,12 +195,32 @@ test("two-account pilot uses web approvals, reviewer mailbox acceptance, explici
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
+    await expect(
+      resource.getByLabel("Eligible reviewer").locator(`option[value="${coordinator}"]`),
+    ).toHaveJSProperty("disabled", true);
+    expect(
+      (
+        await page.request.post(origin + "/api/administration", {
+          headers: { origin },
+          data: {
+            action: "assign",
+            id: submissionId,
+            revision: 1,
+            reviewerId: coordinator,
+            requestId: randomUUID(),
+          },
+        })
+      ).status(),
+    ).toBe(403);
+    await f.login(page, "multi");
+    await page.goto("/admin/intake");
     await resource.getByLabel("Eligible reviewer").selectOption(coordinator);
     await resource.getByRole("button", { name: "Assign reviewer", exact: true }).click();
     await expect(page.getByRole("alertdialog")).toContainText("revision 1");
     await page.getByRole("button", { name: "Confirm operation" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Reviewer assigned" })).toBeVisible();
     await deliver(coordinator, "review_assigned");
+    await f.login(page, "approver");
     await page.goto("/reviewer/submissions/" + submissionId);
     await expect(
       page.getByRole("heading", {

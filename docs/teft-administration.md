@@ -1,6 +1,6 @@
 # TEFT pilot administration and recovery
 
-Phase 4.2.2, 17 November 2026 (Africa/Johannesburg). Local pilot only.
+Updated for Phase 4.3.1, 17 November 2026 (Africa/Johannesburg). Synthetic local demonstration only; no real-pilot approval.
 
 ## Independent authority
 
@@ -28,9 +28,11 @@ submission time, workflow state and assignment evidence. Their title is replaced
 review notes are omitted. Non-confidential routing additionally shows the title.
 This is an explicitly authorized routing projection, not broader submission SELECT.
 A coordinator who is independently an active reviewer may deliberately assign
-**themselves to someone else’s resource**. This is the owner-requested exception to
-the earlier blanket prohibition on self-assignment. SQL still prohibits assigning
-any author to their own submission and grants access only to the confirmed revision.
+**themselves only to someone else’s non-confidential resource**. Confidential work
+requires a different authorized coordinator to assign an already eligible reviewer.
+SQL prohibits author self-review and grants access only to the confirmed revision.
+Coordination alone never gives document access. A single administrator cannot enable
+confidential review without an appropriate second authorized person.
 
 ## One-time first administrator
 
@@ -137,8 +139,9 @@ replacement. Restoring a changed mailbox does not revive an invalidated invitati
 
 Direct reviewer grants, system admin, access-manager grants and editing delegation
 ceilings are unavailable through HTTP. Self-grants and self-revocations are refused;
-a delegated manager may invite themselves, but must still prove mailbox control and
-accept explicitly. A second manager or guarded emergency tool handles self-revocation.
+self-invitation is also refused. Another authorized access manager must initiate the
+invitation; mailbox proof and explicit recipient acceptance remain mandatory. A second
+manager or guarded emergency tool handles self-revocation.
 This prevents an access manager from expanding their own delegation or capabilities.
 
 Bulk identity browsing/search, bulk grants, coordinator mail reminders, a full access
@@ -212,3 +215,12 @@ intake alerts transactionally. Expired/revoked leases cannot finish. A send alre
 past its final check can still race revocation; every link checks current authority.
 Provider or capture acceptance is not inbox delivery. Actual scheduling, controlled
 provider/inbox acceptance and production monitoring remain release prerequisites.
+
+## Phase 4.3.1 maintenance
+
+Migration 0039 preserves existing grants/assignments and blocks activation of pending
+self-issued invitations. Apply it only through owner-authorized forward maintenance;
+see [pilot security maintenance](pilot-security-maintenance.md). Confidential PDFs
+remain blocked pending an approved processing route. The current operational PDF
+limit is 4 MiB within the hard 20 MiB ceiling. See the
+[Diocese approval pack](diocese-pilot-approval-pack.md) before any real-clergy use.

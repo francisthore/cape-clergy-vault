@@ -66,8 +66,8 @@ export async function runBouncerWorker(
         if (c.providerStatus === "submitting") result = "ambiguous";
         else {
           // Verify bytes and quota BEFORE committing the ambiguous-submission marker.
-          localHash = await checksum(storage, c, signal);
           scanner.canSubmit(c.byteSize);
+          localHash = await checksum(storage, c, signal);
           const usage = await scanner.usage(signal);
           const [reserved] = await checkpoint(
             db`select app.reserve_bouncer_scan(${c.documentId},${c.lease},${usage.used},${usage.limit},${usage.period}) as ok`,

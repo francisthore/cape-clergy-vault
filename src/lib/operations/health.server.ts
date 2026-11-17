@@ -35,7 +35,9 @@ let cached: Promise<Response> | undefined,
   lastCheck = 0;
 let connection:
   | Promise<
-      Awaited<ReturnType<typeof import("../../../database/runtime.server.ts").connectLocalRuntime>>
+      Awaited<
+        ReturnType<typeof import("../../../database/service-connections.server.ts").connectRuntime>
+      >
     >
   | undefined;
 export async function handleHealth(path: string) {
@@ -51,8 +53,9 @@ export async function handleHealth(path: string) {
             origin = process.env["BETTER_AUTH_URL"];
           if (!secret || secret.length < 32 || !origin) throw Error("Configuration unavailable");
           new URL(origin);
-          const { connectLocalRuntime } = await import("../../../database/runtime.server.ts");
-          connection ??= connectLocalRuntime().catch((error) => {
+          const { connectRuntime } =
+            await import("../../../database/service-connections.server.ts");
+          connection ??= connectRuntime().catch((error) => {
             connection = undefined;
             throw error;
           });

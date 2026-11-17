@@ -1,3 +1,4 @@
+import { configuredUploadPolicy } from "../documents/upload-policy.server.ts";
 import type { createAuthService } from "../auth/service.server.ts";
 import { draftSchema, querySchema, transitionSchema } from "./validation.ts";
 import { failure, json, readInput, RequestError } from "../server/http.server.ts";
@@ -44,6 +45,7 @@ export function createSubmissionService(
                 : await tx`select app.author_assignment_status(${q.id}) as status`;
               return {
                 assignmentStatus: assignment?.["status"],
+                ...(!repository ? { uploadPolicy: configuredUploadPolicy() } : {}),
                 submission: rows[0],
                 documents,
                 history,

@@ -1,10 +1,10 @@
 import { acquireWorkerLock } from "../worker-lock.ts";
-import { connectLocalNotifications } from "../../database/notifications.server.ts";
+import { connectNotifications } from "../../database/service-connections.server.ts";
 import { configuredEmail } from "../../src/lib/email/service.server.ts";
 import { deliverApprovalNotifications } from "../../src/lib/approvals/notifications.server.ts";
 const origin = process.env["BETTER_AUTH_URL"];
 if (!origin) throw new Error("Trusted application origin required");
-const worker = await connectLocalNotifications();
+const worker = await connectNotifications();
 const email = configuredEmail(origin, process.env, worker.client);
 let release: (() => Promise<void>) | undefined;
 try {

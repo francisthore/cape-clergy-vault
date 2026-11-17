@@ -20,7 +20,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { submissionStatusLabel, lifecycleLabel } from "@/lib/submissions/wording";
 import { SubmissionForm } from "./SubmissionForm";
+import {
+  screeningGuidance,
+  screeningSelectionError,
+  type UploadPolicy,
+} from "@/lib/documents/upload-policy";
 type Detail = {
+  uploadPolicy?: UploadPolicy;
   submission: SubmissionRow;
   assignmentStatus?: "assigned" | "unassigned";
   documents: Attachment[];
@@ -55,7 +61,12 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
   const selectFile = async (file: File | undefined) => {
     if (xhr.current) return;
     const current = ++selectionGeneration.current;
-    const error = file ? validatePdfSelection(file) : "Choose or drop one PDF at a time.";
+    const error = file
+      ? (validatePdfSelection(file) ??
+        (data?.uploadPolicy
+          ? screeningSelectionError(file.size, data.uploadPolicy, data.submission.confidential)
+          : null))
+      : "Choose or drop one PDF at a time.";
     setFileError(error ?? "");
     setSelectedFile(null);
     setCheckingFile(false);
@@ -175,7 +186,11 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
   }
   function upload(file: File) {
     if (xhr.current || !data || !authorized || busy || editing) return;
-    const error = validatePdfSelection(file);
+    const error =
+      validatePdfSelection(file) ??
+      (data?.uploadPolicy
+        ? screeningSelectionError(file.size, data.uploadPolicy, data.submission.confidential)
+        : null);
     if (error) {
       setFileError(error);
       return;
@@ -364,6 +379,11 @@ export function SubmissionDetail({ id, repository = false }: { id: string; repos
                     selected={selectedFile}
                     onSelect={(file) => void selectFile(file)}
                     onUpload={() => selectedFile && upload(selectedFile)}
+                    guidance={
+                      data.uploadPolicy
+                        ? screeningGuidance(data.uploadPolicy, data.submission.confidential)
+                        : undefined
+                    }
                     onCancel={() => xhr.current?.abort()}
                     error={fileError}
                     checking={checkingFile}

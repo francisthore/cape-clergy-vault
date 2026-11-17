@@ -220,3 +220,29 @@ test("configuration accepts only real providers and production rejects explicit 
     });
   }
 });
+
+test("4 MiB route boundary and missing host reject large submissions before any provider call", async () => {
+  let calls = 0;
+  const small = new BouncerScanner({
+    apiKey: "synthetic-only",
+    uploadHost: "",
+    fetch: (async () => {
+      calls++;
+      throw Error("Unexpected provider call");
+    }) as typeof fetch,
+  });
+  for (const size of [BOUNCER_V1_MAX_BYTES - 1, BOUNCER_V1_MAX_BYTES])
+    assert.doesNotThrow(() => small.canSubmit(size));
+  for (const size of [BOUNCER_V1_MAX_BYTES + 1, 20 * 1024 * 1024]) {
+    await assert.rejects(
+      small.submit(bytes(size), size, async () => {}),
+      category("unsafe_destination"),
+    );
+  }
+  assert.equal(calls, 0);
+  const large = make(() => {
+    throw Error("No provider call expected");
+  });
+  assert.doesNotThrow(() => large.canSubmit(20 * 1024 * 1024));
+  assert.throws(() => large.canSubmit(20 * 1024 * 1024 + 1), category("invalid_response"));
+});

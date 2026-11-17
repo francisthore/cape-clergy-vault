@@ -1,0 +1,17 @@
+-- REVIEW ONLY, DBA after explicit host/target approval. Never run automatically.
+-- Check for existing names/ownership/memberships first; collisions BLOCK provisioning.
+-- Use privately generated distinct SCRAM passwords via protected psql \password;
+-- do not put actual passwords in this file, shell history or process arguments.
+CREATE ROLE cape_clergy_dev LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION;
+CREATE ROLE cape_clergy_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION CONNECTION LIMIT 2;
+CREATE ROLE cape_clergy_scanner LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION CONNECTION LIMIT 2;
+CREATE ROLE cape_clergy_notifications LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION CONNECTION LIMIT 4;
+CREATE DATABASE cape_clergy_vault OWNER cape_clergy_dev;
+COMMENT ON DATABASE cape_clergy_vault IS 'cape-clergy-vault:production:REPLACE_WITH_APPROVED_INSTALLATION_UUID';
+REVOKE ALL ON DATABASE cape_clergy_vault FROM PUBLIC;
+-- Connect only to cape_clergy_vault, as its owner, to REVOKE CREATE ON SCHEMA public FROM PUBLIC.
+-- Use the explicit production-maintenance entry under a short-lived operator credential
+-- for forward migration, then reviewed grants, then read-only check.
+-- Never ALTER global PostgreSQL socket/memory settings blindly on the shared host.
+-- Native Unix socket path must be separately provisioned and tested; alternatively use
+-- exact DNS+certificate-verified TLS with the root-owned approved target/CA files.

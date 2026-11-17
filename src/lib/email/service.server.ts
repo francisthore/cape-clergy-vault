@@ -118,6 +118,23 @@ export class EmailService {
   }
 }
 export function configuredEmail(origin: string, env = process.env, client?: Sql) {
+  if (env["EMAIL_PROVIDER"] === "disabled") {
+    // Explicit isolated staging/maintenance mode. It never captures or sends a
+    // proof, reports delivery success, or bypasses account verification/outboxes.
+    return new EmailService(
+      {
+        send: async () => {
+          throw Error("EMAIL_DISABLED");
+        },
+      },
+      { from: "Disabled <disabled@example.invalid>", origin },
+      async () => ({
+        from: "Disabled <disabled@example.invalid>",
+        transactionalEnabled: false,
+        notificationsEnabled: false,
+      }),
+    );
+  }
   const real = env["EMAIL_PROVIDER"] === "resend";
   if (
     env["NODE_ENV"] === "production" &&

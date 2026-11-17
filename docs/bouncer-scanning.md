@@ -184,3 +184,31 @@ local target. They require no live fixture residue and verify append-only enforc
 and restricted privileges; they report retained evidence instead of demanding an
 empty history. Three earlier synthetic download-audit rows are intentionally retained.
 See the [implementation report](phase-41b-report.md) for causes and preservation checks.
+
+## Phase 4.3.1 superseding operational safeguards
+
+The UI/server operational limit now defaults to **4 MiB**, with a fixed 20 MiB hard
+ceiling. Confidential PDF uploads are refused before storage reservation. The database
+0038 gate blocks new confidential claims/reservations, and forward migration 0039
+fences later classification changes after any committed external-transfer intent,
+including excluded attachments and stale repeatable-read transactions. Provider IDs
+continue reconciliation without new bytes; missing-ID submission markers remain
+ambiguous. No real scanner was invoked during remediation.
+
+The official [v2 reference](https://usebouncer.dev/docs/) was re-read on 17 November
+2026; it still supplies a placeholder bucket. No actual host or live v2 integration
+was verified. Do not raise `CAPE_SCREENING_MAX_BYTES` until the worker pin/contract and
+authorization have evidence. Protected current held-job counts are zero; the read-only
+inventory found two currently confidential PDFs with provider IDs requiring responsible-
+party investigation. That is potential historical transfer evidence, not a real-data
+or legal determination. Never infer that a gate recalls prior bytes.
+
+Read [pilot maintenance](pilot-security-maintenance.md) for the owner migration and
+held-job procedure and [preflight](phase-5-deployment-preflight.md) before deployment.
+No automatic requeue, quota reset or large-file fallback was added. Separate-endpoint
+`test:phase43`/`test:phase422` now run alongside the preserved cluster; the direct
+original-endpoint `db:test:phase41b` still refuses an active preserved database.
+
+Historical confidential Bouncer clean verdicts remain stored provider evidence but
+0039 excludes them from `document_is_clean`; submission and audited download gates
+cannot release those bytes without a separately reviewed approved route.

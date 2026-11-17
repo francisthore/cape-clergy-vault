@@ -1,4 +1,4 @@
-import { connectLocalRuntime } from "../../../database/runtime.server.ts";
+import { connectRuntime } from "../../../database/service-connections.server.ts";
 import { configuredEmail } from "../email/service.server.ts";
 import { createAuthService } from "./service.server.ts";
 let service: Promise<ReturnType<typeof createAuthService>> | undefined;
@@ -8,9 +8,8 @@ export function getAuthService() {
       const secret = process.env["BETTER_AUTH_SECRET"];
       const baseURL = process.env["BETTER_AUTH_URL"];
       if (!secret || !baseURL) throw new Error("Explicit Better Auth secret and origin required");
-      // This phase has intentionally local-only DB safety guards and a draft notice.
-      // NODE_ENV=production is also used by the local Node build; deployment remains blocked.
-      const connection = await connectLocalRuntime();
+      // Database mode is explicit; the local production build retains guarded local targets.
+      const connection = await connectRuntime();
       const email = configuredEmail(baseURL, process.env, connection.client);
       return createAuthService(connection, email, { secret, baseURL });
     })().catch((error: unknown) => {

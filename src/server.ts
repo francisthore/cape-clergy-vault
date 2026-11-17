@@ -1,10 +1,15 @@
 import "./lib/error-capture";
+import { withCspNonce } from "./lib/security/csp-context.server";
+import { newCspNonce, secureResponse } from "./lib/security/headers.server";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
 type ServerEntry = {
-  fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
+  fetch: (
+    request: Request,
+    options?: { context: { nonce: string } },
+  ) => Promise<Response> | Response;
 };
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
@@ -44,78 +49,84 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
-export default {
-  async fetch(request: Request, env: unknown, ctx: unknown) {
-    try {
-      const path = new URL(request.url).pathname;
-      if (path === "/health/live" || path === "/health/ready") {
-        if (request.method !== "GET" && request.method !== "HEAD")
-          return new Response(null, { status: 405 });
-        const { handleHealth } = await import("./lib/operations/health.server");
-        return handleHealth(path);
-      }
-      if (path === "/admin/registrations" || path.startsWith("/admin/registrations/")) {
-        const { authorizeApprovalPage } = await import("./lib/approvals/runtime.server");
-        const denied = await authorizeApprovalPage(request.headers);
-        if (denied) return denied;
-      }
-      if (
-        (path === "/reviewer" || path.startsWith("/reviewer/")) &&
-        path !== "/reviewer/invitation"
-      ) {
-        const { authorizeReviewerPage } = await import("./lib/reviews/runtime.server");
-        const id = path.startsWith("/reviewer/submissions/")
-          ? path.slice("/reviewer/submissions/".length)
-          : undefined;
-        if (id && !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id))
-          return new Response("Item unavailable", {
-            status: 404,
-            headers: { "Cache-Control": "no-store" },
-          });
-        const denied = await authorizeReviewerPage(request.headers, id);
-        if (denied) return denied;
-      }
-      if (path === "/admin/settings/email") {
-        const { authorizeSettingsPage } = await import("./lib/settings/runtime.server");
-        const denied = await authorizeSettingsPage(request.headers);
-        if (denied) return denied;
-      }
-      if (
-        path === "/admin" ||
-        path === "/admin/intake" ||
-        path === "/admin/access" ||
-        path === "/submissions" ||
-        path.startsWith("/submissions/") ||
-        path === "/repository" ||
-        path.startsWith("/repository/")
-      ) {
-        const { authorizeSubmissionPage } = await import("./lib/submissions/runtime.server");
-        const denied = await authorizeSubmissionPage(request.headers);
-        if (denied) return denied;
-      }
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      const normalized = await normalizeCatastrophicSsrResponse(response);
-      if (
-        ["/auth", "/account", "/documents", "/admin"].includes(path) ||
-        path.startsWith("/admin/") ||
-        path.startsWith("/submissions") ||
-        path.startsWith("/repository") ||
-        path.startsWith("/reviewer")
-      ) {
-        const headers = new Headers(normalized.headers);
-        headers.set("Cache-Control", "no-store");
-        headers.set("Referrer-Policy", "no-referrer");
-        headers.set("Vary", "Cookie");
-        return new Response(normalized.body, { status: normalized.status, headers });
-      }
-      return normalized;
-    } catch (error) {
-      console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
+async function handleRequest(request: Request) {
+  try {
+    const path = new URL(request.url).pathname;
+    if (path === "/health/live" || path === "/health/ready") {
+      if (request.method !== "GET" && request.method !== "HEAD")
+        return new Response(null, { status: 405 });
+      const { handleHealth } = await import("./lib/operations/health.server");
+      return handleHealth(path);
     }
+    if (path === "/admin/registrations" || path.startsWith("/admin/registrations/")) {
+      const { authorizeApprovalPage } = await import("./lib/approvals/runtime.server");
+      const denied = await authorizeApprovalPage(request.headers);
+      if (denied) return denied;
+    }
+    if (
+      (path === "/reviewer" || path.startsWith("/reviewer/")) &&
+      path !== "/reviewer/invitation"
+    ) {
+      const { authorizeReviewerPage } = await import("./lib/reviews/runtime.server");
+      const id = path.startsWith("/reviewer/submissions/")
+        ? path.slice("/reviewer/submissions/".length)
+        : undefined;
+      if (id && !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id))
+        return new Response("Item unavailable", {
+          status: 404,
+          headers: { "Cache-Control": "no-store" },
+        });
+      const denied = await authorizeReviewerPage(request.headers, id);
+      if (denied) return denied;
+    }
+    if (path === "/admin/settings/email") {
+      const { authorizeSettingsPage } = await import("./lib/settings/runtime.server");
+      const denied = await authorizeSettingsPage(request.headers);
+      if (denied) return denied;
+    }
+    if (
+      path === "/admin" ||
+      path === "/admin/intake" ||
+      path === "/admin/access" ||
+      path === "/submissions" ||
+      path.startsWith("/submissions/") ||
+      path === "/repository" ||
+      path.startsWith("/repository/")
+    ) {
+      const { authorizeSubmissionPage } = await import("./lib/submissions/runtime.server");
+      const denied = await authorizeSubmissionPage(request.headers);
+      if (denied) return denied;
+    }
+    const handler = await getServerEntry();
+    const response = await handler.fetch(request);
+    const normalized = await normalizeCatastrophicSsrResponse(response);
+    if (
+      ["/auth", "/account", "/documents", "/admin"].includes(path) ||
+      path.startsWith("/admin/") ||
+      path.startsWith("/submissions") ||
+      path.startsWith("/repository") ||
+      path.startsWith("/reviewer")
+    ) {
+      const headers = new Headers(normalized.headers);
+      headers.set("Cache-Control", "no-store");
+      headers.set("Referrer-Policy", "no-referrer");
+      headers.set("Vary", "Cookie");
+      return new Response(normalized.body, { status: normalized.status, headers });
+    }
+    return normalized;
+  } catch (error) {
+    console.error(error);
+    return new Response(renderErrorPage(), {
+      status: 500,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
+  }
+}
+export default {
+  async fetch(request: Request) {
+    const nonce = process.env["NODE_ENV"] === "production" ? newCspNonce() : undefined;
+    return withCspNonce(nonce, async () =>
+      secureResponse(await handleRequest(request), request, nonce),
+    );
   },
 };

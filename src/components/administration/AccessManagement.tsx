@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAdministration, useAdministrationAction } from "./useAdministration";
 type Identity = {
+  isSelf: boolean;
   id: string;
   email: string;
   verified: boolean;
@@ -115,7 +116,12 @@ export function AccessManagement() {
                 className="space-y-4 border-t pt-4"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (confirmation !== required || !data.delegated.includes(capability)) return;
+                  if (
+                    confirmation !== required ||
+                    !data.delegated.includes(capability) ||
+                    (data.isSelf && operation !== "cancel-invitation")
+                  )
+                    return;
                   void action
                     .run(
                       {
@@ -222,7 +228,8 @@ export function AccessManagement() {
                   Record how the exact identity was verified without passwords, proof links or
                   sensitive submission details. Access managers cannot grant system admin,
                   access-manager authority or reviewer status directly. Self-grants and
-                  self-revocation are prohibited; self-invitation still requires mailbox proof.
+                  self-revocation and self-invitation are prohibited. Another authorized access
+                  manager must invite you.
                 </p>
                 <label className="block break-words" htmlFor="confirmation">
                   Type {required} to confirm
@@ -238,6 +245,7 @@ export function AccessManagement() {
                 <Button
                   disabled={
                     action.busy ||
+                    (data.isSelf && operation !== "cancel-invitation") ||
                     confirmation !== required ||
                     !data.delegated.includes(capability) ||
                     ((operation === "grant" || operation === "invite") && !data.eligible)

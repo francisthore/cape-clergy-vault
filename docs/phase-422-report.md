@@ -1,5 +1,8 @@
 # Phase 4.2.2 — Submission readiness and TEFT administration
 
+> Historical Phase 4.2.2 evidence. Self-invitation and confidential self-assignment
+> described here are superseded by Phase 4.3.1; see [current remediation](phase-431-pilot-remediation-report.md).
+
 17 November 2026 (Africa/Johannesburg).
 
 Implemented locally. No deployment, commit, push, persistent database migration/reset,

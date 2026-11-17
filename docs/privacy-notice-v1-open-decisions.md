@@ -52,3 +52,19 @@ Status: **all items open.** The proposed draft is in [privacy-notice-v1-draft.md
 - The active acknowledged notice (`repository-v1-proposed-2026-11-16`) and its text are unchanged. The registration checkbox still records that version, so the modal still shows the acknowledged text.
 - The draft is complete in structure. It is ready for legal and governance review, not for acknowledgement.
 - Remove every placeholder only when the Diocese has supplied and approved the underlying fact. Do not replace a placeholder with a guess.
+
+## Phase 4.3.1 review attachment (no approvals recorded)
+
+Use the single [Diocese pilot approval pack](diocese-pilot-approval-pack.md) for the
+current non-technical decision register. All organizational decisions remain open.
+Technical updates: self-invitations and confidential self-assignment are blocked;
+confidential PDF uploads/new external transfers fail closed; operational PDF limit
+defaults to 4 MiB; fonts are served locally (B6's external-request observation is
+superseded). No frozen acknowledged notice text/version was changed. Reconcile these
+facts, draft wording about general “TEFT staff” access to private notes, and the
+current acknowledgement/draft version distinction before adopting a notice.
+
+A read-only inventory found two currently confidential PDFs with provider scan IDs.
+This is an open restricted-investigation item for the responsible office; no real-data
+classification, lawful-processing conclusion or incident notification decision has
+been made. Preserve evidence and do not describe earlier transfers as reversed.

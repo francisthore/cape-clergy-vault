@@ -139,3 +139,20 @@ describe("private local storage", () => {
     expect((await readdir(root)).sort()).toEqual(ids.map((id) => id + ".blob").sort());
   });
 });
+
+it("read-only scanner storage opens owned objects but cannot save, delete or create a root", async () => {
+  const { root, storage } = await fixture(),
+    id = randomUUID();
+  await storage.save(id, stream(), AbortSignal.timeout(1000));
+  const reader = new LocalPrivateStorageProvider(root, 20971520, true);
+  const object = await reader.open(id);
+  expect(await object.read()).toEqual(pdf);
+  await object.close();
+  await expect(reader.save(randomUUID(), stream(), AbortSignal.timeout(1000))).rejects.toThrow(
+    "Read-only",
+  );
+  await expect(reader.delete(id)).rejects.toThrow("Read-only");
+  const absent = new LocalPrivateStorageProvider(join(root, "absent"), 20971520, true);
+  await expect(absent.open(randomUUID())).rejects.toThrow();
+  expect(await readdir(root)).toEqual([id + ".blob"]);
+});

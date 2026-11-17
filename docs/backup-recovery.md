@@ -11,7 +11,7 @@ over the guarded development database, KBSK, Q-Ahead or any remote database.
 Protect one mutually consistent set: PostgreSQL auth/profiles/capabilities/settings,
 submissions/reviews/audits, migration ledger, notification/scan jobs and scan evidence;
 all private/quarantined/legacy objects; application release identifier and configuration
-schema; ClamAV/worker/supervisor configuration. Provider and Better Auth secrets,
+schema; scanner/worker/supervisor configuration. Bouncer is the intended shared-host scanner; no ClamAV installation is proposed. Provider and Better Auth secrets,
 invitation encryption material and backup-decryption keys require a separately
 controlled encrypted secret backup. A DB dump alone cannot recover pending invitation
 ciphertext. Do not place secrets or captures in ordinary source/database archives.
@@ -101,3 +101,21 @@ The reconciliation barrier is an **operator procedure** exercised by the drill, 
 automatic web-startup lock. Do not start web before it passes. Downloads still require
 clean evidence, live RLS and committed authorization/start audits; metadata-only safety
 does not replace recovery-time byte reconciliation.
+
+## Phase 4.3.1 recovery extension
+
+The current disposable drill additionally restores a pending invitation envelope
+and verifies correct-key digest recovery plus wrong-key rejection, without printing
+proof. It preserves an accepted Bouncer scan ID and
+a missing-ID submission marker across encrypted backup/restore and proves neither
+becomes clean. Provider calls remain disabled. The operational restore must preserve
+these records, never reset quota/attempts and never re-upload an ambiguous submission.
+Existing IDs resume only their permitted poll path; finite provider retention/idempotency
+can require operator investigation. A provider 404 cannot establish clean status.
+
+An interrupted deployment stays quiescent until the schema/release/object pair and
+immutable histories reconcile. Revert an application artifact only after compatibility
+review, retaining additive migrations and new evidence. Never overwrite live post-backup
+history to manufacture an old schema. Prefer a forward repair if compatibility is
+uncertain. Actual off-host restoration, separate-custodian key recovery, host reboot
+and measured RPO/RTO remain untested and need approval. See [preflight](phase-5-deployment-preflight.md).

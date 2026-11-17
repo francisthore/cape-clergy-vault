@@ -142,3 +142,19 @@ authorized/executed during development. The Diocese must approve processor terms
 cross-border arrangements, appropriate notice/lawful basis, confidentiality scope,
 retention/rights and incident handling before real clergy use. Existing repository
 consent is not claimed as approval for this new external transfer.
+
+## Phase 4.3.1 review attachment (no approvals recorded)
+
+Use the single [Diocese pilot approval pack](diocese-pilot-approval-pack.md) for the
+current non-technical decision register. All organizational decisions remain open.
+Technical updates: self-invitations and confidential self-assignment are blocked;
+confidential PDF uploads/new external transfers fail closed; operational PDF limit
+defaults to 4 MiB; fonts are served locally (B6's external-request observation is
+superseded). No frozen acknowledged notice text/version was changed. Reconcile these
+facts, draft wording about general “TEFT staff” access to private notes, and the
+current acknowledgement/draft version distinction before adopting a notice.
+
+A read-only inventory found two currently confidential PDFs with provider scan IDs.
+This is an open restricted-investigation item for the responsible office; no real-data
+classification, lawful-processing conclusion or incident notification decision has
+been made. Preserve evidence and do not describe earlier transfers as reversed.

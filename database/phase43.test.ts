@@ -333,6 +333,7 @@ test("Phase 4.3 horizontal and vertical privilege-escalation probes (synthetic i
             worker.client`select app.reserve_bouncer_scan(${ordinary},${claimed.lease},0,100,${new Date().toISOString().slice(0, 7)})`,
             { code: "42501" },
           );
+          await worker.client`select app.finish_bouncer_scan(${ordinary},${claimed.lease},null,'ineligible',null,null,null,false)`;
         } finally {
           await worker.close();
         }
@@ -340,17 +341,12 @@ test("Phase 4.3 horizontal and vertical privilege-escalation probes (synthetic i
     );
 
     await t.test(
-      "diagnostic F-01: delegation self-escalation path (recorded, not asserted)",
+      "F-01 independent reviewer activation and confidential assignment guards are installed",
       async () => {
-        // Evidence only. A holder of access_manager (delegating reviewer) plus review_coordinator could
-        // invite themselves as reviewer (mailbox proof) and self-assign to another's confidential work.
-        // The Phase 4.2.2 suite exercises this deliberately; this probe records the DB-level guard state.
-        const [guard] =
-          await owner.client`select prosrc ~ 'identity=actor AND action IN \\(''grant'',''revoke''\\)' as blocks_self_grant_revoke_only,
-        prosrc !~ 'identity=actor AND action=''invite''' as invite_to_self_allowed
-        from pg_proc where oid='app.manage_access(text,text,text,text,text,text,uuid,uuid,text,text)'::regprocedure`;
-        console.log(JSON.stringify({ event: "phase43.finding.F-01", ...guard }));
-        assert.ok(guard);
+        const [guard] = await owner.client`select
+       position('''grant'',''revoke'',''invite''' in prosrc)>0 as safe
+       from pg_proc where oid='app.manage_access(text,text,text,text,text,text,uuid,uuid,text,text)'::regprocedure`;
+        assert.equal(guard?.["safe"], true);
       },
     );
   } finally {

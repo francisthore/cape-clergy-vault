@@ -13,7 +13,7 @@ role creation or real application capability grant occurred.
 
 Non-owner service logins have NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOREPLICATION/
 NOBYPASSRLS, no memberships, owned relations/schemas, database CREATE/TEMP, PUBLIC
-schema creation or inherited privileged functions. RLS is enabled on all 25 app
+schema creation or inherited privileged functions. RLS is enabled on all 29 app
 tables. Auth tables retain their reviewed adapter boundary. Operator ownership can
 bypass ordinary RLS; keep that credential outside services and record operator work.
 
@@ -71,3 +71,20 @@ component; function grants do not protect against its own provider credential ab
 crash lease recovery, retry exhaustion, payload stability and provider failure safety.
 Previous 3E/3F operator fixtures continue to cover exact review/mailbox cancellation.
 No owner-only fixture is represented as restricted-role authorization evidence.
+
+## Phase 4.3.1 explicit production boundary
+
+`database/production.server.ts` selects only a root-approved exact database/owner/host/
+port/installation marker, with a dedicated per-unit credential and verified TLS for
+TCP. Same-host Unix sockets use the fixed protected path. Local factories remain
+unchanged. The historical owner name `cape_clergy_dev` is retained for SQL operator
+checks, with new host-specific credentials and no service membership; do not reuse
+the development password. Production grants render the three reviewed grant files
+with only the fixed database name changed. A fresh synthetic production-named DB
+exercises migration, exact grants, RLS, ownership and immutable-trigger audits.
+
+The runtime pool is shared by auth and health (two connections); each worker uses
+two connections, including its reserved overlap-prevention lock. Notifications allow
+four across two workers. An operator pool uses one temporarily. Credentials, mounted
+configuration/TLS and actual host isolation still require authorized staging acceptance.
+[Preflight](phase-5-deployment-preflight.md) contains the complete procedure.

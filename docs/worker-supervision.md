@@ -91,3 +91,23 @@ currently eligible approvers. It needs no extra scheduler or table privileges.
 See [registration notification operation and diagnosis](registration-notifications.md)
 for zero-recipient evidence, no-backfill behavior, safe capture tests and read-only
 queue diagnostics. Do not drain the configured real queue during automated tests.
+
+## Phase 4.3.1 shared-host deployment templates
+
+Prefer the reviewed native units in `ops/systemd/` and the
+[Phase 5 preflight](phase-5-deployment-preflight.md), which supersede the web-only PM2
+proposal for host isolation. Bouncer is the intended scanner; no ClamAV installation
+is authorized or planned on this host. Web/scanner keep storage ownership in separate
+PID/mount namespaces, scanner storage is read-only, and each unit has only its own
+credential mount. `scripts/service-entry.mjs` fails unless it is unprivileged PID 1.
+Systemd >=257/PID namespace support and actual cross-process/file denials must be
+verified; unsupported settings cannot be treated as accepted isolation. Production
+worker locks live under the unit's dedicated `/run/cape-vault/<kind>` path, keeping
+release artifacts read-only. Existing SQL overlap locks, lease recovery and bounds
+remain in effect. No worker with a real key was started in remediation.
+
+The prepared production entry and initial flock wrapper use Node 24 `execve` to
+replace setup processes (no spawn fallback), leaving one web Node and at most two
+Nodes per worker while a batch is active. Verify this currently experimental API,
+absolute native flock path and PID-1 signal/namespace behavior on authorized staging.
+Local development retains the tested child-wrapper lifecycle.

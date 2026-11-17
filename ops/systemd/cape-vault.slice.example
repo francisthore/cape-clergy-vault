@@ -1,0 +1,8 @@
+# REVIEW ONLY. Shared-host allocation must be measured and explicitly approved.
+[Unit]
+Description=Cape Clergy Vault resource budget
+[Slice]
+MemoryHigh=1G
+MemoryMax=1536M
+CPUQuota=130%
+TasksMax=128

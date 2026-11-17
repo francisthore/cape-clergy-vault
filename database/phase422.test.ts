@@ -203,8 +203,30 @@ test("Phase 4.2.2 disposable TEFT administration and exact-revision boundaries",
           (await post({ cookie: cookies }, { ...body, actorId: coordinator })).status,
           400,
         );
-        assert.equal((await post({ cookie: cookies }, body)).status, 200);
-        assert.equal((await post({ cookie: cookies }, body)).status, 200);
+        assert.equal((await post({ cookie: cookies }, body)).status, 403);
+        await owner.client`insert into app.operational_grants(user_id,capability,delegated) values(${other},'access_manager',array['reviewer'])`;
+        const issued = createInvitationProof(secret, coordinator),
+          inviteRequest = randomUUID();
+        await access(
+          other,
+          coordinator,
+          "reviewer",
+          "invite",
+          inviteRequest,
+          null,
+          issued.digest,
+          issued.sealed,
+        );
+        await access(
+          other,
+          coordinator,
+          "reviewer",
+          "invite",
+          inviteRequest,
+          null,
+          issued.digest,
+          issued.sealed,
+        );
         const [inv] =
           await owner.client`select n.sealed_token,i.token_digest,i.id,i.expires_at,i.created_at from app.reviewer_notifications n join app.reviewer_invitations i on i.id=n.invitation_id where i.user_id=${coordinator} and i.state='pending'`;
         assert.ok(inv);
@@ -476,7 +498,7 @@ test("Phase 4.2.2 disposable TEFT administration and exact-revision boundaries",
       },
     );
     await t.test(
-      "explicit coordinator self-assignment on another author's work is revision-bound and cannot permit self-review",
+      "confidential assignments need another coordinator; non-confidential self-assignment remains revision-bound",
       async () => {
         const own = await draft(coordinator);
         await submit(coordinator, own);
@@ -499,11 +521,20 @@ test("Phase 4.2.2 disposable TEFT administration and exact-revision boundaries",
         await submit(author, emergency);
         await owner.client`select app.reviewer_operator('assign',${coordinator},${emergency},null,null,${"ASSIGN " + coordinator + " " + emergency + " REVISION 1"},1)`;
         assert.ok((await notices(emergency, "submission_intake"))[0]!["cancelled_at"]);
+        await assert.rejects(
+          as(
+            coordinator,
+            (tx) =>
+              tx`select app.coordinate_assignment(${confidential},1,${coordinator},${randomUUID()})`,
+          ),
+          { code: "42501" },
+        );
+        await owner.client`insert into app.operational_grants(user_id,capability) values(${other},'review_coordinator')`;
         const request = randomUUID();
         assignment = String(
           (
             await as(
-              coordinator,
+              other,
               (tx) =>
                 tx`select app.coordinate_assignment(${confidential},1,${coordinator},${request}) id`,
             )
@@ -512,7 +543,7 @@ test("Phase 4.2.2 disposable TEFT administration and exact-revision boundaries",
         assert.equal(
           (
             await as(
-              coordinator,
+              other,
               (tx) =>
                 tx`select app.coordinate_assignment(${confidential},1,${coordinator},${request}) id`,
             )
@@ -578,7 +609,7 @@ test("Phase 4.2.2 disposable TEFT administration and exact-revision boundaries",
         await submit(author, confidential, 5);
         assert.equal((await notices(confidential, "submission_received")).length, 2);
         await as(
-          coordinator,
+          other,
           (tx) =>
             tx`select app.coordinate_assignment(${confidential},2,${coordinator},${randomUUID()})`,
         );

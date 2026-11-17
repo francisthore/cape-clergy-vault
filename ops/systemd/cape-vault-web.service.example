@@ -1,0 +1,56 @@
+# REVIEW TEMPLATE ONLY. Requires systemd >=257 and working PID/mount namespaces.
+# service-entry refuses to start outside PID 1 of the private namespace.
+# No unit, account or mount is installed/enabled by this repository.
+[Unit]
+Description=Cape Clergy Vault web
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+[Service]
+Type=simple
+User=cape-vault-storage
+Group=cape-vault-storage
+Slice=cape-vault.slice
+WorkingDirectory=/srv/cape-vault/current
+EnvironmentFile=/etc/cape-vault/web.environment
+LoadCredential=database-password:/etc/cape-vault/secrets/web/database-password
+LoadCredential=auth-secret:/etc/cape-vault/secrets/web/auth-secret
+ExecStart=/usr/bin/node scripts/service-entry.mjs web
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=210
+KillMode=mixed
+UMask=0077
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+PrivatePIDs=yes
+PrivateMounts=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+InaccessiblePaths=/etc/cape-vault/secrets
+InaccessiblePaths=-/run/credentials/cape-vault-scanner.service -/run/credentials/cape-vault-approval.service -/run/credentials/cape-vault-reviewer.service -/run/credentials/cape-vault-operator.service
+ReadWritePaths=/var/lib/cape-vault/objects
+MemoryHigh=384M
+MemoryMax=512M
+CPUQuota=75%
+TasksMax=32
+LimitNOFILE=1024
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cape-vault-web
+[Install]
+WantedBy=multi-user.target

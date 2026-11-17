@@ -1,0 +1,8 @@
+{
+  "database": "cape_clergy_vault",
+  "owner": "cape_clergy_dev",
+  "marker": "cape-clergy-vault:production:REPLACE_WITH_APPROVED_INSTALLATION_UUID",
+  "transport": "unix",
+  "host": "/run/cape-vault/postgresql",
+  "port": 5432
+}

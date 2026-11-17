@@ -31,7 +31,7 @@ const bin = [
 assert.ok(bin, "PostgreSQL test binaries required");
 // Refuse an active project cluster. This runner never stops or resets the preserved environment.
 const preserved = join(repository, ".local/postgres/data");
-if (existsSync(preserved)) {
+if (localTarget.port === 55432 && existsSync(preserved)) {
   const status = spawnSync(join(bin, "pg_ctl"), ["-D", preserved, "status"], { stdio: "ignore" });
   assert.equal(
     status.status,
@@ -108,6 +108,16 @@ try {
     await admin.unsafe(`create database ${localTarget.database} owner cape_clergy_dev`);
     await admin.unsafe(`comment on database ${localTarget.database} is '${localTarget.marker}'`);
     await admin.unsafe(`revoke all on database ${localTarget.database} from public`);
+    if (phase43) {
+      await admin.unsafe("create database cape_clergy_vault owner cape_clergy_dev");
+      await admin.unsafe(
+        `comment on database cape_clergy_vault is 'cape-clergy-vault:production:${runId}'`,
+      );
+      await admin.unsafe("revoke all on database cape_clergy_vault from public");
+      await admin.unsafe(
+        "grant connect on database cape_clergy_vault to cape_clergy_runtime,cape_clergy_scanner,cape_clergy_notifications",
+      );
+    }
   } finally {
     await admin.end();
   }
@@ -132,7 +142,7 @@ try {
   );
   // Explicit environment: no inherited live provider key, owner env file or SMTP configuration.
   const targets = phase43
-    ? [["database/phase43.test.ts"]]
+    ? [["database/phase43.test.ts"], ["database/phase431.test.ts"]]
     : phase42
       ? [
           ["database/phase42.test.ts"],

@@ -94,3 +94,18 @@ describe("email infrastructure", () => {
     }
   });
 });
+
+it("explicit disabled production mail performs no network or capture and never reports success", async () => {
+  const network = vi.spyOn(globalThis, "fetch").mockRejectedValue(Error("Network forbidden"));
+  const service = configuredEmail("https://vault.example.invalid", {
+    NODE_ENV: "production",
+    EMAIL_PROVIDER: "disabled",
+  });
+  for (const kind of ["verification", "reset", "reviewer_invitation", "review_assigned"] as const) {
+    await expect(service.senderSettings(kind)).rejects.toThrow("EMAIL_DISABLED");
+    await expect(
+      service.send(kind, "synthetic@example.invalid", "https://vault.example.invalid/account"),
+    ).rejects.toThrow("EMAIL_DISABLED");
+  }
+  expect(network).not.toHaveBeenCalled();
+});

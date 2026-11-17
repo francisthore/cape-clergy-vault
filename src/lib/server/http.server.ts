@@ -14,23 +14,32 @@ export class RequestError extends Error {
     this.status = status;
   }
 }
-export async function readInput(request: Request, origin: string) {
+export async function readInput(request: Request, origin: string, maxBytes = 32768) {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 32768)
+    throw Error("Invalid JSON body limit");
   if (request.headers.get("origin") !== origin) throw new RequestError(403, "Untrusted origin.");
   if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
     throw new RequestError(415, "JSON required.");
+  const declared = request.headers.get("content-length");
+  if (declared && (!/^\d+$/.test(declared) || Number(declared) > maxBytes))
+    throw new RequestError(413, "Request too large.");
   const reader = request.body?.getReader();
   if (!reader) throw new RequestError(400, "Request required.");
   const chunks: Uint8Array[] = [];
   let size = 0;
-  for (;;) {
-    const part = await reader.read();
-    if (part.done) break;
-    size += part.value.length;
-    if (size > 32768) {
-      await reader.cancel();
-      throw new RequestError(413, "Request too large.");
+  try {
+    for (;;) {
+      const part = await reader.read();
+      if (part.done) break;
+      size += part.value.length;
+      if (size > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new RequestError(413, "Request too large.");
+      }
+      chunks.push(part.value);
     }
-    chunks.push(part.value);
+  } finally {
+    reader.releaseLock();
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
 }
@@ -42,6 +51,14 @@ export function failure(error: unknown) {
   const code = (error as { code?: string }).code;
   if (code === "40001" || code === "23505" || code === "40P01")
     return json({ message: "This item changed. Reload before trying again." }, 409);
+  if (code === "23514")
+    return json(
+      {
+        message:
+          "External PDF screening was already initiated. Create a separate confidential draft; changing the label cannot recall transferred bytes.",
+      },
+      409,
+    );
   if (code === "22023")
     return json(
       { message: "Check required fields, attachments, authorized domain and current state." },

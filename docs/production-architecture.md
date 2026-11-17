@@ -27,11 +27,10 @@ flowchart LR
   N --> W[Node web / restricted runtime]
   W --> P[(Dedicated PostgreSQL database)]
   W --> F[Private objects and quarantine]
-  S[Restricted scanner worker] --> P
+  S[Restricted scanner / read-only object mount] --> P
   S --> F
-  S --> A[Protected clamd Unix socket]
-  U[FreshClam updater] --> A
-  E[Approval and reviewer loops / restricted notification login] --> P
+  S --> A[Bouncer / approved synthetic acceptance first]
+  E[Independent approval and reviewer loops] --> P
   E --> M[Common EmailService / Resend]
   O[Separately authorized operator] --> P
   O --> B[Encrypted off-host backups / separate key custody]
@@ -67,8 +66,8 @@ Unix UID under ordinary PM2 is only process separation and is insufficient as a
 host-level secret boundary. PM2 must not collect all identities' secrets in one daemon
 or saved process dump. Host sandbox implementation is a pending infrastructure gate.
 
-PostgreSQL/ClamAV/FreshClam/Nginx remain native dependency services, independently
-supervised. One bounded worker loop per kind; no overlapping cron/timer. Templates
+PostgreSQL/Nginx remain native dependency services, independently
+supervised. Bouncer is the intended external scanner; do not install ClamAV on the shared VPS. One bounded worker loop per kind; no overlapping cron/timer. Templates
 in `ops/` are intentionally inactive and contain proposed placeholders. PM2 example
 covers the web only; worker isolation needs the reviewed service boundary above.
 
@@ -85,10 +84,14 @@ on web startup. Roll back application artifacts only when schema compatibility i
 reviewed; keep applied forward migrations and immutable evidence. Never rewrite Git
 or migration history. Final production launch needs separate explicit authorization.
 
-The existing connection factories intentionally reject nonlocal targets. No remote
-connection switch was added. Before an isolated nonlocal deployment, separately
-review target-specific DB identity/ownership/TLS checks and operator tooling. This
-is an explicit technical staging prerequisite, not an instruction to bypass guards.
+Phase 4.3.1 adds a separate explicit production factory and guarded operator entry;
+the existing local factories still reject nonlocal targets. Root-owned exact target
+configuration, per-unit credential mounts, certificate-verified TLS where applicable,
+identity/ownership checks and security startup gates are mandatory. Native systemd
+PID/mount-namespace templates preserve storage ownership without sharing secrets.
+These are prepared engineering artifacts, not deployed or host-accepted controls.
+See [Phase 5 preflight](phase-5-deployment-preflight.md) for commands, resource budgets,
+platform prerequisites, rotation, restoration and authorization gates.
 
 See [roles](production-database-roles.md), [supervision](worker-supervision.md),
 [recovery](backup-recovery.md) and the [readiness matrix](release-readiness.md).

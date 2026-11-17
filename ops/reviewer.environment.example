@@ -1,0 +1,13 @@
+# Non-secret review template. Manager reads this root-owned 0600 file.
+NODE_ENV=production
+CAPE_DATABASE_MODE=production
+CAPE_STORAGE_PROVIDER=local
+CAPE_STORAGE_ROOT=/var/lib/cape-vault/objects
+CAPE_MAX_UPLOAD_BYTES=20971520
+CAPE_DOCUMENT_TYPES=pdf
+BETTER_AUTH_URL=https://REPLACE_WITH_APPROVED_VAULT_HOST
+CAPE_SCREENING_MAX_BYTES=4194304
+EMAIL_PROVIDER=disabled
+EMAIL_DOMAIN_VERIFIED=false
+CAPE_WORKER_LOCK_ROOT=/run/cape-vault/reviewer
+NODE_OPTIONS=--max-old-space-size=128

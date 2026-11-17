@@ -1,3 +1,5 @@
+import { configuredUploadPolicy } from "./upload-policy.server.ts";
+import { screeningGuidance, type UploadPolicy } from "./upload-policy.ts";
 import { MAX_PDF_BYTES } from "./validation.ts";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -18,7 +20,16 @@ export function createDocumentService(
   storage: StorageProvider,
   origin: string,
   maxBytes = MAX_PDF_BYTES,
+  policy: UploadPolicy = configuredUploadPolicy(),
 ) {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > MAX_PDF_BYTES)
+    throw Error("Invalid hard upload limit");
+  const screeningLimit = Math.min(maxBytes, policy.hardMaxBytes, policy.screeningMaxBytes);
+  class ScreeningUnavailable extends DocumentError {
+    constructor(confidential = false) {
+      super(409, screeningGuidance({ ...policy, screeningMaxBytes: screeningLimit }, confidential));
+    }
+  }
   const json = (body: unknown, status = 200) =>
     Response.json(body, { status, headers: privateHeaders });
   const audit = (headers: Headers, id: string | null, event: string, correlation: string) =>
@@ -58,16 +69,31 @@ export function createDocumentService(
     // RLS checks parent ownership, consent, account verification and editable state.
     // Finalization separately locks/rechecks the parent after the upload.
     await auth.withApprovedDatabase(request.headers, async (tx) => {
-      const rows = await tx`select id from app.submissions where id=${query.submissionId}
+      const rows =
+        await tx`select id,confidential from app.submissions where id=${query.submissionId}
        and owner_id=app.request_user_id() and status='draft' and kind='document'`;
       if (!rows.length)
         throw new DocumentError(403, "This submission is not editable by your account.");
+      if (rows[0]!["confidential"] === true) throw new ScreeningUnavailable(true);
+      if (length && Number(length) > screeningLimit) throw new ScreeningUnavailable();
       await tx`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size,upload_request_id)
        values(${id},${query.submissionId},${storageKey},${name},'application/pdf',0,${requestId})`;
     });
     const signal = AbortSignal.any([request.signal, AbortSignal.timeout(5 * 60_000)]);
     try {
-      const object = await storage.save(storageKey, request.body, signal);
+      let streamed = 0;
+      const bounded = request.body.pipeThrough(
+        new TransformStream<Uint8Array, Uint8Array>({
+          transform(chunk, controller) {
+            streamed += chunk.byteLength;
+            if (streamed > maxBytes)
+              throw new DocumentError(413, "Document exceeds the upload limit.");
+            if (streamed > screeningLimit) throw new ScreeningUnavailable();
+            controller.enqueue(chunk);
+          },
+        }),
+      );
+      const object = await storage.save(storageKey, bounded, signal);
       signal.throwIfAborted();
       // A new session/permission check after slow network I/O, outside the upload.
       await auth.withApprovedDatabase(request.headers, async (tx) => {
@@ -229,6 +255,8 @@ export function createDocumentService(
       if (!documentId && request.method === "GET") return await list(request);
       return json({ message: "Method not allowed." }, 405);
     } catch (error) {
+      if (error instanceof ScreeningUnavailable)
+        return json({ code: "screening_unavailable", message: error.message }, error.status);
       if (error instanceof DocumentError) return json({ message: error.message }, error.status);
       if (error instanceof z.ZodError) return json({ message: "Invalid document request." }, 400);
       const code = (error as { code?: string }).code;

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@/lib/documents/validation";
 export function PdfUpload({
   selected,
+  guidance,
   onSelect,
   onUpload,
   onCancel,
@@ -15,6 +16,7 @@ export function PdfUpload({
   hasAttachments,
 }: {
   selected: File | null;
+  guidance?: string | undefined;
   onSelect: (file: File | undefined) => void;
   onUpload: () => void;
   onCancel: () => void;
@@ -70,7 +72,7 @@ export function PdfUpload({
           <div>
             <p className="font-medium">Attach a PDF</p>
             <p id="pdf-limit" className="text-sm text-muted-foreground">
-              Choose or drop one PDF. Maximum 20 MiB.
+              {guidance ?? "Choose or drop one PDF. Maximum 20 MiB."}
             </p>
           </div>
           <Button
@@ -84,8 +86,8 @@ export function PdfUpload({
         </div>
       )}
       {hasAttachments && !expanded && !selected && !error && progress === null && (
-        <p id="pdf-limit" className="sr-only">
-          Choose or drop one PDF. Maximum 20 MiB.
+        <p id="pdf-limit" className="text-sm text-muted-foreground">
+          {guidance ?? "Choose or drop one PDF. Maximum 20 MiB."}
         </p>
       )}
       <input

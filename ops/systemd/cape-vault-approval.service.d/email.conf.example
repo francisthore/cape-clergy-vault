@@ -1,0 +1,4 @@
+# REVIEW ONLY. Add only after provider/domain approval and an authorized send window.
+# Also set EMAIL_PROVIDER=resend and verified domain/DB sender settings deliberately.
+[Service]
+LoadCredential=resend-key:/etc/cape-vault/secrets/approval/resend-key

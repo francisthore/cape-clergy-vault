@@ -58,6 +58,19 @@ export async function fixtures42() {
     await tx`select app.accept_reviewer_invitation(${proof.digest})`;
   });
   const cookies = new Map<string, Awaited<ReturnType<ReturnType<Page["context"]>["cookies"]>>>();
+  async function paceAuth() {
+    // Real shared throttles span browser projects. Pace synthetic traffic through
+    // natural expiry; never reset rows or raise application limits for acceptance.
+    const [budget] = await owner.client`select max(hits)::int hits,
+      greatest(0,ceil(max(extract(epoch from expires_at-now()))))::int wait_seconds
+      from app.rate_limits where key like 'auth:%' and expires_at>now()`;
+    if (Number(budget?.["hits"]) >= 60) {
+      console.log("Acceptance pacing: honoring the shared authentication window.");
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(60, Number(budget?.["wait_seconds"]) || 1) * 1000),
+      );
+    }
+  }
   async function login(page: Page, name: string) {
     if (cookies.has(name)) {
       await page.context().clearCookies();
@@ -173,6 +186,7 @@ export async function fixtures42() {
     id,
     address,
     login,
+    paceAuth,
     capture,
     registered,
     deliver,

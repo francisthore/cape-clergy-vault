@@ -241,6 +241,17 @@ capabilities. Read [TEFT administration and recovery](teft-administration.md) fo
 restricted one-time bootstrap, web workflow, confidential metadata projection and
 break-glass commands. Existing reviewer operator commands remain emergency tools.
 Admin still confers no review authority. A coordinator who separately activated as
-a reviewer may explicitly assign themselves to another author's exact revision;
+a reviewer may explicitly assign themselves only to another author's non-confidential exact revision;
 author self-review remains prohibited. Reviewer mailbox proof, expiry and explicit
 acceptance, private streaming, RLS and immutable history are unchanged.
+
+## Phase 4.3.1 independent authorization
+
+The current policy requires another authorized access manager to issue a reviewer
+invitation. A pending self-issued invitation cannot activate the role; prior valid
+grants/assignments are preserved. Confidential assignment requires another authorized
+coordinator, and coordination does not itself confer document access. Emergency
+operator access still requires independently recorded human authorization and cannot
+serve as a single-person approval shortcut. Read [maintenance](pilot-security-maintenance.md)
+and the [approval pack](diocese-pilot-approval-pack.md). No confidential external-PDF
+processing is enabled by this change.

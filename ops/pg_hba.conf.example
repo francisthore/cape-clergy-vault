@@ -1,0 +1,12 @@
+# REVIEW ONLY: app-specific rules BEFORE generic allow rules. Confirm SCRAM,
+# Unix socket ownership and exact intended connectivity with the DBA first.
+# No changes to rules matching existing applications are authorized here.
+local cape_clergy_vault cape_clergy_dev,cape_clergy_runtime,cape_clergy_scanner,cape_clergy_notifications scram-sha-256
+local all cape_clergy_dev,cape_clergy_runtime,cape_clergy_scanner,cape_clergy_notifications reject
+# Unix-only deployment: block TCP for these dedicated roles, including other DBs.
+host all cape_clergy_dev,cape_clergy_runtime,cape_clergy_scanner,cape_clergy_notifications 0.0.0.0/0 reject
+host all cape_clergy_dev,cape_clergy_runtime,cape_clergy_scanner,cape_clergy_notifications ::/0 reject
+# If certificate-verified TLS is selected instead, replace only this app's entries
+# with exact approved source/destination rules and retain other-DB rejections.
+# This addresses PUBLIC CONNECT defaults in unrelated databases without changing
+# those databases or giving the service access to them.

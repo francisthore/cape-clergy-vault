@@ -1,0 +1,17 @@
+# Dedicated Nginx logs only. Review retention with the Information Officer.
+# App/worker logs use restricted journald storage; do not alter global journald
+# limits for other applications. Approve per-unit retention/export separately.
+/var/log/cape-vault/nginx-access.log /var/log/cape-vault/nginx-error.log {
+    daily
+    rotate 14
+    size 10M
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 0640 www-data cape-vault-logs
+    sharedscripts
+    postrotate
+        /usr/sbin/nginx -s reopen
+    endscript
+}

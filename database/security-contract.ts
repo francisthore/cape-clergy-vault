@@ -399,6 +399,7 @@ export async function auditImmutableTriggers(owner: Sql, checks: string[]) {
   // Operational workflow triggers introduced by 4.2/4.2.2 (notification intent, revocation, intake).
   const required = [
     ["submissions", "submission_received"],
+    ["submissions", "external_scan_classification"],
     ["submissions", "assignment_notification_superseded"],
     ["reviewer_assignments", "intake_assignment_created"],
     ["reviewer_assignments", "assignment_notification_revoked"],

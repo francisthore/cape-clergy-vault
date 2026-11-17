@@ -10,6 +10,16 @@ test.afterAll(async () => {
   await f?.close();
 });
 test.beforeEach(async ({ page }) => {
+  await f.paceAuth();
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/api/auth/account" && !response.ok())
+      console.log(
+        "Account check HTTP status:",
+        response.status(),
+        "Retry-After:",
+        response.headers()["retry-after"] ?? "none",
+      );
+  });
   page.on("pageerror", (error) => console.log("Browser error:", error.message));
   // No browser-origin external requests, including font providers, during acceptance.
   await page.route("**/*", (route) =>
@@ -235,6 +245,17 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
     },
     { timeout: 60000 },
   );
+  await expect(page.locator("#pdf-error")).toContainText("cannot currently be verified");
+  await expect(upload).toHaveCount(0);
+  expect(requests).toBe(0);
+  const operationalLimitPdf = Buffer.alloc(4 * 1024 * 1024);
+  operationalLimitPdf.write("%PDF-1.4\n");
+  operationalLimitPdf.write("\n%%EOF\n", operationalLimitPdf.length - 7);
+  await input.setInputFiles({
+    name: "operational-limit.pdf",
+    mimeType: "application/pdf",
+    buffer: operationalLimitPdf,
+  });
   await expect(upload).toBeEnabled();
   expect(requests).toBe(0);
   await page.getByRole("button", { name: "Edit submission", exact: true }).click();

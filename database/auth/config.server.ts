@@ -63,6 +63,7 @@ export function createLocalAuth(
       minPasswordLength: 12,
       maxPasswordLength: 128,
       revokeSessionsOnPasswordReset: true,
+      resetPasswordTokenExpiresIn: 3600,
       ...(options.sendResetPassword ? { sendResetPassword: options.sendResetPassword } : {}),
     },
     emailVerification: {

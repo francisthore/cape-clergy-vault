@@ -1,12 +1,12 @@
 import { acquireWorkerLock } from "../worker-lock.ts";
-import { connectLocalNotifications } from "../../database/notifications.server.ts";
+import { connectNotifications } from "../../database/service-connections.server.ts";
 import { configuredEmail } from "../../src/lib/email/service.server.ts";
 import { deliverReviewerNotifications } from "../../src/lib/reviews/notifications.server.ts";
 const origin = process.env["BETTER_AUTH_URL"],
   secret = process.env["BETTER_AUTH_SECRET"];
 if (!origin || !secret)
   throw Error("Trusted application origin and protected auth secret required");
-const worker = await connectLocalNotifications();
+const worker = await connectNotifications();
 let release: (() => Promise<void>) | undefined;
 try {
   release = await acquireWorkerLock(worker.client, "reviewer");

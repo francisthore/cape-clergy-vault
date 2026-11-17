@@ -14,7 +14,11 @@ import { TestScanner } from "../../src/lib/scanning/testing.ts";
 import { storageInventory } from "../../src/lib/operations/inventory.server.ts";
 import { deliverApprovalNotifications } from "../../src/lib/approvals/notifications.server.ts";
 import { EmailService, TestEmailProvider } from "../../src/lib/email/service.server.ts";
-import { createInvitationProof, openInvitationProof } from "../../src/lib/reviews/tokens.server.ts";
+import {
+  createInvitationProof,
+  openInvitationProof,
+  digestInvitation,
+} from "../../src/lib/reviews/tokens.server.ts";
 const bin = [
   process.env["CAPE_PG_BIN"],
   "/usr/lib/postgresql/18/bin",
@@ -131,7 +135,7 @@ try {
     docs: string[] = [],
     keys: string[] = [];
   const scanner = connect(source.root, "cape_clergy_scanner");
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < 4; i++) {
     const id = randomUUID(),
       key = randomUUID();
     docs.push(id);
@@ -145,6 +149,10 @@ try {
     await source.client`insert into app.document_scans(document_id,expected_sha256) values(${id},${saved.sha256})`;
   }
   await runScanWorker(scanner, storage, new TestScanner(), 1, docs[0]!);
+  // Provider acceptance ambiguity survives backup/restore. No external requests are made.
+  const externalId = "scan_" + randomUUID();
+  await source.client`update app.document_scans set provider='bouncer',provider_status='pending',external_scan_id=${externalId},submitted_at=now(),submission_revision=1 where document_id=${docs[2]!}`;
+  await source.client`update app.document_scans set provider='bouncer',provider_status='submitting',submitted_at=now(),submission_revision=1 where document_id=${docs[3]!}`;
   // Simulate a crash with a durable expired pending scan and notification lease.
   await scanner`select app.claim_document_scan(${docs[1]!})`;
   await source.client`update app.document_scans set lease_until=now()-interval '1 second' where document_id=${docs[1]!}`;
@@ -152,6 +160,9 @@ try {
   const oldLease = randomUUID();
   await source.client`update app.approval_notifications set lease_token=${oldLease},attempts=1,available_at=now()-interval '1 second' where user_id=${author}`;
   await source.client`insert into app.audit_events(actor_id,submission_id,action,outcome) values(${author},${submission},'recovery.fixture','ok')`;
+  const invitationSecret = randomBytes(32).toString("hex");
+  const pendingProof = createInvitationProof(invitationSecret, author);
+  await source.client`select app.reviewer_operator('invite',${author},null,${pendingProof.digest},${pendingProof.sealed},${"INVITE " + author},null)`;
   const audits = await source.client`select id from app.audit_events order by id`;
   const ledger =
     await source.client`select hash from cape_migrations.__drizzle_migrations order by id`;
@@ -292,6 +303,19 @@ try {
   const [pending] =
     await target.client`select state from app.document_scans where document_id=${docs[1]!}`;
   assert.equal(pending!["state"], "clean");
+  const [acceptedScan] =
+    await target.client`select external_scan_id,provider_status from app.document_scans where document_id=${docs[2]!}`;
+  const [ambiguousScan] =
+    await target.client`select external_scan_id,provider_status from app.document_scans where document_id=${docs[3]!}`;
+  assert.equal(acceptedScan!["external_scan_id"], externalId);
+  assert.equal(acceptedScan!["provider_status"], "pending");
+  assert.equal(ambiguousScan!["external_scan_id"], null);
+  assert.equal(ambiguousScan!["provider_status"], "submitting");
+  for (const id of [docs[2]!, docs[3]!])
+    assert.equal((await target.client`select app.document_is_clean(${id}) ok`)[0]!["ok"], false);
+  checks.push(
+    "Bouncer accepted ID and ambiguous submission marker survive restore without resubmission or fabricated clean evidence",
+  );
   const provider = new TestEmailProvider(),
     email = new EmailService(provider, {
       origin: "http://localhost:3000",
@@ -306,8 +330,22 @@ try {
     )) > 0,
   );
   assert.ok(provider.messages.every((m) => m.to.endsWith("@example.invalid")));
-  const proof = createInvitationProof("Disposable restore encryption secret only", author);
-  assert.throws(() => openInvitationProof(proof.sealed, "missing-replaced-key", author));
+  const [restoredInvitation] =
+    await target.client`select n.sealed_token from app.reviewer_notifications n join app.reviewer_invitations i on i.id=n.invitation_id where i.user_id=${author} and i.state='pending'`;
+  assert.equal(restoredInvitation!["sealed_token"], pendingProof.sealed);
+  const restoredProof = openInvitationProof(
+    String(restoredInvitation!["sealed_token"]),
+    invitationSecret,
+    author,
+  );
+  assert.equal(digestInvitation(restoredProof), pendingProof.digest);
+  assert.throws(() =>
+    openInvitationProof(
+      String(restoredInvitation!["sealed_token"]),
+      "missing-replaced-key",
+      author,
+    ),
+  );
   checks.push(
     "restored pending work and expired leases recover through restricted scanner/mail roles; wrong invitation key fails; email in memory only",
   );

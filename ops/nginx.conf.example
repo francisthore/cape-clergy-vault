@@ -11,10 +11,8 @@ server {
     # Exclude query strings, cookies, authorization and referrers (auth proof).
     client_max_body_size 21m;
     client_body_timeout 60s;
-    # Phase 4.3: baseline response headers (HTML currently carries none from the application).
-    # Applied at the proxy, not in the app, because the legacy Lovable preview embeds the app in an
-    # iframe in development. A Content-Security-Policy still needs a reviewed nonce design for the
-    # TanStack Start inline hydration script and the Google Fonts decision; do not guess one here.
+    # The app emits a per-response nonce CSP. Preserve it; do not replace or cache HTML.
+    # HSTS belongs to this dedicated HTTPS vhost only, without includeSubDomains/preload.
     add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Frame-Options "DENY" always;
     add_header X-Content-Type-Options "nosniff" always;
