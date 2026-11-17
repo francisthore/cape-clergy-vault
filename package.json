@@ -65,6 +65,7 @@
     "branding:generate": "node scripts/branding/generate.mjs",
     "db:notifications:status": "node --env-file=.env.db.local scripts/db/notification-status.ts",
     "test:dev": "node scripts/dev-all.test.mjs",
+    "test:namespace-guard": "node --test scripts/namespace-guard.test.mjs",
     "test:phase421": "node scripts/db/phase42-test.ts",
     "db:administration:operator": "node --env-file=.env.db.local scripts/db/administration-operator.ts",
     "test:phase422": "node scripts/db/phase42-test.ts",

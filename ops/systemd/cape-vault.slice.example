@@ -1,8 +1,17 @@
 # REVIEW ONLY. Shared-host allocation must be measured and explicitly approved.
+# Verified host (Phase 5A): 2 vCPU, 3.8 GiB RAM (2.5 GiB available once), 3.8 GiB swap
+# shared with five other applications. Staging starts at TIER 0 (web only).
+# Tier 0 (web only; scanner/approval/reviewer stopped) - the values below.
+# Tier 2 (all four) is NOT approved on this host: it needs measured peak-period
+# MemAvailable >= 2.5 GiB after neighbours; then use MemoryHigh=1G MemoryMax=1280M
+# CPUQuota=130% TasksMax=160 via a separate owner-approved change.
 [Unit]
 Description=Cape Clergy Vault resource budget
 [Slice]
-MemoryHigh=1G
-MemoryMax=1536M
-CPUQuota=130%
-TasksMax=128
+MemoryHigh=512M
+MemoryMax=640M
+MemorySwapMax=0
+CPUQuota=75%
+CPUWeight=20
+IOWeight=20
+TasksMax=64

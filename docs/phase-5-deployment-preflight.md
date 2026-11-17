@@ -20,25 +20,33 @@ object/backup cannot be reconciled. Do not weaken guards or permissions to proce
 
 ## Host inspection and process boundaries
 
-After authorization, record Ubuntu/kernel, Node 24.12+, Bun 1.4.4+, PostgreSQL/tool
+After authorization, record Ubuntu/kernel/architecture/virtualisation, cgroup controllers, a dedicated Node 24.12+
+(never the global Node), util-linux tools, PostgreSQL/tool
 major, systemd, Nginx, socket support, available disk/inodes/RAM, current loads, ports,
-existing identities, database roles and backup arrangements. Do not infer free memory
-from the host's 4 GB specification. Keep existing apps' service managers unchanged.
+existing identities, database roles and backup arrangements. Bun is a build-only tool and is not installed on the VPS. Do not infer free memory
+from the host's 4 GB specification; use peak-period `MemAvailable`. Keep existing apps' service managers unchanged.
 
 Review the inactive units in `ops/systemd/`. They use native services, one web process
 and three independently supervised loops, without containers, ClamAV or additional
-paid services. `PrivatePIDs=yes` requires systemd 257+ and kernel PID namespaces;
-[systemd documents the feature and its limitations](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html).
-The launcher additionally refuses to start unless it is unprivileged PID 1.
-It uses Node 24's `process.execve` to replace its setup process rather than keep an
-extra Node wrapper. The production loop also execs `/usr/bin/flock -F` to retain its lock without an
-extra Node parent. Verify this currently experimental Node API and native flock on the approved
-build/runtime; there is no spawn fallback. Peak normal Node count is seven: one
-web, three loop processes and up to three active batch children (maintenance/build
-processes are separate and must not overlap without capacity review). Unsupported
-or ignored namespace settings must cause a failed launch, not a quiet downgrade.
-Do not upgrade the host's systemd implicitly. If unavailable, review an equivalent
-native PID/mount-namespace launcher separately; staging remains blocked meanwhile.
+paid services. `PrivatePIDs=yes` requires systemd 257+, so it is **not used**: the verified
+Ubuntu 24.04 host has systemd 255, which silently ignores the key. Each unit instead starts
+`ops/libexec/cape-vault-ns-launch` through `ExecStart=!` (not `+`, which would bypass the
+mount sandbox): it creates a real private PID namespace with `unshare --pid --fork`, mounts a
+fresh `/proc`, and `setpriv` drops to the service UID with every capability set empty and
+`no_new_privs` before the pinned Node 24 runs. `service-entry.mjs` fails closed unless it
+is unprivileged PID 1 with no capabilities, `no_new_privs` and a `/proc` listing of only PID 1.
+This is a design, **untested on the host**; see
+[Phase 5A](phase-5a-vps-infrastructure-assessment.md) and the mandatory
+[host acceptance tests](phase-5a-host-acceptance-tests.md), including negative controls.
+Node 24's `process.execve` replaces the setup process and the production loop execs
+`/usr/bin/flock -F`; there is no spawn fallback. Peak normal Node count is seven (one web,
+three loop processes, up to three batch children), plus one small `unshare` process per
+unit; staging starts web-only (two processes). Maintenance/build processes must not
+overlap without capacity review. Unsupported or ignored namespace settings must cause a
+failed launch, not a quiet downgrade. Do not upgrade the host's systemd. If acceptance
+fails, follow the rollback in the acceptance document; staging stays blocked.
+Node 24 is installed only under a version-pinned root-owned `/opt/cape-vault/runtime/`
+directory referenced by the launcher; `/usr/bin/node` (Node 22) is never replaced.
 
 Web and scanner deliberately share only the dedicated storage UID
 `cape-vault-storage`, because private directories and objects must keep matching UID,
@@ -119,7 +127,7 @@ proof. Never silently retry an undecryptable proof or reset provider ambiguity.
 
 ## Artifact, maintenance and service sequence
 
-1. Build the reviewed source with locked dependencies using Bun 1.4.4+. The version
+1. Build the reviewed source off the server with locked dependencies using Bun 1.4.4+ (not installed on the VPS; target the host architecture). The version
    floor matters because scoped overrides use lockfile version 3. Include `.output`,
    the reviewed worker/database/scripts TypeScript import tree, migration SQL/journal,
    required Node dependencies and licenses. Exclude private environments, `.git`,
@@ -163,8 +171,9 @@ proof. Never silently retry an undecryptable proof or reset provider ambiguity.
 10. Complete human accessibility/mobile, backup/restore and operational handover before
     a separate live-pilot decision. Document stop conditions and support contacts.
 
-The proposed slice caps this application group at 1.5 GiB / 130% CPU, with lower soft
-budgets and per-service limits. These are initial review values, not measured capacity
+The shipped slice template (tier 0, web only) caps the group at 640 MiB / 75% CPU with no swap;
+the four-service tier (1.28 GiB / 130%) is not approved on the shared 3.8 GiB host without
+measured peak headroom. Per-service limits are in the unit templates. These are initial review values, not measured capacity
 claims. Node heap limits leave room for non-heap buffers and loop parents; measure
 streaming uploads, provider polling, queue backlog and other apps before acceptance.
 Do not install a large resident antivirus daemon on this VPS. Limit disk/inode growth,

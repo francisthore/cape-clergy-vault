@@ -1,5 +1,6 @@
 // Production systemd entry. No dotenv loading, owner credentials or request-triggered work.
-import { readFile, lstat } from "node:fs/promises";
+import { readFile, lstat, readdir } from "node:fs/promises";
+import { assertProcView, assertSandboxStatus } from "./namespace-guard.mjs";
 const kind = process.argv[2],
   kinds = ["web", "scanner", "approval", "reviewer"];
 if (
@@ -9,6 +10,9 @@ if (
   process.pid !== 1
 )
   throw Error("Dedicated unprivileged production PID namespace required");
+// Launcher proof: no capabilities, no_new_privs and a /proc view containing only this process.
+assertSandboxStatus(await readFile("/proc/self/status", "utf8"));
+assertProcView(await readdir("/proc"));
 const directory = `/run/credentials/cape-vault-${kind}.service`;
 if (process.env.CREDENTIALS_DIRECTORY !== directory)
   throw Error("Dedicated credentials mount required");

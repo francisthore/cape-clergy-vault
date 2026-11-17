@@ -1,5 +1,9 @@
-# REVIEW TEMPLATE ONLY. Requires systemd >=257 and working PID/mount namespaces.
-# service-entry refuses to start outside PID 1 of the private namespace.
+# REVIEW TEMPLATE ONLY (Phase 5A-2, systemd 255 / Ubuntu 24.04 compatible).
+# PrivatePIDs= needs systemd >=257 and is NOT used. A real private PID namespace comes from
+# ExecStart=! plus ops/libexec/cape-vault-ns-launch.example (unshare --pid --fork, fresh /proc,
+# setpriv drop to the service UID with an empty capability set). `!` (not `+`) keeps every
+# other sandbox option active. service-entry refuses to start unless it is PID 1, non-root,
+# capability-free and no_new_privs. UNVERIFIED ON ANY HOST: see docs/phase-5a-host-acceptance-tests.md.
 # No unit, account or mount is installed/enabled by this repository.
 [Unit]
 Description=Cape Clergy Vault reviewer
@@ -16,16 +20,17 @@ WorkingDirectory=/srv/cape-vault/current
 EnvironmentFile=/etc/cape-vault/reviewer.environment
 LoadCredential=database-password:/etc/cape-vault/secrets/reviewer/database-password
 LoadCredential=auth-secret:/etc/cape-vault/secrets/reviewer/auth-secret
-ExecStart=/usr/bin/node scripts/service-entry.mjs reviewer
+ExecStart=!/opt/cape-vault/libexec/cape-vault-ns-launch cape-vault-reviewer reviewer
 Restart=on-failure
 RestartSec=30
 TimeoutStopSec=210
 KillMode=mixed
 UMask=0077
 NoNewPrivileges=yes
-CapabilityBoundingSet=
+# Launcher-only capabilities (all dropped by setpriv before Node; Node starts with none).
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SETUID CAP_SETGID CAP_SETPCAP
 AmbientCapabilities=
-PrivatePIDs=yes
+RestrictNamespaces=pid mnt
 PrivateMounts=yes
 PrivateTmp=yes
 PrivateDevices=yes
@@ -47,11 +52,16 @@ InaccessiblePaths=/var/lib/cape-vault/objects
 RuntimeDirectory=cape-vault/reviewer
 RuntimeDirectoryMode=0700
 ReadWritePaths=/run/cape-vault/reviewer
-MemoryHigh=144M
-MemoryMax=192M
+MemoryHigh=160M
+MemoryMax=224M
+MemorySwapMax=0
 CPUQuota=15%
-TasksMax=32
+CPUWeight=20
+IOWeight=20
+OOMScoreAdjust=500
+TasksMax=48
 LimitNOFILE=1024
+LimitCORE=0
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=cape-vault-reviewer

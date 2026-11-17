@@ -1,0 +1,48 @@
+#!/bin/sh
+# REVIEW TEMPLATE ONLY. Install (if ever authorised) as root:root 0755 at
+# /opt/cape-vault/libexec/cape-vault-ns-launch. Not installed by this repository.
+#
+# Purpose: systemd 255 (Ubuntu 24.04) has no PrivatePIDs= (added in 257). This shim gives
+# each service a REAL private PID namespace and a fresh /proc, then irrevocably drops to the
+# service UID with an empty capability set before Node starts. service-entry.mjs still
+# refuses to run unless it is PID 1, unprivileged, capability-free and no_new_privs.
+#
+# It is started by `ExecStart=!` (NOT `+`): `!` skips only User=/Group= switching, so every
+# other sandbox option in the unit (mount namespace, InaccessiblePaths, ReadOnlyPaths,
+# ProtectSystem, NoNewPrivileges, LoadCredential, seccomp-style restrictions) still applies.
+# The unit's CapabilityBoundingSet is the minimal set below, and is dropped by setpriv.
+#
+# Usage (from the unit):  cape-vault-ns-launch <uid-name> <kind>
+# Stage 1 runs as root inside the unit sandbox; stage 2 runs as PID 1 of the new namespace.
+set -eu
+umask 077
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+NODE=/opt/cape-vault/runtime/node-v24.REPLACE_WITH_APPROVED_PATCH-linux-x64/bin/node # exact pinned dir; never /usr/bin/node
+
+case "${1:-}" in
+--stage2)
+  svc_user=$2
+  kind=$3
+  # Fresh /proc for the new PID namespace, as restrictive as the unit's ProtectProc/ProcSubset.
+  mount -t proc -o nosuid,nodev,noexec,hidepid=invisible,subset=pid proc /proc
+  # Drop everything. Order is irrelevant after exec: bounding set, inheritable, ambient and
+  # permitted/effective (via setresuid away from root) all become empty; no_new_privs is set.
+  exec /usr/bin/setpriv \
+    --reuid="$svc_user" --regid="$svc_user" --clear-groups \
+    --bounding-set=-all --inh-caps=-all --ambient-caps=-all \
+    --no-new-privs \
+    -- "$NODE" scripts/service-entry.mjs "$kind"
+  ;;
+esac
+
+svc_user=${1:?service user}
+kind=${2:?service kind}
+case "$kind" in web | scanner | approval | reviewer) ;; *) echo "bad kind" >&2; exit 64 ;; esac
+[ "$(id -u)" = 0 ] || { echo "launcher must start as root inside the unit sandbox" >&2; exit 64; }
+
+# --kill-child=SIGTERM: if this outer process is signalled by systemd, the namespace's PID 1
+# (Node) receives SIGTERM and runs its normal bounded drain; cgroup limits and TimeoutStopSec
+# remain the backstop. Whether stop semantics are graceful is a HOST ACCEPTANCE TEST (A-G*).
+exec /usr/bin/unshare --pid --fork --kill-child=SIGTERM --mount --propagation private -- \
+  "$0" --stage2 "$svc_user" "$kind"

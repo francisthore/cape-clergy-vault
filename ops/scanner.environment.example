@@ -10,4 +10,4 @@ CAPE_SCREENING_MAX_BYTES=4194304
 CAPE_SCANNER=bouncer
 BOUNCER_UPLOAD_HOST=
 CAPE_WORKER_LOCK_ROOT=/run/cape-vault/scanner
-NODE_OPTIONS=--max-old-space-size=128
+NODE_OPTIONS=--max-old-space-size=96

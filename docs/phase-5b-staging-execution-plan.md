@@ -1,7 +1,8 @@
 # Phase 5B — Synthetic staging execution plan (DO NOT EXECUTE)
 
-Prepared 17 November 2026 alongside the
-[Phase 5A assessment](phase-5a-vps-infrastructure-assessment.md). **This is a plan, not
+Prepared 17 November 2026, revised for the verified host (Ubuntu 24.04.4, systemd 255, 2 vCPU,
+3.8 GiB RAM) alongside the [Phase 5A assessment](phase-5a-vps-infrastructure-assessment.md)
+and [host acceptance tests](phase-5a-host-acceptance-tests.md). **This is a plan, not
 authorisation.** Nothing here has been run. Every host-specific value (names, paths,
 tier, versions, socket option) is a proposal until the owner confirms it in writing after
 Phase 5A Appendix A has been completed and reviewed. Scope: synthetic data only, email
@@ -14,7 +15,7 @@ modified except for the explicitly authorised Nginx include/reload and PostgreSQ
 
 - A name, port or path collides, or an existing resource would be altered unintentionally.
 - Measured `MemAvailable`, disk or inode headroom falls below the chosen tier gate, or any neighbour shows degradation (latency, OOM, swap thrash, error logs) attributable to our work.
-- Isolation cannot be demonstrated (namespace, credential, storage tests in Phase 5B-7).
+- Isolation cannot be demonstrated (namespace, credential, storage and limit tests in 5B-8) or a negative control unexpectedly passes.
 - Owner/operator credentials would enter a service environment, shell history or process arguments.
 - Database target/marker, role attributes or the applied-migration ledger do not verify.
 - Any step needs a weaker permission, shared PM2 daemon, container socket, group-readable objects or a relaxed guard.
@@ -30,22 +31,21 @@ that contains no secrets.
 ## 5B-0 Gate: complete Phase 5A
 
 - **Prereq:** owner ran Phase 5A Appendix A (and approved privileged items); output reviewed.
-- **Action:** fill Phase 5A sections 3–8; choose tier (0 recommended); record the decision for systemd ≥257 or an isolation alternative (Option A/B/C/D); choose PostgreSQL socket option.
+- **Action:** fill Phase 5A sections 3–8; choose tier (0 recommended; tier 2 not approved on this host); record the owner's acceptance of the `ExecStart=!` namespace launcher and its residual risks (systemd 255 cannot use `PrivatePIDs=`); choose PostgreSQL socket option; confirm the §9 additional read-only inspection (architecture, virtualisation, cgroup controllers, util-linux, neighbour peak memory, oomd, `kbsk-staging` intent).
 - **Validate:** no collisions; tier gate met; neighbours' peak load documented; owner signs the exact names/paths/ports/window/rollback window.
 - **Stop:** any Phase 5A blocker still open. **Rollback:** none (read-only).
 
 ## 5B-1 Repository preparation (local workstation; no host contact)
 
 - **Prereq:** 5B-0 approved; clean tree at the reviewed revision (record SHA).
-- **Action (code/template changes, reviewed before use):**
-  1. R1/R2: adjust web heap/`MemoryHigh`; add `CPUWeight`, `IOWeight`, `OOMScoreAdjust` (and slice swap policy).
-  2. I1: parametrise or edit unit `ExecStart=` to the approved Node path (e.g. `/opt/cape-vault/node-v24.x/bin/node`).
-  3. P1: add `BindReadOnlyPaths=` or chosen socket arrangement to units, if option (c); otherwise reviewed target file for option (b).
-  4. If systemd < 257 and Option B approved: author and review the minimal root launcher; add tests for `/proc` isolation before any host use.
-  5. S2: design/review/approve a synthetic-account seeding entry (guarded, TTY-confirmed, operator-only, synthetic markers, no admin bootstrap, no email dependency) — or record that Stage 1 is navigation-only.
-  6. Update stale `release-readiness.md` wording about 0039.
+- **Action (already drafted in Phase 5A rev. 2; review the diff):**
+  1. Launcher `ops/libexec/cape-vault-ns-launch.example`; units use `ExecStart=!`, a launcher-only capability bounding set, `RestrictNamespaces=pid mnt`, no `PrivatePIDs`.
+  2. R1/R2: web heap 256 MiB / `MemoryHigh` 448 M; worker heap 96 MiB; `CPUWeight`, `IOWeight`, `OOMScoreAdjust`, `MemorySwapMax=0`, `LimitCORE=0`; tier 0 slice.
+  3. I1: exact pinned Node 24 directory set in the launcher's `NODE=` (never `/usr/bin/node`).
+  4. `scripts/service-entry.mjs` + `scripts/namespace-guard.mjs` guard (unit tests `bun run test:namespace-guard`).
+  5. Still open: P1 PostgreSQL socket arrangement (`BindReadOnlyPaths=` vs second cluster vs TLS), S2 synthetic-account seeding (or navigation-only), update stale `release-readiness.md` wording about 0039.
 - **Validate:** unit tests/lint/type-check pass; `systemd-analyze verify` on rendered units on a workstation with equal-or-newer systemd; secret scan of the diff; owner reviews the diff.
-- **Build:** `bun install --frozen-lockfile` (Bun ≥1.4.4) then `bun run build`; assemble the artifact: `.output`, worker/database/scripts import tree, migration SQL/journal, runtime node_modules, licences. Exclude `.git`, `.env*`, captures, test results, keys, backups, storage. Record SHA-256 of the archive and of migration `0039` (`38f19e2f…7819`).
+- **Build (off the VPS; Bun is not installed there; target x86_64 unless P1 says otherwise):** `bun install --frozen-lockfile` (Bun ≥1.4.4) then `bun run build`; assemble the artifact: `.output`, worker/database/scripts import tree (including `scripts/namespace-guard.mjs`), migration SQL/journal, runtime node_modules, licences. Exclude `.git`, `.env*`, captures, test results, keys, backups, storage. Record SHA-256 of the archive and of migration `0039` (`38f19e2f…7819`).
 - **Rollback:** revert local uncommitted changes; nothing external touched.
 
 ## 5B-2 Authorisation record
@@ -64,11 +64,11 @@ that contains no secrets.
 
 - **Prereq:** 5B-0…5B-3 complete; slice/units reviewed.
 - **Action, in order:**
-  1. Install Node 24.12+ (official tarball, verified checksum/signature) to the approved private root-owned path; do not touch `/usr/bin/node` or other apps' runtimes.
+  1. Install Node 24.12+ (official tarball, verified checksum/signature) to the approved version-pinned root-owned directory under `/opt/cape-vault/runtime/`; install the reviewed launcher root:root 0755 at `/opt/cape-vault/libexec/` with that exact path in `NODE=`. Do not touch `/usr/bin/node`, PATH, alternatives or other apps' runtimes.
   2. Create only the approved system users/groups (`cape-vault-storage`, and `cape-vault-approval`/`-reviewer` if Tier ≥1), no login shell, no home.
   3. Create directories with exact owners/modes: `/srv/cape-vault/releases` (root, 0755), `/etc/cape-vault` and `/etc/cape-vault/secrets/<svc>` (root, 0700/0750 as reviewed, non-symlink), `/var/lib/cape-vault/objects` (storage UID, 0700), `/var/log/cape-vault` (restricted).
-  4. Install `cape-vault.slice` and unit files **disabled and stopped**; `systemctl daemon-reload` only after `systemd-analyze verify` passes. Do not install email drop-ins.
-- **Validate:** `node -v`; `process.execve` present; `/usr/bin/flock` runs; `ls -ld` of every new path matches the plan; `systemctl list-unit-files | grep cape` shows disabled; neighbours unchanged against 5B-3.
+  4. Install `cape-vault.slice` (tier 0 values) and unit files **disabled and stopped**; `systemctl daemon-reload` only after `systemd-analyze verify` passes. Do not install email drop-ins.
+- **Validate:** pinned `node -v` and `typeof process.execve`; `/usr/bin/node -v` still 22.x; `setpriv`/`unshare`/`flock` present; `/usr/bin/flock` runs; `ls -ld` of every new path matches the plan; `systemctl list-unit-files | grep cape` shows disabled; neighbours unchanged against 5B-3.
 - **Rollback:** `systemctl daemon-reload` after removing only the unit files/slice we added; `userdel`/`groupdel` of our names; remove our empty directories and the private Node directory. Verify against the 5B-3 inventory.
 
 ## 5B-5 Dedicated database and roles (DBA, privileged)
@@ -97,12 +97,13 @@ that contains no secrets.
 - **Stop:** hash mismatch, partial migration, any audit failure.
 - **Rollback:** the database is synthetic and disposable at this stage — drop/recreate the empty DB via 5B-5 rollback and re-run. Do not hand-edit the ledger or grants.
 
-## 5B-8 Isolation and credential tests (web only; scanner/mail still stopped)
+## 5B-8 Host acceptance (probe harness first, then real web only)
 
-- **Action:** start `cape-vault-web` only. Execute Phase 5A Appendix B tests: `service-entry` reaches PID 1; `/proc` shows only the service; `/etc/cape-vault/secrets` and sibling credential directories are inaccessible; `process.execve` succeeded; web can write only inside the objects path; an unrelated Linux user cannot read `/var/lib/cape-vault`. If Tier ≥1 and namespace tests for scanner are authorised, briefly start the scanner **without a Bouncer key** and prove web ⇄ scanner `/proc` separation, then stop it.
-- **Validate:** every negative test fails with permission/ENOENT; every positive test passes; restart and (separately authorised) reboot preserve results; neighbour baseline unchanged.
-- **Stop:** any test cannot be demonstrated; **do not downgrade the sandbox**.
-- **Rollback:** `systemctl stop cape-vault-web`.
+- **Prereq:** owner approval of the probe harness (`/run/cape-probe`, volatile units, `daemon-reload`, probe UID, capped stress slice); abort gates in the acceptance document hold; 5B-3 baseline captured.
+- **Action:** run [Phase 5A host acceptance tests](phase-5a-host-acceptance-tests.md) in order: preconditions P1–P7; namespace and process N1–N10 (including negative control N5 and the `+` control in C1); storage S1–S6; credentials C1–C6; limits M1–M6 inside the probe slice; then start the real `cape-vault-web` only and repeat N1–N4, S1, S3–S5, C2–C5, M7–M8 (24–48 h). If tier 1 is authorised, start the scanner **without a Bouncer key** only long enough to repeat N4 against the real web, S2 and C3, then stop it.
+- **Validate:** every negative test fails with permission/ENOENT; every positive test passes; both negative controls fail as predicted; restart and (separately authorised) reboot preserve results; neighbour baseline unchanged (section 6 of the acceptance document).
+- **Stop:** any test cannot be demonstrated; **do not downgrade the sandbox** (do not drop the PID namespace, add `ProtectProc`-only substitutes, widen capabilities or relax read-only mounts).
+- **Rollback (acceptance failure):** the ordered procedure in acceptance document section 8: stop probe and real units, remove only our `/run` probe artifacts, unit/slice files and drop-ins, launcher and pinned Node, then the database/users/directories we created (empty or synthetic only), and compare with the 5B-3 baseline; PM2, Nginx, PostgreSQL and other applications are never restarted or changed as part of rollback.
 
 ## 5B-9 Nginx, DNS and TLS (restricted exposure)
 
