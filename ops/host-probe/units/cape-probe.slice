@@ -1,0 +1,11 @@
+# TEMPORARY HOST PROBE SLICE: scaled-down copy of the tier-0 budget. Nests under an implicit cape.slice.
+# No IOWeight on purpose: the io controller is absent from system.slice (acceptance doc I1-I3).
+[Unit]
+Description=Cape probe resource budget (temporary)
+[Slice]
+MemoryHigh=128M
+MemoryMax=160M
+MemorySwapMax=0
+CPUQuota=25%
+CPUWeight=20
+TasksMax=64

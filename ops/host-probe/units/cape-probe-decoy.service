@@ -1,0 +1,17 @@
+# TEMPORARY HOST PROBE UNIT: a same-UID sibling holding a synthetic credential (stands in for scanner vs web).
+[Unit]
+Description=Cape probe decoy sibling (synthetic credential)
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+Slice=cape-probe.slice
+LoadCredential=probe:/run/cape-probe/secrets/probe-secret-decoy
+ExecStart=/usr/bin/sleep 3600
+TimeoutStopSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateNetwork=yes
+ProtectSystem=strict
+MemoryMax=16M
+TasksMax=4

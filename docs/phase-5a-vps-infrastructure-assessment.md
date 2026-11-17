@@ -1,8 +1,8 @@
-# Phase 5A — VPS feasibility assessment (revision 2: verified host)
+# Phase 5A — VPS feasibility assessment (revision 3: second read-only inspection)
 
-Prepared 17 November 2026, revised after the owner's inspection of the shared VPS.
+Prepared 17 November 2026, revised after the owner's two read-only inspections of the shared VPS.
 **Status: design adapted and locally checked; nothing installed, deployed or run on the
-host.** Revision 1 (host not inspected) is preserved in git history. Companion documents:
+host; a temporary host probe is prepared and awaiting owner approval.** Revisions 1 and 2 are preserved in git history. Companion documents:
 [host acceptance tests](phase-5a-host-acceptance-tests.md),
 [Phase 5B plan](phase-5b-staging-execution-plan.md),
 [deployment preflight](phase-5-deployment-preflight.md).
@@ -14,18 +14,32 @@ effect on the real host has not been demonstrated.
 
 ## 1. Verified host facts and what is still assumed
 
-| Fact                                                                                                                                                      | Status                               |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| Ubuntu 24.04.4 LTS, kernel 6.8.0-147-generic, systemd 255                                                                                                 | VERIFIED                             |
-| 2 vCPU; 3.8 GiB RAM, 2.5 GiB available (one snapshot); 3.8 GiB swap unused                                                                                | VERIFIED (a single moment, not peak) |
-| 59 GB free disk; > 10 M free inodes                                                                                                                       | VERIFIED                             |
-| Node.js 22.23.2 (global); Bun absent; TCP 3300 unused                                                                                                     | VERIFIED                             |
-| Neighbours: makoti-production, onestop-kitchen-production, qahead-web, qahead-email-worker, qahead-notification-worker; `kbsk-staging` stopped on purpose | VERIFIED (names only)                |
-| CPU architecture (artifact assumes x86_64), virtualisation type (KVM vs container)                                                                        | **ASSUMED — not reported**           |
-| cgroup v2 controllers (`memory cpu pids io`) delegated to the manager                                                                                     | ASSUMED (Ubuntu 24.04 default)       |
-| util-linux version (`unshare`, `setpriv`, `flock`; 2.39.x expected)                                                                                       | ASSUMED                              |
-| PostgreSQL version/socket location, `max_connections`, Nginx state, who manages the five apps (PM2/systemd), `systemd-oomd`, AppArmor status              | NOT INSPECTED                        |
-| Peak-hour memory/CPU of the neighbours; whether `kbsk-staging` will return                                                                                | UNKNOWN                              |
+| Fact                                                                                                                                                                     | Status                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ |
+| Ubuntu 24.04.4 LTS, kernel 6.8.0-147-generic, systemd 255                                                                                                                | VERIFIED                             |
+| 2 vCPU; 3.8 GiB RAM, 2.5 GiB available (one snapshot); 3.8 GiB swap unused                                                                                               | VERIFIED (a single moment, not peak) |
+| 59 GB free disk; > 10 M free inodes                                                                                                                                      | VERIFIED                             |
+| Node.js 22.23.2 (global); Bun absent; TCP 3300 unused                                                                                                                    | VERIFIED                             |
+| Neighbours: makoti-production, onestop-kitchen-production, qahead-web, qahead-email-worker, qahead-notification-worker; `kbsk-staging` stopped on purpose                | VERIFIED (names only)                |
+| KVM virtualisation (not a container); AppArmor active; `systemd-oomd` inactive; util-linux 2.39.3; unified cgroup v2; `system.slice` controllers `cpu memory pids`       | VERIFIED (second inspection)         |
+| PostgreSQL 16 online on 5432 (socket directory, `max_connections`, `pg_hba` still not reported); port 3300 unused; `kbsk-staging` stopped on purpose; all others running | VERIFIED                             |
+| Expected load: approximately five users daily                                                                                                                            | OWNER ESTIMATE                       |
+| CPU architecture (artifact assumes x86_64): not reported                                                                                                                 | **ASSUMED** (probe P1)               |
+| `io` controller: **absent** from `system.slice`; whether the kernel offers it at the root, and the block scheduler (BFQ needed for `io.weight`), not reported            | VERIFIED absent / probe I1–I2        |
+| `setpriv`, `flock`, `perl`, `unshare` binaries and `max_{pid,mnt}_namespaces` (part of util-linux 2.39.3, expected)                                                      | ASSUMED (probe P2–P3)                |
+| AppArmor profiles that could confine `unshare`, `setpriv`, `mount`, `sh`; denials in the kernel log                                                                      | UNTESTED (probe A1–A3)               |
+| Nginx state, who manages the five apps (PM2/systemd)                                                                                                                     | NOT INSPECTED                        |
+| Peak-hour memory/CPU of the neighbours; whether `kbsk-staging` will return                                                                                               | UNKNOWN                              |
+
+**What the second inspection changes**
+
+- **No I/O control exists on this host.** `system.slice` has no `io` controller, so `IOWeight=20` in the unit and slice templates is almost certainly inert, and it must not be cited as I/O protection (earlier revisions did, §6). Even if `io` were enabled, `io.weight` needs the BFQ scheduler or iocost, which a virtio disk rarely uses. Enabling `io` would be a host-wide change to the root cgroup; it is not proposed. Protection against I/O contention therefore rests on workload size (about five users, no PDFs in synthetic staging), memory and task limits, journald limits and the owner's acceptance of the residual risk (probe I1–I2).
+- **`systemd-oomd` is inactive**, so no pressure-based killer acts on our slice or the neighbours: only the kernel's cgroup OOM (inside our `MemoryMax`) and the global OOM killer (where `OOMScoreAdjust=500` makes us the preferred victim) apply. Probe test M6 is not applicable.
+- **AppArmor is active.** The launcher uses no user namespace, so Ubuntu 24.04's unprivileged-userns restriction should not apply, but profiles or denials affecting root-run `unshare`/`setpriv`/`mount` are untested (A1–A3). Failure would be a failed launch, never a weaker start.
+- **KVM is full virtualisation**, which removes the container-class failure mode for PID/mount namespaces; it is still demonstrated by test N1, not assumed.
+- **Slice nesting.** `cape-vault.slice` (and the probe's `cape-probe.slice`) is, by systemd's dash rule, a child of an implicit `cape.slice` under the root cgroup, not of `system.slice`. The `cpu`, `memory` and `pids` controllers must therefore be enabled through the root and `cape.slice`; probe M1 reads `cape.slice/cgroup.subtree_control` and stops if a controller is missing (a missing controller means silently absent limits). Cgroup paths in the acceptance document use `/sys/fs/cgroup/cape.slice/cape-probe.slice/…`.
+- **About five daily users** supports Tier 0 (web only) and makes Tier 2 unnecessary for staging; nothing here claims capacity.
+- **A stop-semantics risk is now explicit** (acceptance N8c): `--kill-child` is a parent-death signal that the kernel clears when `setpriv` changes credentials, and `KillMode=mixed` signals only the main PID (`unshare`). Whether SIGTERM reaches the Node namespace init is **UNTESTED**; the probe tests it with a control and carries a gated `KillMode=control-group` fallback.
 
 ## 2. Resolving `PrivatePIDs=yes` on systemd 255 (blocker S1)
 
@@ -143,10 +157,11 @@ Slice, tier 0 (shipped): `MemoryHigh` 512 M, `MemoryMax` 640 M, 75 % CPU, no swa
 inspection, leaving ≈ 1.86 GiB for the neighbours. Tier 2 (sum of unit maxima 1,344 M; slice 1,280 M) would use ≈ 51 % of the same
 snapshot and is **not recommended on this host** unless peak-period measurements keep `MemAvailable` ≥ 2.5 GiB with five applications
 running and `kbsk-staging` accounted for; the owner has not stated whether it returns.
-All units add `CPUWeight=20`, `IOWeight=20`, `OOMScoreAdjust=500`, `MemorySwapMax=0` and `LimitCORE=0` (R2: our processes lose contention
-and are the OOM victim; no swap pressure on shared swap; no core dumps containing secrets).
+All units add `CPUWeight=20`, `IOWeight=20`, `OOMScoreAdjust=500`, `MemorySwapMax=0` and `LimitCORE=0` (R2: our processes lose CPU contention
+and are the OOM victim; no swap pressure on shared swap; no core dumps containing secrets). **`IOWeight=20` is expected to be inert on this host** (no `io`
+controller, §1); it is harmless but gives no protection. Whether to delete it from the templates is an owner decision after probe I1–I2; the probe units omit it.
 
-Open measurement dependencies: neighbours' peak (not 'one snapshot'); PostgreSQL's resident footprint; whether `systemd-oomd` is active.
+Open measurement dependencies: neighbours' peak (not 'one snapshot'); PostgreSQL 16's resident footprint (`systemd-oomd` is inactive, verified).
 Because 2 vCPU is shared, `CPUQuota=75 %` of the slice is also a ceiling, not a guarantee, so M3 compares neighbour latency during load.
 
 ## 7. Template and code changes made in this revision (all inactive)
@@ -164,20 +179,19 @@ Because 2 vCPU is shared, `CPUQuota=75 %` of the slice is also a ceiling, not a 
 
 **Ready (repository):** launcher and units drafted; guard code and unit tests; budgets and tiers; acceptance suite; rollback; Bun/Node decisions.
 
-**Needs host testing before any exposure (nothing demonstrated):** `!` retains the mount sandbox (C1); namespace creation and fresh `/proc` on kernel 6.8 (N1–N4);
+**Needs host testing before any exposure (nothing demonstrated; prepared as the temporary probe in [the acceptance document](phase-5a-host-acceptance-tests.md), awaiting approval):** `!` retains the mount sandbox (C1); namespace creation and fresh `/proc` on kernel 6.8 (N1–N4);
 negative controls (N5, C1 with `+`); stop and restart semantics (N8, N9); `process.execve` (N7); read-only storage and mount modes (S2); cgroup controller delegation,
 OOM, CPU and task limits (M1–M5); pinned Node install; PostgreSQL socket and `pg_hba` approach (P1/P2 from revision 1); resource behaviour over 24–48 h.
 
 **Owner approvals required (nothing implied by this document):** each of the following separately: (1) running the read-only inspection in §9 (and which privileged lines);
-(2) installing the pinned Node 24 tree and the launcher under `/opt/cape-vault`; (3) creating the probe harness under `/run` and running section 2–5 tests (includes `daemon-reload`, the
-`nobody` or other probe UID, and CPU/memory stress inside a capped slice); (4) creating real users, directories, units and the slice; (5) PostgreSQL roles/database/socket/`pg_hba` reload;
+(2) installing the pinned Node 24 tree and the launcher under `/opt/cape-vault`; (3) creating the probe harness under `/run` and running the probe (acceptance document §1 lists every change: 8 unit files, two `daemon-reload`s, UID `nobody`, capped CPU/memory/PID stress inside `cape-probe.slice`, one deliberate cgroup OOM kill); (4) creating real users, directories, units and the slice; (5) PostgreSQL roles/database/socket/`pg_hba` reload;
 (6) Nginx/DNS/TLS and staging access restriction; (7) resource tier, window and rollback window, and an answer on `kbsk-staging`; (8) synthetic-account seeding procedure (blocker S2, unchanged);
 (9) accepting the residual risks in §2. External email, Bouncer and PDFs remain separately gated and are out of scope.
 
-## 9. Additional read-only inspection still needed (unprivileged unless stated)
+## 9. Remaining read-only inspection (the host probe's G0 preconditions P1–P10 cover most of this list)
 
-`uname -m`; `systemd-detect-virt`; `stat -fc %T /sys/fs/cgroup`; `cat /sys/fs/cgroup/cgroup.controllers /sys/fs/cgroup/system.slice/cgroup.controllers`; `/proc/sys/user/max_{pid,mnt}_namespaces`;
-`unshare --version; setpriv --version; command -v flock mount`; `sysctl kernel.yama.ptrace_scope fs.protected_hardlinks kernel.apparmor_restrict_unprivileged_userns`; `systemctl is-active systemd-oomd`;
+`uname -m`; the root `cgroup.controllers`/`cgroup.subtree_control` (the `system.slice` list is verified); `/proc/sys/user/max_{pid,mnt}_namespaces`;
+`unshare --version; setpriv --version; command -v flock mount`; `sysctl kernel.yama.ptrace_scope fs.protected_hardlinks kernel.apparmor_restrict_unprivileged_userns`;
 how the five applications are supervised (unit names / PM2 owner user, names only) and which Linux users they run as (names only, for storage-isolation test S4); `ps -e --no-headers | wc -l` and
 RSS of the top 15 processes by name at the neighbours' peak (several samples over a business day, `MemAvailable` and PSI each time); PostgreSQL version, `max_connections`, socket directory and cluster list
 (`pg_lsclusters`; privileged lines from revision 1 Appendix A); Nginx vhost listener summary and `nginx -t` (privileged); `df`/`df -i` of the filesystem that will hold `/var/lib/cape-vault`;

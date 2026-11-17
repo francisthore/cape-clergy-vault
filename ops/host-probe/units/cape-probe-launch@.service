@@ -1,0 +1,58 @@
+# TEMPORARY HOST PROBE UNIT (Phase 5A rev 3). Volatile: install only under /run/systemd/system.
+# Sandbox block mirrors ops/systemd/cape-vault-web.service.example (checked by check-local.sh).
+# Differences from production: user nobody, probe slice and paths, scaled limits, PrivateNetwork=yes,
+# 3 s restart delay, 40 s stop timeout, no IOWeight (see acceptance doc I1-I3). Synthetic data only.
+[Unit]
+Description=Cape probe via namespace launcher, web-like (rw objects), mode %i
+StartLimitIntervalSec=300
+StartLimitBurst=3
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+Slice=cape-probe.slice
+WorkingDirectory=/run/cape-probe
+Environment=PROBE_MODE=%i
+EnvironmentFile=-/run/cape-probe/ctl/%i.env
+LoadCredential=probe:/run/cape-probe/secrets/probe-secret
+ExecStart=!/run/cape-probe/bin/launch 65534 web
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=40
+KillMode=mixed
+UMask=0077
+NoNewPrivileges=yes
+CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SETUID CAP_SETGID CAP_SETPCAP
+AmbientCapabilities=
+RestrictNamespaces=pid mnt
+PrivateMounts=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+InaccessiblePaths=/run/cape-probe/secrets
+InaccessiblePaths=-/run/credentials/cape-probe-decoy.service
+ReadWritePaths=/run/cape-probe/objects
+MemoryHigh=96M
+MemoryMax=128M
+MemorySwapMax=0
+CPUQuota=25%
+CPUWeight=20
+OOMScoreAdjust=500
+TasksMax=48
+LimitNOFILE=1024
+LimitCORE=0
+PrivateNetwork=yes
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cape-probe
