@@ -1,7 +1,34 @@
 import { sql } from "drizzle-orm";
-import { bigint, check, index, integer, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  check,
+  index,
+  integer,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { app, createdAt } from "./common.ts";
 import { documents } from "./submissions.ts";
+// Only the guarded operator records a decision reference or withdraws it.
+export const confidentialScanApprovals = app
+  .table(
+    "confidential_scan_approvals",
+    {
+      reference: text("reference").primaryKey(),
+      createdAt: createdAt(),
+      revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    },
+    (t) => [
+      uniqueIndex("one_active_confidential_scan_approval")
+        .on(sql`(true)`)
+        .where(sql`${t.revokedAt} is null`),
+      check("approval_reference_present", sql`length(btrim(${t.reference})) between 1 and 200`),
+    ],
+  )
+  .enableRLS();
+
 export const documentScans = app
   .table(
     "document_scans",
@@ -20,6 +47,9 @@ export const documentScans = app
       completedAt: timestamp("completed_at", { withTimezone: true }),
       provider: text("provider").notNull().default("clamav"),
       externalScanId: text("external_scan_id"),
+      confidentialApproval: text("confidential_approval").references(
+        () => confidentialScanApprovals.reference,
+      ),
       expectedByteSize: bigint("expected_byte_size", { mode: "number" }),
       submissionRevision: integer("submission_revision"),
       submittedAt: timestamp("submitted_at", { withTimezone: true }),

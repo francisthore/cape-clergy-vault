@@ -55,9 +55,7 @@ use that exact host in your browser). A secret of at least 32 characters is requ
 Set `EMAIL_PROVIDER` explicitly to `resend` or `development`. Real delivery also
 requires a key and `EMAIL_DOMAIN_VERIFIED=true`; existing live PostgreSQL sender,
 domain authorization and enable checks still govern delivery. Web and scanner
-must use the same `CAPE_STORAGE_ROOT` (default `.local/storage`). Configure the
-existing exact pinned `BOUNCER_UPLOAD_HOST` to support PDFs above 4 MiB. The upload
-limit remains exactly 20 MiB regardless of provider transport support.
+must use the same `CAPE_STORAGE_ROOT` (default `.local/storage`). Each PDF is limited to 4 MiB. The small-file Bouncer route needs no S3 host.
 
 Only allowlisted settings enter each child. Inherited `NODE_ENV`, `NODE_OPTIONS`,
 provider keys and database URLs cannot override those files. In particular,
@@ -74,8 +72,7 @@ It starts only `db:local:start` against the marked existing project cluster. It
 never initializes, resets, migrates, seeds, grants roles or deletes data. A
 read-only preflight checks each restricted identity and the owner-status function.
 
-Migration `0036_owner_verification_status.sql` is required for the new owner-safe
-UI projection. It is additive and grants only that function to runtime. Review it
+Migration `0040_v1_confidential_scanning.sql` and the reviewed role grants are required. Review them
 and use the established guarded migration procedure deliberately before running
 this version against the persistent database. The launcher never applies it, and
 the implementation/test session did not apply it to persistent development data.

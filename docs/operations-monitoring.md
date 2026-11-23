@@ -1,5 +1,12 @@
 # Operations and monitoring foundation
 
+For the current four-service V1 release, use the [production readiness assessment](v1-production-readiness.md)
+and [deployment runbook](v1-deployment-runbook.md). The V1 maximum is 4 MiB per PDF.
+Confidential transfers require a documented decision recorded under migration 0040.
+
+## Existing health indicators and threshold rationale
+
+
 No production service, monitoring account, paid integration, cron job or deployment
 is installed. Commands target the existing guarded local database. Preserve separate
 operator/worker credentials, capture-only test email and private filesystem ownership.

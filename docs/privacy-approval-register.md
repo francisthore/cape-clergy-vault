@@ -84,3 +84,20 @@ A read-only inventory found two currently confidential PDFs with provider scan I
 This is an open restricted-investigation item for the responsible office; no real-data
 classification, lawful-processing conclusion or incident notification decision has
 been made. Preserve evidence and do not describe earlier transfers as reversed.
+
+## V1 launch decision record — 23 November 2026
+
+The product decision is to support real clergy and confidential PDFs. The evidence field for each organisational decision below is **open**. Enter the dated decision, accountable office, scope, effective date, review/withdrawal terms and restricted evidence reference before signing the launch record. Keep contracts, names, signatures and incident material in the restricted register.
+
+| Record | Evidence required before activation |
+| --- | --- |
+| Ownership and privacy | Diocesan service owner and deputy, responsible party, Information Officer or delegated office, contact for rights requests and escalation, written decision covering proposed purposes and special personal information |
+| Bouncer | Signed decision specifically covering complete confidential PDFs, service contract, sub-processors and locations, applicable international-transfer safeguards, content and metadata retention, incident contact, revocation conditions and approved provider account |
+| Resend | Terms, locations, safeguards, named domain owner, approved sender and reply-to, verified domain, approved message classes and tightly bounded delivery test |
+| Notice and acknowledgements | Reviewed wording, approval and effective date, distinct frozen version, registration and existing-user acknowledgement plan, evidence of the screens and a test of withdrawal. The published draft and an older acknowledgement do not supply this evidence |
+| Retention and incidents | Adopted schedules for DB, files, quarantine, logs, emails and backup copies, holds and disposal authority, response lead, notification decision process, escalation exercise |
+| Hosting and backups | Operator identities and access, physical and off-site locations, encryption and key custody, adopted RPO/RTO and retention, dated isolated restore, neighbour impact and signed four-unit acceptance |
+| Historic confidential provider IDs | Restricted investigation, classification, provider handling and responsible-office decision for the two previously recorded items. Retain the original evidence |
+| Final release | Signed acceptance matrix, residual risks, reviewers, dates, rollback authority and separate decisions for provider test windows and real-clergy launch |
+
+Use the Bouncer decision's opaque register ID as the approval reference in PostgreSQL. A database row points to the evidence. It does not establish the legal basis or replace the signed decision.

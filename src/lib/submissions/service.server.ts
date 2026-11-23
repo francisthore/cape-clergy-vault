@@ -42,10 +42,17 @@ export function createSubmissionService(
                 : await tx`select app.author_review_feedback(${q.id}) as feedback`;
               const [assignment] = repository
                 ? []
-                : await tx`select app.author_assignment_status(${q.id}) as status`;
+                : await tx`select app.author_assignment_status(${q.id}) as status, app.confidential_scanning_enabled() as permitted`;
               return {
                 assignmentStatus: assignment?.["status"],
-                ...(!repository ? { uploadPolicy: configuredUploadPolicy() } : {}),
+                ...(!repository
+                  ? {
+                      uploadPolicy: {
+                        ...configuredUploadPolicy(),
+                        confidentialPdfAllowed: assignment?.["permitted"] === true,
+                      },
+                    }
+                  : {}),
                 submission: rows[0],
                 documents,
                 history,

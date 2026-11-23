@@ -1,5 +1,8 @@
 # Coordinated backup and recovery acceptance
 
+The [V1 deployment runbook](v1-deployment-runbook.md) gives the quiesced PG16 backup, encryption, off-host verification and isolated restore sequence. The V1 disposable drill also verifies confidential processing decisions, withdrawal, clean evidence and monitoring queries after restore.
+
+
 No live backup, destructive rotation or existing-database restore is authorized.
 The Phase 4 drill uses **two new disposable Unix-socket PostgreSQL clusters** in a
 fresh `/tmp/cape-recovery-*` directory, no inherited database URL and no TCP listener.

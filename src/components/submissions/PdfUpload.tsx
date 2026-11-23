@@ -72,7 +72,8 @@ export function PdfUpload({
           <div>
             <p className="font-medium">Attach a PDF</p>
             <p id="pdf-limit" className="text-sm text-muted-foreground">
-              {guidance ?? "Choose or drop one PDF. Maximum 20 MiB."}
+              {guidance ??
+                "Choose or drop one PDF. Maximum 4 MiB per PDF. Prepare clearly labelled parts locally for longer works."}
             </p>
           </div>
           <Button
@@ -87,7 +88,8 @@ export function PdfUpload({
       )}
       {hasAttachments && !expanded && !selected && !error && progress === null && (
         <p id="pdf-limit" className="text-sm text-muted-foreground">
-          {guidance ?? "Choose or drop one PDF. Maximum 20 MiB."}
+          {guidance ??
+            "Choose or drop one PDF. Maximum 4 MiB per PDF. Prepare clearly labelled parts locally for longer works."}
         </p>
       )}
       <input
@@ -97,7 +99,7 @@ export function PdfUpload({
         className="sr-only"
         tabIndex={-1}
         accept=".pdf,application/pdf"
-        aria-label="Attach a PDF (maximum 20 MiB)"
+        aria-label="Attach a PDF (maximum 4 MiB)"
         aria-describedby="pdf-limit pdf-error"
         aria-invalid={!!error}
         disabled={disabled}

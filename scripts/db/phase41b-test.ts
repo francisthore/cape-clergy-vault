@@ -24,6 +24,7 @@ assert.ok(
 const repository = fileURLToPath(new URL("../../", import.meta.url));
 const bin = [
   process.env["CAPE_PG_BIN"],
+  "/usr/lib/postgresql/16/bin",
   "/usr/lib/postgresql/18/bin",
   "/usr/lib/postgresql/17/bin",
   "/usr/lib/postgresql/14/bin",

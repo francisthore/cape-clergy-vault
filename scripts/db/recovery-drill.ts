@@ -21,6 +21,7 @@ import {
 } from "../../src/lib/reviews/tokens.server.ts";
 const bin = [
   process.env["CAPE_PG_BIN"],
+  "/usr/lib/postgresql/16/bin",
   "/usr/lib/postgresql/18/bin",
   "/usr/lib/postgresql/17/bin",
   "/usr/lib/postgresql/14/bin",
@@ -149,6 +150,46 @@ try {
     await source.client`insert into app.document_scans(document_id,expected_sha256) values(${id},${saved.sha256})`;
   }
   await runScanWorker(scanner, storage, new TestScanner(), 1, docs[0]!);
+  // Exercise the V1 decision, byte-bound verdict and withdrawal across a real dump.
+  const confidential = randomUUID(),
+    privateDoc = randomUUID(),
+    privateKey = randomUUID();
+  const decision = "recovery-fixture-" + randomUUID();
+  const saved = await storage.save(
+    privateKey,
+    new Response("%PDF-1.4\nSynthetic private fixture\n%%EOF\n").body!,
+    new AbortController().signal,
+  );
+  await source.client`insert into app.confidential_scan_approvals(reference) values(${decision})`;
+  await source.client`insert into app.submissions(id,owner_id,title,status,confidential) values(${confidential},${author},'Disposable private fixture','draft',true)`;
+  const sourceRuntime = connect(source.root, "cape_clergy_runtime");
+  await sourceRuntime.begin(async (tx) => {
+    await tx`select set_config('cape.user_id',${author},true)`;
+    await tx`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size) values(${privateDoc},${confidential},${privateKey},'synthetic.pdf','application/pdf',0)`;
+    await tx`select app.finalize_document(${privateDoc},${saved.byteSize},${saved.sha256})`;
+  });
+  const [claim] = await scanner`select app.claim_bouncer_scan(${privateDoc})->>'lease' lease`;
+  const lease = String(claim!["lease"]);
+  assert.equal(
+    (
+      await scanner`select app.reserve_bouncer_scan(${privateDoc},${lease},0,500,${new Date().toISOString().slice(0, 7)}) ok`
+    )[0]!["ok"],
+    true,
+  );
+  const privateProviderId = "scan_" + randomUUID();
+  assert.equal(
+    (
+      await scanner`select app.accept_bouncer_scan(${privateDoc},${lease},${privateProviderId}) ok`
+    )[0]!["ok"],
+    true,
+  );
+  assert.equal(
+    (
+      await scanner`select app.finish_bouncer_scan(${privateDoc},${lease},${privateProviderId},'clean',${saved.sha256},${saved.sha256},${saved.byteSize},true) ok`
+    )[0]!["ok"],
+    true,
+  );
+  await source.client`update app.confidential_scan_approvals set revoked_at=now() where reference=${decision}`;
   // Provider acceptance ambiguity survives backup/restore. No external requests are made.
   const externalId = "scan_" + randomUUID();
   await source.client`update app.document_scans set provider='bouncer',provider_status='pending',external_scan_id=${externalId},submitted_at=now(),submission_revision=1 where document_id=${docs[2]!}`;
@@ -264,6 +305,22 @@ try {
     return inventory;
   }
   await barrier();
+  const [policy] =
+    await target.client`select j.confidential_approval,app.confidential_scanning_enabled() enabled,app.document_is_clean(j.document_id) clean
+    from app.document_scans j where j.document_id=${privateDoc}`;
+  assert.equal(policy!["confidential_approval"], decision);
+  assert.equal(policy!["enabled"], false);
+  assert.equal(policy!["clean"], true);
+  command(join(bin!, "psql"), ["-X", "-v", "ON_ERROR_STOP=1", "-f", "ops/v1-monitor.sql"], {
+    ...process.env,
+    PGHOST: target.root,
+    PGDATABASE: dbName,
+    PGUSER: "cape_clergy_dev",
+    PGPASSWORD: credentials["cape_clergy_dev"],
+  });
+  checks.push(
+    "restored confidential approval reference, withdrawal, reservation and clean evidence verified; read-only monitoring queries executed",
+  );
   const [clean] = await target.client`select app.document_is_clean(${docs[0]!}) as clean`;
   assert.equal(clean!["clean"], true);
   const runtime = connect(target.root, "cape_clergy_runtime");
@@ -272,6 +329,10 @@ try {
       await tx`select set_config('cape.user_id',${who},true)`;
       const rows = await tx`select id from app.documents where id=${docs[0]!}`;
       assert.equal(rows.length, who === author ? 1 : 0);
+      assert.equal(
+        (await tx`select id from app.documents where id=${privateDoc}`).length,
+        who === author ? 1 : 0,
+      );
     });
   checks.push(
     "isolated restore preserves ledger, exact-hash clean evidence, immutable audit IDs and author/outsider RLS",

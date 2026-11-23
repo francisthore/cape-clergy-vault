@@ -299,7 +299,7 @@ test("Phase 4.3 horizontal and vertical privilege-escalation probes (synthetic i
                 await as(
                   a,
                   (tx) =>
-                    tx`select app.save_draft(null,0,'document','Synthetic private title','General','A meaningful description for this synthetic theological proposal.',array[]::text[],${confidentialFlag}) id`,
+                    tx`select app.save_draft(null,0,'document','Synthetic private title','General','A meaningful description for this synthetic theological proposal.',array[]::text[],false) id`,
                 )
               )[0]!["id"],
             );
@@ -307,6 +307,8 @@ test("Phase 4.3 horizontal and vertical privilege-escalation probes (synthetic i
             await owner.client`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size,upload_request_id)
               values(${id},${parent},${randomUUID()},'synthetic.pdf','application/pdf',0,${randomUUID()})`;
             await as(a, (tx) => tx`select app.finalize_document(${id},100,${"a".repeat(64)})`);
+            if (confidentialFlag)
+              await owner.client`update app.submissions set confidential=true where id=${parent}`;
             return id;
           };
           const secret = await stage(true);

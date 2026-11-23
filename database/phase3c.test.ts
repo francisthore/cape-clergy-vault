@@ -122,7 +122,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
           BETTER_AUTH_URL: baseURL,
           BETTER_AUTH_SECRET: secret,
           CAPE_STORAGE_ROOT: root,
-          CAPE_MAX_UPLOAD_BYTES: String(20 * 1024 * 1024),
+          CAPE_MAX_UPLOAD_BYTES: String(4 * 1024 * 1024),
           CAPE_DOCUMENT_TYPES: "pdf",
           CAPE_STORAGE_PROVIDER: "local",
           EMAIL_PROVIDER: "development",
@@ -238,9 +238,9 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
       );
     });
     await t.test(
-      "exact 20 MiB is accepted; actual oversized stream with forged length is rejected",
+      "exact 4 MiB is accepted; actual oversized stream with forged length is rejected",
       async () => {
-        const exact = Buffer.alloc(20 * 1024 * 1024, 32);
+        const exact = Buffer.alloc(4 * 1024 * 1024, 32);
         exact.write("%PDF-1.7\n");
         exact.write("\n%%EOF\n", exact.length - 7);
         assert.equal((await upload("owner", exact)).status, 201);
@@ -278,7 +278,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
           assert.equal((await send(request)).status, 413);
         }
         // HTTP also checks an ordinary crafted oversized request independently of the React UI.
-        assert.equal((await upload("owner", Buffer.alloc(20 * 1024 * 1024 + 1))).status, 413);
+        assert.equal((await upload("owner", Buffer.alloc(4 * 1024 * 1024 + 1))).status, 413);
       },
     );
     await t.test(
@@ -290,7 +290,7 @@ test(`Phase 3C: ${http ? "built Node HTTP" : "restricted runtime"} documents`, a
           Buffer.from("%PDF-1.7\ntruncated"),
         ])
           assert.ok([400, 415].includes((await upload("owner", body)).status));
-        assert.equal((await upload("owner", Buffer.alloc(20 * 1024 * 1024 + 1))).status, 413);
+        assert.equal((await upload("owner", Buffer.alloc(4 * 1024 * 1024 + 1))).status, 413);
         assert.equal(
           (
             await upload("owner", pdf, randomUUID(), submission, {

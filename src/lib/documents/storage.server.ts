@@ -46,7 +46,7 @@ export class LocalPrivateStorageProvider implements StorageProvider {
     if (this.root.split("/").some((p) => ["public", "dist", ".output", "node_modules"].includes(p)))
       throw new Error("Private storage configuration rejected");
     if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_PDF_BYTES)
-      throw new Error("Upload limit must be between 1 byte and 20 MiB");
+      throw new Error("Upload limit must be between 1 byte and 4 MiB");
   }
   private async directory() {
     // Check every ancestor; no untrusted intermediate symlink is followed.

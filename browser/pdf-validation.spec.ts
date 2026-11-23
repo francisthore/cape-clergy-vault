@@ -30,9 +30,9 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
       requests++;
   });
   await expect(upload).toHaveCount(0);
-  await expect(page.getByText("Maximum 20 MiB.", { exact: false })).toBeVisible();
+  await expect(page.getByText("per PDF", { exact: false })).toBeVisible();
   for (const [name, size, mime, message] of [
-    ["oversize.pdf", MAX_PDF_BYTES + 1, "application/pdf", "exceeds the 20 MiB"],
+    ["oversize.pdf", MAX_PDF_BYTES + 1, "application/pdf", "exceeds the 4 MiB"],
     ["empty.pdf", 0, "application/pdf", "empty"],
     ["invalid.txt", 10, "text/plain", "choose a PDF"],
   ] as const) {
@@ -60,7 +60,7 @@ test("PDF selection validates size, empty/type, drop, replacement, accessible fe
   }, MAX_PDF_BYTES);
   await page.locator(".upload-area").dispatchEvent("drop", { dataTransfer: transfer });
   await transfer.dispose();
-  await expect(page.getByRole("alert")).toContainText("exceeds the 20 MiB");
+  await expect(page.getByRole("alert")).toContainText("exceeds the 4 MiB");
   await expect(upload).toHaveCount(0);
   // A full browser event cycle plus a database query proves rejection creates no upload or reservation.
   await page.evaluate(

@@ -23,8 +23,8 @@ conception and original development remain attributed in the README.
 
 Server-only variables are documented in `.env.example`. Default `CAPE_STORAGE_ROOT`
 is ignored `.local/storage`; `CAPE_STORAGE_PROVIDER=local`,
-`CAPE_MAX_UPLOAD_BYTES=20971520`, `CAPE_DOCUMENT_TYPES=pdf`. The byte limit can be
-reduced, never raised beyond 20 MiB in this phase. Unsupported provider/type settings
+`CAPE_MAX_UPLOAD_BYTES=4194304`, `CAPE_DOCUMENT_TYPES=pdf`. The byte limit can be
+reduced, never raised beyond 4 MiB in this phase. Unsupported provider/type settings
 fail closed. Do not use VITE variables for server configuration. Only `.env.example`
 may be tracked, including in nested directories.
 
@@ -62,7 +62,7 @@ deployment releases so deploy/rollback never removes it.
 Nginx must proxy `/api/` to Node and serve static assets **only** from the build's
 public directory; never alias/root the storage directory or repository root. Deny
 dotfile locations, disable directory listing, impose upload time/concurrency/body
-limits, and allow enough download time. The raw file-body limit is 20 MiB, with no
+limits, and allow enough download time. The raw file-body limit is 4 MiB, with no
 multipart overhead. Do not cache document or account endpoints. No production
 Nginx/PM2/VPS configuration is installed by this phase.
 

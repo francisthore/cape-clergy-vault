@@ -54,43 +54,6 @@ test("small upload uses authenticated v1, bounded multipart and neutral filename
   });
   assert.equal(accepted, id);
 });
-test("large upload persists ID before streaming to exact pinned S3 with no API key", async () => {
-  let saved = false,
-    calls = 0;
-  const size = BOUNCER_V1_MAX_BYTES + 1;
-  const scanner = make(async (url, init) => {
-    calls++;
-    if (url.endsWith("/v2/scan")) {
-      assert.deepEqual(JSON.parse(String(init.body)), {
-        file_name: "document.pdf",
-        mime_type: "application/pdf",
-      });
-      return json(
-        {
-          scan_id: id,
-          status: "pending",
-          max_file_size: 26214400,
-          upload: {
-            url: `https://${host}/`,
-            fields: { key: `uploads/${id}/document.pdf`, policy: "private-policy" },
-          },
-        },
-        201,
-      );
-    }
-    assert.ok(saved);
-    assert.equal(url, `https://${host}/`);
-    assert.equal(new Headers(init.headers).has("X-API-Key"), false);
-    let length = 0;
-    for await (const chunk of init.body as unknown as AsyncIterable<Buffer>) length += chunk.length;
-    assert.equal(length, Number(new Headers(init.headers).get("Content-Length")));
-    return new Response(null, { status: 204 });
-  });
-  await scanner.submit(bytes(size), size, async () => {
-    saved = true;
-  });
-  assert.equal(calls, 2);
-});
 test("async statuses and all documented completed verdicts parse with exact identity", async () => {
   for (const status of ["pending", "scanning", "failed", "completed"]) {
     for (const verdict of ["clean", "malicious", "suspicious"]) {
@@ -236,13 +199,13 @@ test("4 MiB route boundary and missing host reject large submissions before any 
   for (const size of [BOUNCER_V1_MAX_BYTES + 1, 20 * 1024 * 1024]) {
     await assert.rejects(
       small.submit(bytes(size), size, async () => {}),
-      category("unsafe_destination"),
+      category("invalid_response"),
     );
   }
   assert.equal(calls, 0);
   const large = make(() => {
     throw Error("No provider call expected");
   });
-  assert.doesNotThrow(() => large.canSubmit(20 * 1024 * 1024));
+  assert.throws(() => large.canSubmit(BOUNCER_V1_MAX_BYTES + 1), category("invalid_response"));
   assert.throws(() => large.canSubmit(20 * 1024 * 1024 + 1), category("invalid_response"));
 });

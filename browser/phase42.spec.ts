@@ -245,17 +245,6 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
     },
     { timeout: 60000 },
   );
-  await expect(page.locator("#pdf-error")).toContainText("cannot currently be verified");
-  await expect(upload).toHaveCount(0);
-  expect(requests).toBe(0);
-  const operationalLimitPdf = Buffer.alloc(4 * 1024 * 1024);
-  operationalLimitPdf.write("%PDF-1.4\n");
-  operationalLimitPdf.write("\n%%EOF\n", operationalLimitPdf.length - 7);
-  await input.setInputFiles({
-    name: "operational-limit.pdf",
-    mimeType: "application/pdf",
-    buffer: operationalLimitPdf,
-  });
   await expect(upload).toBeEnabled();
   expect(requests).toBe(0);
   await page.getByRole("button", { name: "Edit submission", exact: true }).click();
@@ -346,6 +335,64 @@ test("visible PDF picker, editor selection, zero invalid upload requests, quaran
   expect(download.status()).toBe(200);
   expect(await download.body()).toEqual(pdf);
   await assess(page);
+});
+
+test("confidential PDF approval, quarantine, private download and repository exclusion", async ({
+  page,
+}) => {
+  await f.login(page, "author");
+  await page.goto("/submissions/new");
+  await page.getByLabel("Title", { exact: true }).fill("Synthetic confidential work");
+  await page
+    .getByLabel("Abstract or description", { exact: true })
+    .fill("A synthetic confidential work prepared locally for testing.");
+  await page.getByRole("checkbox", { name: /Confidential/ }).check();
+  await page.getByRole("button", { name: "Save resource details" }).click();
+  await page.waitForURL(/\/submissions\/[0-9a-f-]+$/);
+  const parent = page.url().split("/").at(-1)!;
+  const file = {
+    name: "private-part-1.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\nSynthetic confidential test\n%%EOF\n"),
+  };
+  const input = page.getByLabel("Attach a PDF", { exact: false });
+  await input.setInputFiles(file);
+  await expect(page.locator("#pdf-error")).toContainText("approved route");
+  const reference = crypto.randomUUID();
+  await f.owner.client`insert into app.confidential_scan_approvals(reference) values(${reference})`;
+  try {
+    await page.reload();
+    await expect(page.locator("#pdf-limit")).toContainText("Bouncer receives the complete file");
+    await input.setInputFiles(file);
+    await page.getByRole("button", { name: "Upload PDF", exact: true }).click();
+    await expect(page.getByText("Awaiting verification", { exact: true })).toBeVisible();
+    const [doc] = await f.owner.client`select id from app.documents where submission_id=${parent}`;
+    const path = "/api/documents/" + doc!["id"] + "/download";
+    expect((await page.request.get(path)).status()).toBe(404);
+    await f.scan(String(doc!["id"]));
+    await expect(page.getByRole("link", { name: "Download PDF" })).toBeVisible();
+    expect(await (await page.request.get(path)).body()).toEqual(file.buffer);
+    const submitted = await page.request.post("/api/submissions", {
+      headers: { origin },
+      data: { action: "submit", id: parent, version: 1 },
+    });
+    expect(submitted.status()).toBe(200);
+    await f.owner
+      .client`select app.reviewer_operator('assign',${f.id("multi")},${parent},null,null,${"ASSIGN " + f.id("multi") + " " + parent + " REVISION 1"},1)`;
+    await f.runtime.client.begin(async (tx) => {
+      await tx`select set_config('cape.user_id',${f.id("multi")},true)`;
+      await tx`select app.decide_review(${parent},2,'under_review','','',${crypto.randomUUID()})`;
+      await tx`select app.decide_review(${parent},3,'accepted','','Synthetic confidential review decision',${crypto.randomUUID()})`;
+    });
+    expect((await page.request.get("/api/repository?id=" + parent)).status()).toBe(404);
+    await page.context().clearCookies();
+    await f.login(page, "approver");
+    expect((await page.request.get(path)).status()).toBe(404);
+    expect((await page.request.get("/api/repository?id=" + parent)).status()).toBe(404);
+  } finally {
+    await f.owner
+      .client`update app.confidential_scan_approvals set revoked_at=now() where reference=${reference}`;
+  }
 });
 
 test("waiting, active, delayed and failed checks remain gated, exclusion confirms retained history", async ({

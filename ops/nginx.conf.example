@@ -9,7 +9,7 @@ server {
     access_log /var/log/cape-vault/nginx-access.log cape_vault_safe;
     # Define in http context: log_format cape_vault_safe '$request_id $request_method $uri $status $request_time';
     # Exclude query strings, cookies, authorization and referrers (auth proof).
-    client_max_body_size 21m;
+    client_max_body_size 4m;
     client_body_timeout 60s;
     # The app emits a per-response nonce CSP. Preserve it; do not replace or cache HTML.
     # HSTS belongs to this dedicated HTTPS vhost only, without includeSubDomains/preload.

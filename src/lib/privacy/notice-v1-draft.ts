@@ -11,12 +11,12 @@
 // invented names, addresses, approvals or durations.
 
 export const privacyNoticeV1Draft = {
-  identifier: "repository-v1-draft-2026-11-17",
+  identifier: "repository-v1-draft-2026-11-23",
   status: "draft-not-approved",
   active: false,
   label: "Privacy Notice (Version 1) — proposed draft",
   warning:
-    "Proposed draft for Diocese review. Not approved and not in force. Pre-launch demonstration only: use synthetic information and PDFs. Do not enter real personal or confidential information.",
+    "Proposed draft for Diocese review. Not approved and not in force. During release acceptance use synthetic information and PDFs. Do not enter real personal or confidential information.",
   governingLaw:
     "Protection of Personal Information Act 4 of 2013 (POPIA), South Africa. Statutory references are for the Diocese's legal adviser to confirm.",
   sections: [
@@ -38,7 +38,7 @@ export const privacyNoticeV1Draft = {
         "Status and permissions: verification and registration status; approval status (pending, approved, rejected, suspended or reactivated); roles granted to an account, such as clergy, approver, review coordinator, reviewer, access manager or settings manager; and reviewer invitation records.",
         "Privacy records: the version of this notice that you acknowledged, when you acknowledged it, and any later withdrawal event.",
         "Resources and submissions: titles, descriptions, keywords, the category, your confidentiality choice, uploaded PDF files and their technical details (for example size, type and checksum), revisions, and lifecycle history such as received, assigned, under review, accepted or returned.",
-        "Review: feedback shown to you as the author, and private reviewer notes. Private reviewer notes are visible only to authorised reviewers and TEFT review staff, and are never shown to authors.",
+        "Review: feedback shown to you as the author, and private reviewer notes. Private reviewer notes are available to reviewers authorised for the assigned revision, and are never shown to authors.",
         "Security screening: malware screening results and quarantine status for each PDF.",
         "Access, download and audit records: who viewed or downloaded a file and when, administrative changes, and the audit history needed to explain them.",
         "Notifications: records of emails the application sends for your account or submissions (recipient, message type, time and delivery status).",
@@ -88,7 +88,7 @@ export const privacyNoticeV1Draft = {
         "Assigned theological reviewers can access only the exact revision assigned to them, and only while both their reviewer authorisation and the assignment are active. Reviewers cannot review their own submissions or amended revisions without a new assignment.",
         "Settings managers manage email configuration and related application settings. That capability is separate from clergy approval and theological review. [Verify against live role permissions before approval.]",
         "Accepted, non-confidential resources can be seen by approved clergy with a current repository acknowledgement. Confidential works remain private to the author and to authorised, assigned reviewers. Acceptance does not publish a confidential work to the repository.",
-        "Private reviewer notes are visible only to authorised reviewers and TEFT review staff. They are not shown to authors, and they are not included in author notifications.",
+        "Private reviewer notes are available to reviewers authorised for the assigned revision. They are not shown to authors, and they are not included in author notifications.",
         "Administrative roles do not automatically allow access to confidential resources or private reviewer notes. No single administrator can read everything in the system.",
         "A small number of trusted technical operators may need controlled access to the database, files or logs for maintenance, security or incident handling. That access is limited to what is necessary. [Operator controls and disclosure rules — awaiting Diocese confirmation.]",
         "Access controls reduce risk but cannot recall a copy of a file that has already been downloaded.",
@@ -101,9 +101,9 @@ export const privacyNoticeV1Draft = {
         "Resend provides transactional email (account, verification, reset and submission notifications) when email is enabled. Resend receives the recipient address and the message content, including any sign-in or review link. [Resend agreement, processing location and safeguards — awaiting Diocese review.]",
         "Bouncer provides malware screening for uploaded PDFs when it is configured. The complete PDF is sent to Bouncer for scanning through its upload infrastructure. Bouncer's published privacy policy, as summarised on 17 November 2026 and to be re-checked before launch, states that its data is stored on AWS infrastructure in the Mumbai (ap-south-1) region in India; that uploaded file content is deleted within 24 hours; and that scan metadata is retained while the provider account is active. These are the provider's statements. The Diocese has not independently verified them.",
         "Because Bouncer processing takes place outside South Africa and a PDF may contain special personal information, transfers must meet POPIA section 72 requirements before real use. Confidential PDFs are not to be sent to an external scanner unless the Diocese specifically approves that use with the required safeguards. [Bouncer approval status and section 72 safeguards — awaiting Diocese decision.]",
-        "ClamAV is an alternative scanner. Where it is used, scanning happens on infrastructure configured for the application. [Scanner location to be confirmed in the infrastructure record.]",
+        "V1 proposes sending each newly authorised confidential PDF in full to Bouncer for screening. Each PDF may be up to 4 MiB. The upload screen explains the transfer before you attach the file. The Diocese must record its decision before this route opens. Files attached under earlier arrangements stay outside this approval. A clean result allows the normal private review workflow. Even after acceptance, confidential work stays outside the shared clergy repository.",
         "Hosting, database, file storage and backup services are run on infrastructure used for this application. [Hosting provider, physical locations and operator agreements — awaiting Diocese confirmation.]",
-        "The sign-in pages request fonts from Google Fonts, which can receive your browser's network details, such as IP address. [Self-hosting or separate review — pending.]",
+        "The application serves its fonts locally.",
         "No advertising or analytics services were found in the application code reviewed for this draft. [To be re-verified before launch.]",
       ],
     },
@@ -149,7 +149,7 @@ export const privacyNoticeV1Draft = {
         "The sign-in session cookie keeps you signed in. It is marked HttpOnly, so page scripts cannot read it; it is set with SameSite=Lax; and it is marked Secure when the site is served over HTTPS. It is essential to sign-in and security.",
         "Email verification and password-reset links are time-limited. Changing your password ends existing sign-ins on your account.",
         "No advertising or tracking cookies were identified in the code reviewed. [Complete browser-storage and cookie inventory — pending verification before launch, since some legacy client code remains in the project.]",
-        "Google Fonts is described in section 7. Whether essential cookies require separate notice under the Diocese's policy is for the Diocese to confirm.",
+        "Whether essential cookies require separate notice under the Diocese's policy is for the Diocese to confirm.",
       ],
     },
     {

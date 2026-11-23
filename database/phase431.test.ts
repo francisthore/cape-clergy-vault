@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
+import { cp, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { TransactionSql } from "postgres";
 import { connectLocalDatabase } from "./connection.server.ts";
 import { connectLocalRuntime } from "./runtime.server.ts";
@@ -68,10 +70,12 @@ test("Phase 4.3.1 independent authority and transfer concurrency", async (t) => 
       )[0]!["id"],
     );
   const stage = async (confidential = false) => {
-    const parent = await draft(author, confidential, "document"),
+    const parent = await draft(author, false, "document"),
       id = randomUUID();
     await owner.client`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size,upload_request_id) values(${id},${parent},${randomUUID()},'synthetic.pdf','application/pdf',0,${randomUUID()})`;
     await as(author, (tx) => tx`select app.finalize_document(${id},100,${"a".repeat(64)})`);
+    if (confidential)
+      await owner.client`update app.submissions set confidential=true where id=${parent}`;
     return { id, parent };
   };
   const claim = async (id: string) =>
@@ -132,12 +136,44 @@ test("Phase 4.3.1 independent authority and transfer concurrency", async (t) => 
           try {
             await assertProductionIdentity(operator, target, "operator");
             await operator`revoke create on schema public from public`;
+            // Rehearse an upgrade with real pre-0040 rows and the original ledger.
+            const prior = join(manifest.root, "prior-migrations");
+            await cp(migrationFolder, prior, { recursive: true });
+            const journalPath = join(prior, "meta", "_journal.json");
+            const journal = JSON.parse(await readFile(journalPath, "utf8"));
+            journal.entries = journal.entries.filter((e: { idx: number }) => e.idx < 40);
+            await writeFile(journalPath, JSON.stringify(journal));
+            await migrate(drizzle(operator), {
+              migrationsFolder: prior,
+              migrationsSchema: "cape_migrations",
+            });
+            assert.deepEqual((await reviewedMigrationPlan(operator)).pending, [
+              "0040_v1_confidential_scanning",
+            ]);
+            const oldDoc = randomUUID(),
+              oldParent = randomUUID(),
+              hash = "a".repeat(64);
+            await operator`insert into auth.users(id,name,email,email_verified) values('historical','Historical fixture','historical@example.invalid',true)`;
+            await operator`insert into app.clergy_profiles(user_id,full_name,approval_status) values('historical','Historical fixture','approved')`;
+            await operator`insert into app.submissions(id,owner_id,title,confidential,status) values(${oldParent},'historical','Historic synthetic item',true,'accepted')`;
+            await operator`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size,sha256,state)
+              values(${oldDoc},${oldParent},${randomUUID()},'historical.pdf','application/pdf',5000000,${hash},'available')`;
+            await operator`insert into app.document_scans(document_id,state,provider,expected_sha256,scanned_sha256,provider_sha256,expected_byte_size,provider_byte_size,completed_at,submission_revision,external_scan_id,provider_status,result_category)
+              values(${oldDoc},'clean','bouncer',${hash},${hash},${hash},5000000,5000000,now(),1,'scan_historical','completed','clean')`;
             await migrate(drizzle(operator), {
               migrationsFolder: migrationFolder,
               migrationsSchema: "cape_migrations",
             });
             await operator.unsafe(await productionGrants());
             assert.deepEqual((await reviewedMigrationPlan(operator)).pending, []);
+            await operator`insert into app.confidential_scan_approvals(reference) values('synthetic-upgrade-only')`;
+            const [historic] =
+              await operator`select j.state, j.confidential_approval, d.byte_size::int, app.document_is_clean(d.id) clean
+              from app.documents d join app.document_scans j on j.document_id=d.id where d.id=${oldDoc}`;
+            assert.equal(historic!["state"], "clean");
+            assert.equal(historic!["byte_size"], 5000000);
+            assert.equal(historic!["confidential_approval"], null);
+            assert.equal(historic!["clean"], false);
             const checks: string[] = [];
             await auditMigrationLedger(operator, checks);
             await auditRoles(operator, checks);
@@ -547,13 +583,39 @@ test("Phase 4.3.1 independent authority and transfer concurrency", async (t) => 
             }),
           );
         for (const size of [4194303, 4194304]) assert.equal((await upload(size)).status, 201);
+        const pendingRow = randomUUID();
+        await as(
+          author,
+          (
+            tx,
+          ) => tx`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size)
+          values(${pendingRow},${parent},${randomUUID()},'size.pdf','application/pdf',0)`,
+        );
+        await assert.rejects(
+          as(
+            author,
+            (tx) => tx`select app.finalize_document(${pendingRow},4194305,${"a".repeat(64)})`,
+          ),
+          { code: "22023" },
+        );
+        const shortHeader = new Request(
+          origin + `/api/documents?submissionId=${parent}&requestId=${randomUUID()}`,
+          {
+            method: "POST",
+            headers: {
+              origin,
+              cookie,
+              "content-length": "1",
+              "content-type": "application/pdf",
+              "x-document-name": "size.pdf",
+            },
+            body: pdf(4194305),
+          },
+        );
+        assert.equal((await service.handle(shortHeader)).status, 413);
         const [before] = await owner.client`select count(*)::int n from app.documents`;
-        for (const size of [4194305, MAX_PDF_BYTES]) {
-          const result = await upload(size);
-          assert.equal(result.status, 409);
-          assert.equal((await result.json()).code, "screening_unavailable");
-        }
-        assert.equal((await upload(MAX_PDF_BYTES + 1)).status, 413);
+        for (const size of [MAX_PDF_BYTES + 1, 20971520])
+          assert.equal((await upload(size)).status, 413);
         assert.equal((await upload(100, confidential)).status, 409);
         assert.equal(
           (await owner.client`select count(*)::int n from app.documents`)[0]!["n"],
@@ -561,24 +623,106 @@ test("Phase 4.3.1 independent authority and transfer concurrency", async (t) => 
         );
         assert.equal(
           (await upload(4194305, parent, randomUUID(), false)).status,
-          409,
+          413,
           "streamed bytes enforce operational limit without Content-Length",
         );
         const key = randomUUID();
         assert.equal((await upload(100, parent, key)).status, 201);
         assert.equal((await upload(100, parent, key)).status, 409);
-        // Trusted server policy can accept exactly 20 MiB; the immutable safety ceiling remains enforced.
-        const large = createDocumentService(auth, storage, origin, MAX_PDF_BYTES, {
-          hardMaxBytes: MAX_PDF_BYTES,
-          screeningMaxBytes: MAX_PDF_BYTES,
-          confidentialPdfAllowed: false,
-        });
-        assert.equal((await upload(MAX_PDF_BYTES, parent, randomUUID(), false, large)).status, 201);
-        assert.equal(
-          (await upload(MAX_PDF_BYTES + 1, parent, randomUUID(), false, large)).status,
-          413,
+        const approval = prefix + "-synthetic-decision";
+        await assert.rejects(
+          as(
+            author,
+            (tx) => tx`insert into app.confidential_scan_approvals(reference) values(${approval})`,
+          ),
+          { code: "42501" },
         );
-        assert.equal((await upload(100, confidential, randomUUID(), true, large)).status, 409);
+        await owner.client`insert into app.confidential_scan_approvals(reference) values(${approval})`;
+        const uploaded = await upload(100, confidential);
+        assert.equal(uploaded.status, 201);
+        const { id } = await uploaded.json();
+        const c = await claim(id);
+        assert.ok(c);
+        const [reserved] = await reserve(id, c.lease);
+        assert.equal(reserved!["ok"], true);
+        assert.equal((await reserve(id, c.lease))[0]!["ok"], false);
+        await assert.rejects(
+          owner.client`update app.submissions set confidential=false where id=${confidential}`,
+          { code: "23514" },
+        );
+        const scanId = "scan_" + randomUUID();
+        assert.ok(
+          (await scanner.client`select app.accept_bouncer_scan(${id},${c.lease},${scanId}) ok`)[0]![
+            "ok"
+          ],
+        );
+        const [evidence] =
+          await owner.client`select expected_sha256,confidential_approval from app.document_scans where document_id=${id}`;
+        assert.equal(evidence!["confidential_approval"], approval);
+        const hash = String(evidence!["expected_sha256"]);
+        assert.ok(
+          (
+            await scanner.client`select app.finish_bouncer_scan(${id},${c.lease},${scanId},'clean',${hash},${hash},100,true) ok`
+          )[0]!["ok"],
+        );
+        const download = await service.handle(
+          new Request(origin + "/api/documents/" + id + "/download", { headers: { cookie } }),
+          id,
+        );
+        assert.equal(download.status, 200);
+        assert.deepEqual(Buffer.from(await download.arrayBuffer()), pdf(100));
+        assert.equal(
+          (await as(peer, (tx) => tx`select id from app.documents where id=${id}`)).length,
+          0,
+        );
+        assert.equal(
+          (
+            await as(author, (tx) => tx`select app.document_is_clean(${legacyConfidential}) ok`)
+          )[0]!["ok"],
+          false,
+        );
+        const pending = await upload(100, confidential);
+        assert.equal(pending.status, 201);
+        const pendingId = (await pending.json()).id;
+        const leased = await claim(pendingId);
+        await owner.client`update app.confidential_scan_approvals set revoked_at=now() where reference=${approval}`;
+        await assert.rejects(reserve(pendingId, leased.lease), { code: "42501" });
+        await release(pendingId, leased.lease);
+        assert.equal((await upload(100, confidential)).status, 409);
+      },
+    );
+    await t.test(
+      "captured password reset changes the credential, invalidates sessions and consumes the link",
+      async () => {
+        const origin = "http://localhost:3220";
+        const captured = new TestEmailProvider();
+        const auth = createAuthService(
+          runtime,
+          new EmailService(captured, { origin, from: "Capture <capture@example.invalid>" }),
+          { secret: "Synthetic-phase431-secret-at-least-32-characters", baseURL: origin },
+        );
+        const send = (path: string, body: Record<string, string>) =>
+          auth.handle(
+            new Request(origin + "/api/auth/" + path, {
+              method: "POST",
+              headers: { origin, "content-type": "application/json" },
+              body: JSON.stringify(body),
+            }),
+          );
+        const email = author + "@example.invalid";
+        assert.equal((await send("request-password-reset", { email })).status, 200);
+        assert.equal(captured.messages.length, 1);
+        const link = captured.messages[0]!.text.match(/https?:\/\/[^\s]+/)?.[0];
+        assert.ok(link);
+        const token = new URL(link).pathname.split("/").at(-1)!;
+        const newPassword = "Another synthetic reset passphrase";
+        assert.equal((await send("reset-password", { token, newPassword })).status, 200);
+        assert.equal((await send("reset-password", { token, newPassword })).status, 400);
+        assert.equal(
+          (await owner.client`select id from auth.sessions where user_id=${author}`).length,
+          0,
+        );
+        assert.equal((await send("sign-in/email", { email, password: newPassword })).status, 200);
       },
     );
   } finally {

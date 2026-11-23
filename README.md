@@ -10,14 +10,16 @@ The [original editor](https://lovable.dev/projects/219ef20a-7e74-4f29-8092-503e1
 and [historical preview](https://cape-clergy-vault.lovable.app) are attribution
 references, not dependencies of the new authentication flow.
 
-## Current phase: 4 — local operational acceptance
+## Version 1 release preparation
 
-Phase 4 adds restricted notification-worker functions/login, shared PostgreSQL rate
-limits, trusted-proxy checks, scanner-degraded health semantics, an encrypted disposable
-restore drill and operational/approval acceptance packs. No production or staging
-provisioning is authorized. Real ClamAV, target-specific infrastructure isolation,
-live deliverability and human approvals remain open. See the
-[Phase 4 report](docs/phase-4-report.md) and [release matrix](docs/release-readiness.md).
+V1 covers clergy registration, approval, theological review, private PDF screening,
+notifications and the accepted-resource repository. Each PDF may be up to 4 MiB.
+Migration 0040 leaves confidential processing closed until a guarded operator
+records a diocesan decision. Acceptance uses synthetic content. The release
+requires web, scanner and both notification services on the measured target host.
+
+See [V1 readiness](docs/v1-production-readiness.md), [deployment](docs/v1-deployment-runbook.md),
+[launch acceptance](docs/v1-launch-acceptance.md) and [support](docs/v1-support-and-feedback.md).
 
 Better Auth **1.7.16**, TanStack Start, PostgreSQL and Drizzle provide registration,
 email verification, cookie sessions, login/logout, account status and password reset.

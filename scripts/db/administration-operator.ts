@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline/promises";
-import { connectLocalDatabase } from "../../database/connection.server.ts";
+import { connectOperator } from "./operator-connection.ts";
 const [mode, identity, capabilities, delegated] = process.argv.slice(2);
 if (
   process.argv.length !== 6 ||
@@ -22,7 +22,7 @@ if (
   )
 )
   throw Error("Unsupported explicit capability list");
-const owner = await connectLocalDatabase();
+const owner = await connectOperator();
 const terminal = createInterface({ input: process.stdin, output: process.stdout });
 try {
   const [account] =

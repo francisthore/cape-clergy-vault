@@ -161,8 +161,6 @@ async function main() {
   const flags = process.argv.slice(2);
   const env = await configuration(root, flags);
   await checkPort();
-  if (env.provider === "bouncer" && !env.scanner.BOUNCER_UPLOAD_HOST)
-    console.log("Bouncer upload host unset: PDFs above 4 MiB cannot be transferred.");
   if (flags.includes("--check")) {
     console.log("Configuration and port preflight passed. No database or workers started.");
     return;

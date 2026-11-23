@@ -1,0 +1,11 @@
+# V1 support and feedback
+
+Before enrolment, the diocesan service owner must publish a monitored support contact, opening hours, deputy and a private privacy/incident channel. Those contact details await confirmation. Test both channels and the handover to the duty operator during launch acceptance.
+
+**For clergy.** For verification, reset or invitation problems, record the time, screen and message, and contact support through the diocesan channel. Keep passwords, emailed links and invitation codes private. For an upload, give the file size, displayed status, approximate time and any request reference. Each PDF can be 4 MiB. For a longer work, prepare clearly labelled parts locally and attach them one at a time. Keep confidential files on approved equipment. Preserve the draft if screening is delayed. Send any theological feedback through the assigned review workflow.
+
+**For the first responder.** Record a ticket reference, time with zone, affected workflow, scope, impact and a safe callback method. Reproduce with a disposable account and synthetic PDF. Do not ask for the manuscript, private notes, proof link, password or an unredacted screenshot. Route registration decisions to the clergy approver, assignments to the coordinator, provider delivery and queues to operations, and privacy or subject-access requests to the designated office. Support cannot change a user's reviewer access.
+
+**Suspected disclosure or integrity failure.** Escalate immediately to the incident lead and Information Officer. Restrict the affected route, stop new transfers as appropriate and preserve audit, provider, lease and object evidence under controlled access. Use the deployment runbook to withdraw a processing decision. Record who authorised containment, which recipients or systems may have received data and who may authorise recovery. The responsible office decides communications and statutory steps.
+
+**Feedback.** Record device/browser, task, expected result, observed result and permission to follow up. Use a private reference for sensitive reports. The service owner triages accessibility and workflow feedback, names a responsible person, records the disposition and confirms the outcome with the reporter. At handover, review unresolved tickets, queue alerts, revoked access, recent changes and the last verified backup.

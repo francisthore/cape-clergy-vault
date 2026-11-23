@@ -1,5 +1,12 @@
 # Proposed supervision, health and monitoring
 
+For the current four-service V1 release, use the [production readiness assessment](v1-production-readiness.md)
+and [deployment runbook](v1-deployment-runbook.md). The V1 maximum is 4 MiB per PDF.
+Confidential transfers require a documented decision recorded under migration 0040.
+
+## Prior supervision designs
+
+
 No supervisor/service was installed or enabled. See `ops/ecosystem.config.cjs` and
 `ops/nginx.conf.example` for review-only web templates. All paths/users/ports are
 proposals. Do not apply to existing VPS services without separate authorization.

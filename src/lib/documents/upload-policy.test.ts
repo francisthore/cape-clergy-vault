@@ -4,15 +4,13 @@ import { configuredUploadPolicy } from "./upload-policy.server";
 import { screeningSelectionError } from "./upload-policy";
 import { MAX_PDF_BYTES } from "./validation";
 describe("server-authoritative operational PDF policy", () => {
-  it("keeps 20 MiB hard maximum and defaults to the verified small-file route", () => {
+  it("keeps 4 MiB hard maximum and defaults to the verified small-file route", () => {
     const policy = configuredUploadPolicy({});
     expect(policy.hardMaxBytes).toBe(MAX_PDF_BYTES);
     for (const size of [1, 4194303, 4194304])
       expect(screeningSelectionError(size, policy, false)).toBeNull();
-    for (const size of [4194305, MAX_PDF_BYTES, MAX_PDF_BYTES + 1])
-      expect(screeningSelectionError(size, policy, false)).toContain(
-        "cannot currently be verified",
-      );
+    for (const size of [4194305, 20971520])
+      expect(screeningSelectionError(size, policy, false)).toContain("per PDF");
     expect(screeningSelectionError(1, policy, true)).toContain("Do not remove confidentiality");
   });
   it("accepts only trusted integer limits within the hard ceiling and never enables confidential processing", () => {

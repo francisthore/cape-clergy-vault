@@ -17,7 +17,7 @@ import { randomUUID, createHash } from "node:crypto";
 import { LocalPrivateStorageProvider, validateFileName } from "./storage.server";
 const pdf = Buffer.from("%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n");
 const roots: string[] = [];
-async function fixture(limit = 20 * 1024 * 1024) {
+async function fixture(limit = 4 * 1024 * 1024) {
   const root = await mkdtemp(join(tmpdir(), "cape-storage-test-"));
   roots.push(root);
   return { root, storage: new LocalPrivateStorageProvider(root, limit) };
@@ -144,7 +144,7 @@ it("read-only scanner storage opens owned objects but cannot save, delete or cre
   const { root, storage } = await fixture(),
     id = randomUUID();
   await storage.save(id, stream(), AbortSignal.timeout(1000));
-  const reader = new LocalPrivateStorageProvider(root, 20971520, true);
+  const reader = new LocalPrivateStorageProvider(root, 4194304, true);
   const object = await reader.open(id);
   expect(await object.read()).toEqual(pdf);
   await object.close();
@@ -152,7 +152,7 @@ it("read-only scanner storage opens owned objects but cannot save, delete or cre
     "Read-only",
   );
   await expect(reader.delete(id)).rejects.toThrow("Read-only");
-  const absent = new LocalPrivateStorageProvider(join(root, "absent"), 20971520, true);
+  const absent = new LocalPrivateStorageProvider(join(root, "absent"), 4194304, true);
   await expect(absent.open(randomUUID())).rejects.toThrow();
   expect(await readdir(root)).toEqual([id + ".blob"]);
 });

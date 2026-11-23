@@ -281,6 +281,13 @@
       "when": 1794871000000,
       "tag": "0039_pilot_authorization_fences",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795449620267,
+      "tag": "0040_v1_confidential_scanning",
+      "breakpoints": true
     }
   ]
 }

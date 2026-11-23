@@ -259,71 +259,18 @@ test("Phase 4.1B actual restricted roles, durable asynchronous Bouncer and provi
       assert.equal(p.posts(), 1);
     });
     await t.test(
-      "exact 20 MiB v2 upload commits ID before S3 and resumes verified polling",
+      "exact 4 MiB uses one v1 upload and verifies matching provider bytes",
       async () => {
-        const bytes = Buffer.alloc(20 * 1024 * 1024, 32);
+        const bytes = Buffer.alloc(4194304, 32);
         bytes.write("%PDF-1.7\n");
         bytes.write("\n%%EOF\n", bytes.length - 7);
-        const d = await upload(bytes),
-          host = "bouncer-dev-uploads-fixture.s3.ap-south-1.amazonaws.com";
-        const scanId = "scan_" + randomUUID();
-        let posts = 0,
-          uploads = 0;
-        const scanner = new BouncerScanner({
-          apiKey: "fixture-private-key",
-          uploadHost: host,
-          fetch: (async (input, init) => {
-            const url = String(input),
-              now = new Date();
-            let data: unknown;
-            if (url.endsWith("/usage"))
-              data = {
-                tier: "free",
-                period,
-                scans_used: 0,
-                scans_limit: 500,
-                resets_at: new Date(
-                  Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
-                ).toISOString(),
-              };
-            else if (url.endsWith("/v2/scan")) {
-              posts++;
-              data = {
-                scan_id: scanId,
-                status: "pending",
-                max_file_size: 26214400,
-                upload: {
-                  url: `https://${host}/`,
-                  fields: { key: `uploads/${scanId}/document.pdf`, policy: "fixture-policy" },
-                },
-              };
-            } else if (url === `https://${host}/`) {
-              uploads++;
-              assert.equal((await row(d.id))["external_scan_id"], scanId);
-              assert.equal(new Headers(init?.headers).has("X-API-Key"), false);
-              for await (const chunk of init?.body as unknown as AsyncIterable<Uint8Array>)
-                void chunk;
-              return new Response(null, { status: 204 });
-            } else
-              data = {
-                scan_id: scanId,
-                status: "completed",
-                verdict: "clean",
-                file: { sha256: d.sha256, size: d.byteSize },
-              };
-            return Response.json(
-              { status: "success", data },
-              { status: url.endsWith("/v2/scan") ? 201 : 200 },
-            );
-          }) as typeof fetch,
-        });
-        await runScanWorker(worker.client, storage, scanner, 1, d.id);
-        assert.equal((await row(d.id))["document_state"], "quarantined");
+        const d = await upload(bytes);
+        const p = provider(d.sha256, d.byteSize);
+        await runScanWorker(worker.client, storage, p.scanner, 1, d.id);
         await due(d.id);
-        await runScanWorker(worker.client, storage, scanner, 1, d.id);
-        assert.equal((await row(d.id))["document_state"], "available");
-        assert.equal(posts, 1);
-        assert.equal(uploads, 1);
+        await runScanWorker(worker.client, storage, p.scanner, 1, d.id);
+        assert.equal((await row(d.id))["clean"], true);
+        assert.equal(p.posts(), 1);
       },
     );
     await t.test(

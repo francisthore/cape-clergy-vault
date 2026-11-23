@@ -1,5 +1,12 @@
 # Phase 4.1B — Bouncer scanning operations
 
+For the current four-service V1 release, use the [production readiness assessment](v1-production-readiness.md)
+and [deployment runbook](v1-deployment-runbook.md). The V1 maximum is 4 MiB per PDF.
+Confidential transfers require a documented decision recorded under migration 0040.
+
+## Historical Bouncer integration and acceptance evidence
+
+
 Repository integration only, assessed 16 November 2026 (Africa/Johannesburg).
 No deployment, paid plan, service installation or live scan was performed. Michael's
 original attribution and isolated historical interfaces are preserved.

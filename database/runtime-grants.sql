@@ -68,3 +68,6 @@ GRANT EXECUTE ON FUNCTION app.has_operational(text),app.coordination_inbox(integ
  app.access_identity(text),app.manage_access(text,text,text,text,text,text,uuid,uuid,text,text),
  app.author_assignment_status(uuid) TO cape_clergy_runtime;
 GRANT EXECUTE ON FUNCTION app.require_delegation(text) TO cape_clergy_runtime;
+
+REVOKE ALL ON app.confidential_scan_approvals FROM cape_clergy_runtime;
+GRANT EXECUTE ON FUNCTION app.confidential_scanning_enabled() TO cape_clergy_runtime;

@@ -1,5 +1,12 @@
 # Release readiness — Phase 4.3.1
 
+For the current four-service V1 release, use the [production readiness assessment](v1-production-readiness.md)
+and [deployment runbook](v1-deployment-runbook.md). The V1 maximum is 4 MiB per PDF.
+Confidential transfers require a documented decision recorded under migration 0040.
+
+## Phase 4.3.1 readiness record
+
+
 Assessment: 17 November 2026, Africa/Johannesburg. Repository remediation only; no VPS
 inspection/deployment, real delivery or external document processing was authorized.
 See [remediation evidence](phase-431-pilot-remediation-report.md), the

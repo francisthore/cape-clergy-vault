@@ -1,0 +1,8 @@
+# Reviewed candidate drop-in for cape-vault.slice.d/v1.conf. Requires full-host
+# acceptance before activation. Base staging slice remains suitable for web alone.
+[Slice]
+MemoryHigh=1024M
+MemoryMax=1280M
+MemorySwapMax=0
+CPUQuota=130%
+TasksMax=160

@@ -7,13 +7,13 @@ role creation or real application capability grant occurred.
 | Identity                    | Allowed                                                                                                             | Denied                                                                                                                   |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `cape_clergy_runtime`       | Better Auth adapter CRUD; reviewed RLS reads/draft/transition/review/settings/audit functions; shared limiter       | Worker operations; outbox/proof reads; direct review/status writes; DDL; owner membership                                |
-| `cape_clergy_scanner`       | `claim_document_scan`, `finish_document_scan`                                                                       | All direct app/auth table access; mail; capability grants; DDL/history mutation                                          |
+| `cape_clergy_scanner`       | Reviewed claim, reserve, accept and finish functions for Bouncer and existing local-scanner functions                                                                       | All direct app/auth table access; mail; capability grants; DDL/history mutation                                          |
 | `cape_clergy_notifications` | `claim_notification`, `prepare_notification`, `check_notification`, `finish_notification`, `resolve_email_settings` | Every direct app/auth table read/write; scan jobs/documents; sender writes; role grants; decisions; DDL/history deletion |
 | Migration/operator          | Explicitly authorized forward migrations, exact-ID maintenance and read-only operational reports                    | Normal web/background use; automatic privileged grants at startup                                                        |
 
 Non-owner service logins have NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOREPLICATION/
 NOBYPASSRLS, no memberships, owned relations/schemas, database CREATE/TEMP, PUBLIC
-schema creation or inherited privileged functions. RLS is enabled on all 29 app
+schema creation or inherited privileged functions. RLS is enabled on all 30 app
 tables. Auth tables retain their reviewed adapter boundary. Operator ownership can
 bypass ordinary RLS; keep that credential outside services and record operator work.
 

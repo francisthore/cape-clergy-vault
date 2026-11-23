@@ -1,8 +1,8 @@
 # Cape Clergy Vault — Privacy Notice Version 1 (proposed draft)
 
-> **Proposed draft for Diocese review. Not approved and not in force. Pre-launch demonstration only: use synthetic information and PDFs. Do not enter real personal or confidential information.**
+> **Proposed draft for Diocese review. Not approved and not in force. During release acceptance use synthetic information and PDFs. Do not enter real personal or confidential information.**
 >
-> Draft identifier: `repository-v1-draft-2026-11-17`. Status: **draft-not-approved**. This draft is not the acknowledged notice. Registration still acknowledges `repository-v1-proposed-2026-11-16`, whose text is unchanged. Nothing in this draft has been approved by the Diocese, and it has no effective date.
+> Draft identifier: `repository-v1-draft-2026-11-23`. Status: **draft-not-approved**. This draft is not the acknowledged notice. Registration still acknowledges `repository-v1-proposed-2026-11-16`, whose text is unchanged. Nothing in this draft has been approved by the Diocese, and it has no effective date.
 
 _Protection of Personal Information Act 4 of 2013 (POPIA), South Africa. Statutory references are for the Diocese's legal adviser to confirm._
 
@@ -28,7 +28,7 @@ Privacy records: the version of this notice that you acknowledged, when you ackn
 
 Resources and submissions: titles, descriptions, keywords, the category, your confidentiality choice, uploaded PDF files and their technical details (for example size, type and checksum), revisions, and lifecycle history such as received, assigned, under review, accepted or returned.
 
-Review: feedback shown to you as the author, and private reviewer notes. Private reviewer notes are visible only to authorised reviewers and TEFT review staff, and are never shown to authors.
+Review: feedback shown to you as the author, and private reviewer notes. Private reviewer notes are available to reviewers authorised for the assigned revision, and are never shown to authors.
 
 Security screening: malware screening results and quarantine status for each PDF.
 
@@ -88,7 +88,7 @@ Settings managers manage email configuration and related application settings. T
 
 Accepted, non-confidential resources can be seen by approved clergy with a current repository acknowledgement. Confidential works remain private to the author and to authorised, assigned reviewers. Acceptance does not publish a confidential work to the repository.
 
-Private reviewer notes are visible only to authorised reviewers and TEFT review staff. They are not shown to authors, and they are not included in author notifications.
+Private reviewer notes are available to reviewers authorised for the assigned revision. They are not shown to authors, and they are not included in author notifications.
 
 Administrative roles do not automatically allow access to confidential resources or private reviewer notes. No single administrator can read everything in the system.
 
@@ -104,11 +104,11 @@ Bouncer provides malware screening for uploaded PDFs when it is configured. The 
 
 Because Bouncer processing takes place outside South Africa and a PDF may contain special personal information, transfers must meet POPIA section 72 requirements before real use. Confidential PDFs are not to be sent to an external scanner unless the Diocese specifically approves that use with the required safeguards. [Bouncer approval status and section 72 safeguards — awaiting Diocese decision.]
 
-ClamAV is an alternative scanner. Where it is used, scanning happens on infrastructure configured for the application. [Scanner location to be confirmed in the infrastructure record.]
+V1 proposes sending each newly authorised confidential PDF in full to Bouncer for screening. Each PDF may be up to 4 MiB. The upload screen explains the transfer before you attach the file. The Diocese must record its decision before this route opens. Files attached under earlier arrangements stay outside this approval. A clean result allows the normal private review workflow. Even after acceptance, confidential work stays outside the shared clergy repository.
 
 Hosting, database, file storage and backup services are run on infrastructure used for this application. [Hosting provider, physical locations and operator agreements — awaiting Diocese confirmation.]
 
-The sign-in pages request fonts from Google Fonts, which can receive your browser's network details, such as IP address. [Self-hosting or separate review — pending.]
+The application serves its fonts locally.
 
 No advertising or analytics services were found in the application code reviewed for this draft. [To be re-verified before launch.]
 
@@ -160,7 +160,7 @@ Email verification and password-reset links are time-limited. Changing your pass
 
 No advertising or tracking cookies were identified in the code reviewed. [Complete browser-storage and cookie inventory — pending verification before launch, since some legacy client code remains in the project.]
 
-Google Fonts is described in section 7. Whether essential cookies require separate notice under the Diocese's policy is for the Diocese to confirm.
+Whether essential cookies require separate notice under the Diocese's policy is for the Diocese to confirm.
 
 ## 12. Changes and contact
 

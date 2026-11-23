@@ -69,7 +69,7 @@ Unknown commits leave durable state for recovery. Retry delays start at 60 secon
 and double to a bounded hour. Integrity mismatch, missing bytes and size limits are
 terminal. Exhausted work requires operator investigation; no reset loop exists.
 
-The worker hashes the exact streamed bytes, enforces recorded size and the 20 MiB
+The worker hashes the exact streamed bytes, enforces recorded size and the 4 MiB
 ceiling, and reopens/re-hashes a clean object's current key before promotion. It
 rechecks parent type, exclusion and live author eligibility after scanning. No file
 replacement is supported by application writes. A privileged OS process could replace

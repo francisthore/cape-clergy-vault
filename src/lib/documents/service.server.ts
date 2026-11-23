@@ -60,7 +60,10 @@ export function createDocumentService(
       throw new DocumentError(415, "Upload a PDF file body.");
     const length = request.headers.get("content-length");
     if (length && (!/^\d+$/.test(length) || Number(length) > maxBytes))
-      throw new DocumentError(413, "Document exceeds the upload limit.");
+      throw new DocumentError(
+        413,
+        "This PDF exceeds the upload limit. Each PDF must be 4 MiB or smaller.",
+      );
     const denied = await auth.limitOperation(request, "upload");
     if (denied) return denied;
     const id = randomUUID();
@@ -70,11 +73,11 @@ export function createDocumentService(
     // Finalization separately locks/rechecks the parent after the upload.
     await auth.withApprovedDatabase(request.headers, async (tx) => {
       const rows =
-        await tx`select id,confidential from app.submissions where id=${query.submissionId}
+        await tx`select id,confidential,app.confidential_scanning_enabled() as permitted from app.submissions where id=${query.submissionId}
        and owner_id=app.request_user_id() and status='draft' and kind='document'`;
       if (!rows.length)
         throw new DocumentError(403, "This submission is not editable by your account.");
-      if (rows[0]!["confidential"] === true) throw new ScreeningUnavailable(true);
+      if (rows[0]!["confidential"] && !rows[0]!["permitted"]) throw new ScreeningUnavailable(true);
       if (length && Number(length) > screeningLimit) throw new ScreeningUnavailable();
       await tx`insert into app.documents(id,submission_id,storage_key,file_name,media_type,byte_size,upload_request_id)
        values(${id},${query.submissionId},${storageKey},${name},'application/pdf',0,${requestId})`;
@@ -87,7 +90,10 @@ export function createDocumentService(
           transform(chunk, controller) {
             streamed += chunk.byteLength;
             if (streamed > maxBytes)
-              throw new DocumentError(413, "Document exceeds the upload limit.");
+              throw new DocumentError(
+                413,
+                "This PDF exceeds the upload limit. Each PDF must be 4 MiB or smaller.",
+              );
             if (streamed > screeningLimit) throw new ScreeningUnavailable();
             controller.enqueue(chunk);
           },

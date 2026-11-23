@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline/promises";
-import { connectLocalDatabase } from "../../database/connection.server.ts";
+import { connectOperator } from "./operator-connection.ts";
 const [action, value] = process.argv.slice(2);
 if (
   !process.stdin.isTTY ||
@@ -10,7 +10,7 @@ if (
   throw Error(
     "Use settings-operator.ts grant|revoke EXACT_ID or authorize-domain DOMAIN in a trusted interactive terminal",
   );
-const owner = await connectLocalDatabase();
+const owner = await connectOperator();
 const terminal = createInterface({ input: process.stdin, output: process.stdout });
 try {
   if (action === "authorize-domain") {
