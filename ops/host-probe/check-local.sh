@@ -1,41 +1,86 @@
 #!/bin/sh
-# Local (workstation) consistency checks for the temporary host probe. Touches nothing on any host.
-# Usage: sh ops/host-probe/check-local.sh   (from the repository root)
+# shellcheck disable=SC2016
+# Quoted patterns below match literal shell source in the production launcher.
+# Workstation only. --render-launcher emits the reviewed G1 artifact on stdout.
 set -eu
+export LC_ALL=C
 cd "$(dirname "$0")/../.."
-fail=0
-note() { printf '%s\n' "$*"; }
-
-note "1. shellcheck"
-shellcheck -s sh ops/host-probe/payload.sh ops/host-probe/stage1.sh ops/host-probe/helpers.sh ops/libexec/cape-vault-ns-launch.example || fail=1
-
-note "2. probe launcher derivation: exactly two changed lines"
-tmp=$(mktemp)
-sed -e 's#^NODE=.*#NODE=/run/cape-probe/bin/payload.sh#' \
-  -e 's#"\$NODE" scripts/service-entry.mjs "\$kind"#"$NODE" "$kind"#' \
-  ops/libexec/cape-vault-ns-launch.example >"$tmp"
-changed=$(diff ops/libexec/cape-vault-ns-launch.example "$tmp" | grep -c '^>' || true)
-[ "$changed" = 2 ] || { note "FAIL: expected 2 changed lines, got $changed"; fail=1; }
-diff ops/libexec/cape-vault-ns-launch.example "$tmp" || true
-sh -n "$tmp" && rm -f "$tmp"
-
-note "3. sandbox directives identical to the real web unit"
-keys='NoNewPrivileges|CapabilityBoundingSet|AmbientCapabilities|RestrictNamespaces|PrivateMounts|PrivateTmp|PrivateDevices|ProtectSystem|ProtectHome|ProtectProc|ProcSubset|ProtectKernelTunables|ProtectKernelModules|ProtectKernelLogs|ProtectControlGroups|RestrictSUIDSGID|RestrictRealtime|LockPersonality|RestrictAddressFamilies|UMask|KillMode|OOMScoreAdjust|MemorySwapMax|CPUWeight|LimitNOFILE|LimitCORE'
-ref=$(grep -E "^($keys)=" ops/systemd/cape-vault-web.service.example | sort)
-for u in ops/host-probe/units/cape-probe-launch*.service ops/host-probe/units/cape-probe-direct@.service ops/host-probe/units/cape-probe-bang.service ops/host-probe/units/cape-probe-plus.service; do
-  got=$(grep -E "^($keys)=" "$u" | sort)
-  # oneshot readers carry fewer keys: every key they carry must equal production
-  bad=$(printf '%s\n' "$got" | while IFS= read -r l; do printf '%s\n' "$ref" | grep -qxF -- "$l" || echo "$l"; done)
-  [ -z "$bad" ] || { note "FAIL $u differs from production: $bad"; fail=1; }
-done
-
-note "4. systemd-analyze: unknown directives only (missing /run files are expected)"
+template=ops/libexec/cape-vault-ns-launch.example
+render_launcher() {
+  sed -e 's#^NODE=.*#NODE=/opt/cape-probe-exec/payload.sh#' \
+    -e 's#^    -- "\$NODE" scripts/service-entry.mjs "\$kind"$#    -- "$NODE" "$kind"#' "$template"
+}
+case "$#:${1:-}" in
+  1:--render-launcher) render_launcher; exit 0 ;;
+  0:) ;;
+  *) echo 'Usage: check-local.sh [--render-launcher]' >&2; exit 2 ;;
+esac
+fail() { echo "FAIL: $*" >&2; exit 1; }
 d=$(mktemp -d)
-cp ops/host-probe/units/* "$d"/
-for u in "$d"/*.service "$d"/cape-probe.slice; do
-  out=$(systemd-analyze verify --man=no "$u" 2>&1 || true)
-  # only lines about our files: unrelated host units may warn on this workstation's systemd
-  if printf '%s\n' "$out" | grep -F "$d" | grep -iE 'unknown (key|section|lvalue)|invalid|bad (value|unit)'; then fail=1; fi
+trap 'rm -rf -- "$d"' EXIT
+mkdir "$d/bin" "$d/units"
+launch=$d/bin/launch
+render_launcher > "$launch"
+echo '1. ShellCheck and shell syntax'
+shellcheck -s sh ops/host-probe/*.sh "$template" "$launch"
+for script in ops/host-probe/*.sh "$template" "$launch"; do sh -n "$script"; done
+
+echo '2. Only the runtime and entry point change in the launcher'
+# Check both sides of the diff, including removals, and the executable stage-two path.
+if diff "$template" "$launch" > "$d/changes"; then fail 'launcher identical'; else test "$?" = 1; fi
+cat "$d/changes"
+test "$(grep -c '^< ' "$d/changes")" = 2
+test "$(grep -c '^> ' "$d/changes")" = 2
+grep -Fxq 'NODE=/opt/cape-probe-exec/payload.sh' "$launch"
+grep -Fxq '    -- "$NODE" "$kind"' "$launch"
+grep -Fxq '  "$0" --stage2 "$svc_user" "$kind"' "$launch"
+
+echo '3. Execution paths, privilege prefixes and sandbox settings'
+keys='NoNewPrivileges|CapabilityBoundingSet|AmbientCapabilities|RestrictNamespaces|PrivateMounts|PrivateTmp|PrivateDevices|ProtectSystem|ProtectHome|ProtectProc|ProcSubset|ProtectKernelTunables|ProtectKernelModules|ProtectKernelLogs|ProtectControlGroups|RestrictSUIDSGID|RestrictRealtime|LockPersonality|RestrictAddressFamilies|UMask|KillMode|OOMScoreAdjust|MemorySwapMax|CPUWeight|LimitNOFILE|LimitCORE'
+# The operator's migration/rollback inventory names the old files; runtime code must not.
+if grep -nE '(/run/cape-probe|\$P|\$\{P\})/bin/|/run/[^[:space:]"]*/(payload\.sh|stage1\.sh|launch)([[:space:]"]|$)' \
+  ops/host-probe/payload.sh ops/host-probe/stage1.sh ops/host-probe/helpers.sh "$launch" ops/host-probe/units/*; then
+  fail 'stale probe executable under /run'
+fi
+ref=$(grep -E "^($keys)=" ops/systemd/cape-vault-web.service.example | sort)
+for u in ops/host-probe/units/*.service; do
+  name=${u##*/}
+  case "$name" in
+    cape-probe-launch@.service|cape-probe-launch-ro@.service|cape-probe-launch-none@.service)
+      command='!/opt/cape-probe-exec/launch 65534 web' ;;
+    cape-probe-direct@.service) command='/opt/cape-probe-exec/payload.sh' ;;
+    cape-probe-bang.service) command='!/opt/cape-probe-exec/stage1.sh' ;;
+    cape-probe-plus.service) command='+/opt/cape-probe-exec/stage1.sh' ;;
+    cape-probe-decoy.service) command='/usr/bin/sleep 3600' ;;
+    *) fail "unexpected unit $name" ;;
+  esac
+  # Also rejects new ExecStartPre/Post, ExecCondition or interpreter indirection.
+  test "$(grep -E '^[[:space:]]*Exec[A-Za-z]+[[:space:]]*=' "$u")" = "ExecStart=$command" || fail "$name execution path"
+  got=$(grep -E "^($keys)=" "$u" | sort)
+  case "$name" in
+    *-bang.service|*-plus.service) expected=$(printf '%s\n' "$ref" | grep -v '^KillMode=') ;;
+    *-decoy.service) continue ;; # Deliberately minimal sibling, original sleep command checked above.
+    *) expected=$ref ;;
+  esac
+  test "$got" = "$expected" || fail "$name sandbox differs from production"
 done
-rm -rf "$d"
-[ "$fail" = 0 ] && note "ALL LOCAL CHECKS PASSED" || { note "LOCAL CHECKS FAILED"; exit 1; }
+
+echo '4. Offline systemd unit verification with executable fixtures'
+install -m 0755 ops/host-probe/payload.sh ops/host-probe/stage1.sh "$d/bin/"
+chmod 0755 "$launch"
+# Replace only the checked executable prefix. Data paths and sandbox stay verbatim.
+for u in ops/host-probe/units/*.service; do
+  sed "/^ExecStart=/s|/opt/cape-probe-exec/|$d/bin/|" "$u" > "$d/units/${u##*/}"
+done
+cp ops/host-probe/units/cape-probe.slice "$d/units/"
+set -- "$d"/units/*
+test "$#" = 8 || fail 'expected seven services and one slice'
+if ! SYSTEMD_UNIT_PATH="$d/units:/usr/lib/systemd/system" systemd-analyze verify --man=no "$@" > "$d/verify" 2>&1; then
+  cat "$d/verify" >&2; fail 'systemd-analyze verify'
+fi
+cat "$d/verify"
+# systemd can ignore an unknown key and still return success.
+if grep -Ev '/cape-probe-[^:]+\.service:[0-9]+: Special user nobody configured, this is not safe!$' "$d/verify"; then
+  fail 'unexpected probe unit diagnostic'
+fi
+echo 'ALL LOCAL CHECKS PASSED'

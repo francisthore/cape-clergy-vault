@@ -1,5 +1,5 @@
 # shellcheck shell=sh disable=SC2034,SC2013
-# TEMPORARY HOST PROBE helpers. Source as root:  . /run/cape-probe/bin/helpers.sh
+# TEMPORARY HOST PROBE helpers. Source as root:  . /run/cape-probe/helpers.sh
 # Read-only except probe_guard, which may SIGKILL one cape-probe-* unit. Prints no secrets.
 P=/run/cape-probe
 S=/sys/fs/cgroup/cape.slice/cape-probe.slice # 'cape-probe.slice' nests under an implicit cape.slice

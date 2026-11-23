@@ -1,29 +1,46 @@
-# Phase 5A — Temporary host acceptance probe (revision 3, DO NOT RUN without owner authorisation)
+# Phase 5A — Temporary host acceptance probe (revision 4)
 
-Prepared 17 November 2026 for the verified host (Ubuntu 24.04.4, kernel 6.8.0-147, systemd 255, KVM, cgroup v2,
-2 vCPU, 3.8 GiB RAM, 3.8 GiB swap, util-linux 2.39.3, AppArmor active, `systemd-oomd` inactive). **Nothing here has
-been run.** Every "expected" value is a prediction, not evidence. A test passes only when its _negative control_
-behaves as predicted; a test that cannot fail proves nothing. Rules of the probe: synthetic markers only
-(`SYNTHETIC-PROBE-<random>`), no Cape Vault secrets, database, email, PDFs, Bouncer or external API, no network
-(`PrivateNetwork=yes`), nothing outside `/run`. The operator (not Claude) runs every line, as root where marked `#`.
+On 23 November 2026 the operator reported that the 13 revision 3 sources passed SHA-256
+verification and the synthetic G1 harness was staged on `vm400masc.kbsktrading.net`.
+Offline unit verification failed with `Permission denied` on the executable paths.
+The host mounts `/run` with `rw,nosuid,nodev,noexec`. The operator found executable-capable
+ext4 under `/opt` and no existing `/opt/cape-probe-exec`. No daemon reload or
+unit start occurred. Local systemd 249 verification of revision 4 completed for all eight fixture units.
+The seven services emitted the expected special-user warning. Verification of the
+installed revision 4 paths on systemd 255 remains open.
 
-Artifacts (all in this repository, reviewed before use, copied to the host by tar):
-[`ops/host-probe/`](../ops/host-probe/) `payload.sh`, `stage1.sh`, `helpers.sh`, `units/*` (8 files) and the production
-launcher template [`ops/libexec/cape-vault-ns-launch.example`](../ops/libexec/cape-vault-ns-launch.example).
-`sh ops/host-probe/check-local.sh` (workstation) proves: shellcheck clean; the probe launcher differs from the real one
-in exactly two lines; every sandbox directive in the probe units equals the real web unit; no unknown directive.
+The recorded host runs Ubuntu 24.04.4, systemd 255 and kernel 6.8 on KVM with cgroup v2,
+2 vCPU and 3.8 GiB RAM. Expected test results below are predictions. A test passes only
+when its negative control also behaves as predicted. Use only synthetic markers,
+private credentials and `PrivateNetwork=yes`. The authorised operator runs the host steps.
+
+**Revision 3 → 4.** Three installed executable files move to root-owned
+`/opt/cape-probe-exec`: `launch`, `payload.sh` and `stage1.sh`. Six service entry
+points move with them. The seventh service uses `/usr/bin/sleep`. The absolute
+launcher entry point carries through its existing `"$0" --stage2` call.
+The two-line probe derivation changes the runtime and its argument list.
+Production units and the production launcher retain their existing definitions.
+Sources, the sourced 0644 helper, synthetic secrets, objects and monitoring state
+stay in tmpfs. The eight unit files stay in `/run/systemd/system`. The new
+`/opt` directory persists across reboot and has an explicit removal step.
+
+The [G1 operator instructions](phase-5a-g1-operator.md) include the exact upgrade,
+fresh preparation, integrity checks and file-only rollback. Recheck the operator's
+original 13 files before replacing staged units. The local checker verifies the
+derived launcher, service entry points and production sandbox settings, then
+verifies all eight units with temporary executable fixtures.
 
 ## 1. Approval sheet — every temporary change, nothing else
 
 | #   | Change                                                                                                                                                                                                                                    | Gate  | Reversal           |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------------ |
 | 1   | Read-only inspection (§4). Needs root only for `aa-status` and `journalctl -k`                                                                                                                                                            | G0    | none needed        |
-| 2   | Create `/run/cape-probe/` (root 0755; `secrets/`, `src/` 0700) containing 3 scripts, the derived launcher, `ctl/` markers, synthetic secrets, and `objects/` (owner `nobody`, 0700) — tmpfs, vanishes on reboot                           | G1    | `rm -rf` (§9)      |
-| 3   | Copy 13 files from the workstation to `/run/cape-probe/src` over your existing SSH, verified by SHA-256                                                                                                                                   | G1    | same               |
-| 4   | Write 8 unit files to `/run/systemd/system/` (`cape-probe-launch@`, `-launch-ro@`, `-launch-none@`, `-direct@`, `-bang`, `-plus`, `-decoy`, `cape-probe.slice`)                                                                           | G1    | `rm` + reload (§9) |
+| 2   | Prepare private synthetic data, source and helper under `/run/cape-probe`; create only `/opt/cape-probe-exec/{launch,payload.sh,stage1.sh}` (directory and files root:root 0755). Preserve staged credentials. | G1, revised footprint requires approval | Exact files and empty directories (§9) |
+| 3   | Transfer 13 reviewed sources, the derived launcher and two manifests into a new root-only `src-r4/`. Verify both revisions and retain offline diagnostics there. | G1 | §9 |
+| 4   | Stage exactly seven service files and one slice in `/run/systemd/system`. Verify their installed paths offline. | G1 | Delete eight named files. Reload only for rollback after an authorised reload. |
 | 5   | **`systemctl daemon-reload`** — manager-wide (re-reads all units; restarts nothing). Done once to add, once to remove. A third/fourth only for the conditional N8 fallback. Refused while any unit reports `NeedDaemonReload=yes` (§4 P7) | G1b   | second reload      |
 | 6   | Start/stop only `cape-probe-*` units as UID `nobody` (no user is created). Creates a transient cgroup tree `cape.slice/cape-probe.slice` and, per test, a PID + mount namespace                                                           | G2–G4 | stop units         |
-| 7   | Resource use, capped by the probe slice: ≤ 128 MiB RAM for ≈ 20 s, ≤ 25 % of one vCPU for 30 s, ≤ 64 tasks, ≈ 0 disk (tmpfs only), 0 swap, 0 network                                                                                      | G3    | stop units         |
+| 7   | Resource use, capped by the probe slice: ≤ 128 MiB RAM for ≈ 20 s, ≤ 25 % of one vCPU for 30 s, ≤ 64 tasks, three small persistent executable files; synthetic data in tmpfs, 0 swap, 0 network                                                                                      | G3    | stop units         |
 | 8   | One deliberate cgroup OOM kill and one pids-limit refusal inside the probe cgroup. Kernel log shows `Memory cgroup out of memory … cape-probe`. **Tell whoever watches host alerts first**                                                | G3    | n/a                |
 | 9   | A watchdog (`probe_guard`) that may `SIGKILL` the one running `cape-probe-*` unit if `MemAvailable` < 1.2 GiB or swap use grows by > 50 MiB                                                                                               | G3    | n/a                |
 | 10  | Loopback `curl` of the **owner-nominated** health URLs, 10 requests, before/during/after CPU load (optional; skip if no safe URL exists)                                                                                                  | G3    | n/a                |
@@ -32,7 +49,7 @@ Persistent side effects that cannot be removed without touching other applicatio
 units and kernel-log OOM lines (harmless, synthetic; `journalctl --vacuum` is **not** run); `systemd` keeps no state for
 removed `/run` units after the second reload.
 
-**Not changed:** `/etc`, `/opt`, `/srv`, `/var`, `/usr`, packages, users, groups, sudoers, sysctl, PostgreSQL, Nginx, PM2,
+**Outside the probe footprint:** `/etc`, the rest of `/opt`, `/srv`, `/var`, `/usr`, packages, users, groups, sudoers, sysctl, PostgreSQL, Nginx, PM2,
 DNS/TLS, the five applications and `kbsk-staging`, systemd or its configuration, cgroup controller settings, AppArmor, the
 global Node, ports (no listener is opened; port 3300 stays unused), host reboot. Nothing real is read: the only Node run is the
 global binary printing a version and calling `process.execve` (N7, only if it is outside `/home` and `/root`).
@@ -58,7 +75,7 @@ unit; a host reboot (old N10); the real `/var/lib/cape-vault/objects` and `cape-
 Run a **root shell** (`sudo -i`) on the host with a second terminal tailing `journalctl -f -k`. Keep a secret-free log: for each ID
 record time, exact command, output, pass/fail. Neighbour units are named by the owner: `export NEIGHBOUR_UNITS="makoti-production.service …"`
 (systemd-managed ones; for PM2-managed ones the owner records `pm2 status` only, never `pm2 env/describe/jlist`).
-After G1: `. /run/cape-probe/bin/helpers.sh` (provides `probe_run`, `probe_start`, `probe_pids`, `probe_events`, `probe_snapshot`, `probe_latency`, `probe_guard`, `probe_watch`, `jl`).
+After G1: `. /run/cape-probe/helpers.sh` (provides `probe_run`, `probe_start`, `probe_pids`, `probe_events`, `probe_snapshot`, `probe_latency`, `probe_guard`, `probe_watch`, `jl`).
 Instance names select the payload mode, e.g. `cape-probe-launch@report`; `T0` timestamps journal reads.
 
 ## 4. G0 — read-only preconditions (before anything is created)
@@ -70,61 +87,28 @@ Instance names select the payload mode, e.g. `cape-probe-launch@report`; `T0` ti
 | P3  | `command -v unshare setpriv flock mount perl sleep tail timeout node; unshare --version; setpriv --version; readlink -f "$(command -v node)"; node --version`                                                                         | all found under `/usr`; util-linux 2.39.3; Node 22.x path **not** under `/home` or `/root` (else N7 deferred)                                                                                                                |
 | P4  | `sysctl kernel.yama.ptrace_scope fs.protected_hardlinks kernel.dmesg_restrict kernel.apparmor_restrict_unprivileged_userns`                                                                                                           | recorded; informational (the launcher uses no user namespace)                                                                                                                                                                |
 | P5  | `systemctl is-system-running; systemctl is-active systemd-oomd; systemctl --failed --no-legend --plain`                                                                                                                               | `running` (or `degraded` with the failed list recorded as baseline); oomd `inactive` (M6 not applicable)                                                                                                                     |
-| P6  | `getent passwd nobody; getent group nogroup; ps -u nobody -o pid=,comm=; ls -d /run/cape-probe /run/systemd/system/cape-probe* /sys/fs/cgroup/cape.slice 2>&1; systemctl list-unit-files 'cape*'; systemctl list-units --all 'cape*'` | `nobody` uid 65534 and group `nogroup` exist; **no** process owned by `nobody`; every path ENOENT; both lists empty. Otherwise the owner names a different probe UID and the units/launch argument are edited and re-checked |
+| P6  | `getent passwd nobody; getent group nogroup; ps -u nobody -o pid=,comm=; ls -d /run/cape-probe /opt/cape-probe-exec /run/systemd/system/cape-probe* /sys/fs/cgroup/cape.slice 2>&1; systemctl list-unit-files 'cape*'; systemctl list-units --all 'cape*'` | `nobody` uid 65534 and group `nogroup` exist; **no** process owned by `nobody`; every path ENOENT; both lists empty. Otherwise the owner names a different probe UID and the units/launch argument are edited and re-checked |
 | P7  | `for u in $(systemctl list-units --type=service --state=loaded --no-legend --plain \| awk '{print $1}'); do [ "$(systemctl show -p NeedDaemonReload --value "$u")" = yes ] && echo "PENDING $u"; done`                                | prints nothing (a reload would otherwise apply someone else's unfinished unit edit)                                                                                                                                          |
 | P8  | `aa-status \| head -8; ls /etc/apparmor.d; aa-status \| grep -Ei 'unshare\|setpriv\|mount\|/usr/bin/(sh\|dash\|tail\|perl\|sleep\|node)'`                                                                                             | recorded; **no profile names `unshare`, `setpriv`, `mount`, `sh`, `dash`, `tail`, `perl`, `sleep` or `node`** (A1/A2)                                                                                                        |
 | P9  | `grep -E 'MemAvailable\|SwapFree' /proc/meminfo; head -2 /proc/pressure/memory; vmstat 1 5`                                                                                                                                           | `MemAvailable` ≥ 1.5 GiB; PSI `some avg60` < 5 %; `si`/`so` all 0                                                                                                                                                            |
 | P10 | `lsblk -dno NAME,TYPE,ROTA,SCHED; for d in /sys/block/*/queue/scheduler; do echo "$d $(cat $d)"; done`                                                                                                                                | recorded (I1)                                                                                                                                                                                                                |
 
-## 5. G1 — build the harness (no manager interaction until G1b)
+## 5. G1 — stage and verify the harness offline
 
-```sh
-# --- workstation, repository root, reviewed commit; manifest first ---
-sh ops/host-probe/check-local.sh                       # must end ALL LOCAL CHECKS PASSED
-find ops/host-probe ops/libexec/cape-vault-ns-launch.example -type f | sort | xargs sha256sum > /tmp/probe.sha256
-wc -l < /tmp/probe.sha256                               # 13 lines: 12 files in ops/host-probe plus the launcher template
+Follow [G1 operator commands, A–E](phase-5a-g1-operator.md). Use the **staged**
+path on this host. Preserve the verified revision 3 tree until rollback, compare
+old installed files to it and verify the independent revision 4 manifest before
+installation. The `noexec` mount stays in effect throughout.
 
-# --- host (root) ---
-test ! -e /run/cape-probe                               # else STOP
-install -d -m 0755 /run/cape-probe && install -d -m 0700 /run/cape-probe/src
+Record full verifier diagnostics and exit status. The `User=nobody` warning reflects
+the shared UID used deliberately in the synthetic sibling tests. P6 and the
+unused-UID recheck are conditions for that design. Treat executable permission
+errors as blockers, even when the same output includes the UID warning.
 
-# --- workstation: stream the files; then verify on the host ---
-tar -cf - ops/host-probe ops/libexec/cape-vault-ns-launch.example | ssh HOST 'sudo tar -xf - -C /run/cape-probe/src'
-ssh HOST 'cd /run/cape-probe/src && sudo sha256sum -c -' < /tmp/probe.sha256     # every line OK
-
-# --- host (root) ---
-P=/run/cape-probe; S=$P/src; H=$S/ops/host-probe; umask 077
-install -d -m 0755 -o root -g root $P/bin $P/ctl
-install -d -m 0700 -o root -g root $P/secrets
-install -m 0755 -t $P/bin $H/payload.sh $H/stage1.sh
-install -m 0644 -t $P/bin $H/helpers.sh
-sed -e 's#^NODE=.*#NODE=/run/cape-probe/bin/payload.sh#' \
-    -e 's#"\$NODE" scripts/service-entry.mjs "\$kind"#"$NODE" "$kind"#' \
-    $S/ops/libexec/cape-vault-ns-launch.example > $P/bin/launch
-chown root:root $P/bin/launch; chmod 0755 $P/bin/launch
-diff $S/ops/libexec/cape-vault-ns-launch.example $P/bin/launch        # exactly two changed lines (record the diff)
-sh -n $P/bin/launch
-
-r=$(od -An -N6 -tx1 /dev/urandom | tr -d ' \n')                        # synthetic markers
-printf 'SYNTHETIC-PROBE-%s-main\n'  "$r" > $P/secrets/probe-secret
-printf 'SYNTHETIC-PROBE-%s-decoy\n' "$r" > $P/secrets/probe-secret-decoy
-printf 'PROBE_MARKER=SYNTHETIC-PROBE-%s-env\n' "$r" > $P/ctl/hold.env
-install -d -o nobody -g nogroup -m 0700 $P/objects
-printf 'SYNTHETIC-PROBE-%s-seed\n' "$r" > $P/objects/seed.txt; chown nobody:nogroup $P/objects/seed.txt; chmod 0600 $P/objects/seed.txt
-readlink -f "$(command -v node)" > $P/ctl/node.path; chmod 0644 $P/ctl/node.path
-: > $P/ctl/spy.targets; chmod 0644 $P/ctl/spy.targets
-install -m 0644 -t /run/systemd/system $H/units/*
-ls -lR $P | head -40; ls -l /run/systemd/system/cape-probe*                 # only our files; secrets 0600, objects nobody 0700
-systemd-analyze verify /run/systemd/system/cape-probe-*.service /run/systemd/system/cape-probe.slice 2>&1 | grep -Ei 'unknown|invalid|failed' || echo "verify clean"
-. $P/bin/helpers.sh; T_START=$(date '+%F %T')
-probe_snapshot; sleep 120; probe_snapshot; sleep 120; probe_snapshot      # BASELINE x3 (neighbours, mounts, listeners)
-```
-
-Expected: `sha256sum -c` all OK; launcher diff = 2 lines; `verify clean`; baseline snapshots stable (`mounts_sha`, `listeners`, `failed_units`,
-every neighbour `active`, `unshare_procs=0`). Any drift between baselines means the host is too busy to attribute effects: stop.
-
-**G1b (separate go-ahead):** `systemctl daemon-reload` — then `systemctl cat cape-probe-launch@x.service | head -3`, `systemd-analyze security cape-probe-launch@x.service --no-pager | tail -3`
-(informational) and `probe_snapshot`. Expected: no new warning in `journalctl -u systemd-… -n 20`, neighbours unchanged. Then `systemctl start cape-probe-decoy.service` (the same-UID sibling holding a synthetic credential).
+**G1 stop.** Submit the code digests, installed modes, eight-unit verification and
+three baseline snapshots for owner review. G1b, G2 and G3 remain closed.
+G1b would require fresh approval for manager reload and the decoy start, plus a
+fresh P7 check; nothing in the G1 command sequence invokes either action.
 
 ## 6. G2 — isolation, privilege and termination (probe slice only)
 
@@ -177,31 +161,26 @@ Before each stress test: `probe_snapshot`. The watchdog `probe_guard UNIT &` (st
 | I3  | _Optional, default no, separate approval:_ `systemctl set-property --runtime cape-probe.slice IOAccounting=yes`                                                                                                                         | Would make systemd enable `io` in the root `cgroup.subtree_control` (a **host-wide** change visible to all slices) and still gives no isolation without BFQ/iocost. Recommendation: do not run                                                                                                                                                                                    |
 | X1  | `probe_snapshot` after every section; `probe_latency` as above; owner's `pm2 status`                                                                                                                                                    | Every neighbour `active`, `nrestarts` and `mainpid` unchanged, `listeners`, `failed_units` (only our reset probe units), `mounts_sha`, `mntns`/`pidns` counts back to baseline after units stop, `unshare_procs=0`, `MemAvailable`/swap within 5 % of baseline, `kbsk-staging` still stopped                                                                                      |
 
-## 9. Rollback (reverse order; remove only what we created; also the abort procedure)
+## 9. Rollback
 
-```sh
-# 0. stop testing; never reboot, restart shared services, edit PM2/Nginx/PostgreSQL. Keep this shell: helpers stay loaded in memory.
-kill $G 2>/dev/null
-probe_snapshot                                                      # record the state at abort time
-# 1. stop only our units, then confirm the cgroup is empty
-systemctl stop 'cape-probe-launch@*.service' 'cape-probe-launch-ro@*.service' 'cape-probe-launch-none@*.service' \
-  'cape-probe-direct@*.service' cape-probe-decoy.service cape-probe-bang.service cape-probe-plus.service cape-probe.slice
-cat /sys/fs/cgroup/cape.slice/cape-probe.slice/cgroup.procs 2>&1    # ENOENT or empty. If not empty:
-#   systemctl kill -s SIGKILL <the cape-probe-* unit that owns the PID>; never kill an unattributed PID
-# 2. remove our unit files, drop-ins and reload (list first: only cape-probe* may appear)
-ls -ld /run/systemd/system/cape-probe*
-rm -rf -- /run/systemd/system/cape-probe*
-systemctl daemon-reload && systemctl reset-failed 'cape-probe-*' 2>/dev/null
-# 3. remove the harness (findmnt first: no mounts of ours may remain)
-findmnt -R /run/cape-probe; [ -d /run/cape-probe ] && [ ! -L /run/cape-probe ] && rm -rf --one-file-system -- /run/cape-probe
-# 4. verify the host equals the G1 baseline
-systemctl list-units --all 'cape*'; systemctl list-unit-files 'cape*'      # both empty
-ls -d /run/cape-probe /run/systemd/system/cape-probe* /sys/fs/cgroup/cape.slice 2>&1   # all ENOENT
-probe_snapshot                                                      # equals baseline (journal/kernel log lines remain)
-```
+**G1, before any manager reload or unit start.** Use the [file-only rollback,
+section F](phase-5a-g1-operator.md#f-file-only-rollback). It identifies the three
+persistent executables, eight temporary unit files, private tmpfs data and both
+source inventories. It also handles the four legacy `bin/` files if the update
+stopped before retiring them. Use the recorded inventory for partial preparations.
+Do not reload, stop units or reset manager state during G1 rollback.
 
-If real units/artifacts were already installed (post-§10 only): remove just `/etc/systemd/system/cape-vault*` and drop-ins, `/opt/cape-vault/libexec`, `/opt/cape-vault/runtime/node-v24.*`,
-reload, reset-failed; other applications' runtimes (`/usr/bin/node`) are never touched; database/`pg_hba`/users/directories only per Phase 5B rollback after `ls -A` shows synthetic content.
+**Only after a separately approved later gate.** Record the snapshot, stop any
+guard launched by that operator after verifying its identity, and stop only the
+probe instances recorded in the session. Confirm the probe cgroup and all
+descendants have gone or report `populated 0` in the slice's `cgroup.events`.
+An unattributed process or mount requires investigation. If N8d was authorised
+and installed, remove only its recorded `k.conf` and use `rmdir` on its empty
+`/run/systemd/system/cape-probe-launch@term-slow.service.d` directory. Use section F
+for the remaining files. Only if the manager had loaded the probe definitions,
+perform the separately approved rollback reload after the pending-edit check,
+and clear failure state only for recorded probe units. Compare the final snapshot
+and Cape unit/cgroup inventory with G0. Production teardown belongs to Phase 5B.
 
 **What a failure means** (each response needs an owner decision and, where code changes, review; none is pre-approved; no sandbox directive is relaxed to obtain a pass):
 

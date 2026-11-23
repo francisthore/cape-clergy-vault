@@ -1,4 +1,4 @@
-# TEMPORARY HOST PROBE UNIT (Phase 5A rev 3). Volatile: install only under /run/systemd/system.
+# TEMPORARY HOST PROBE UNIT (Phase 5A rev 4). Volatile: install only under /run/systemd/system.
 # Sandbox block mirrors ops/systemd/cape-vault-web.service.example (checked by check-local.sh).
 # Differences from production: user nobody, probe slice and paths, scaled limits, PrivateNetwork=yes,
 # 3 s restart delay, 40 s stop timeout, no IOWeight (see acceptance doc I1-I3). Synthetic data only.
@@ -15,7 +15,7 @@ WorkingDirectory=/run/cape-probe
 Environment=PROBE_MODE=%i
 EnvironmentFile=-/run/cape-probe/ctl/%i.env
 LoadCredential=probe:/run/cape-probe/secrets/probe-secret
-ExecStart=/run/cape-probe/bin/payload.sh
+ExecStart=/opt/cape-probe-exec/payload.sh
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=40

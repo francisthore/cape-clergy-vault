@@ -1,5 +1,5 @@
 #!/bin/sh
-# TEMPORARY HOST PROBE stage-1 reporter (Phase 5A rev 3). Runs as ROOT inside the unit sandbox,
+# TEMPORARY HOST PROBE stage-1 reporter (Phase 5A rev 4). Runs as ROOT inside the unit sandbox,
 # started by ExecStart=! (test) or ExecStart=+ (negative control). Prints OK/FAIL only, never contents.
 set -u
 P=/run/cape-probe

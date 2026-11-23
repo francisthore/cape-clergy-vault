@@ -1,6 +1,6 @@
 # V1 deployment and recovery runbook
 
-**Next step requiring approval:** the infrastructure owner authorises the read-only G0 baseline on the named VPS, with neighbour health endpoints, operator, observer, time window and stop criteria. Record P1–P10 and peak-period capacity. Then submit the distinct temporary-probe approval sheet for G1–G3. No installation, migration, provider credential, public route or real-data permission follows from either approval. [Phase 5A host acceptance](phase-5a-host-acceptance-tests.md)
+The operator reported that revision 3 G1 preparation stopped at offline verification on the VPS's noexec `/run` mount. The next approval covers the revision 4 G1 file update, including three temporary executables under `/opt/cape-probe-exec`. Keep the G0 evidence and peak-capacity requirement. Later probe gates and deployment each require separate approval. [Phase 5A host acceptance](phase-5a-host-acceptance-tests.md)
 
 ## Release sequence
 

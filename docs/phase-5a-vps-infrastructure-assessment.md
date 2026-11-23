@@ -1,8 +1,10 @@
 # Phase 5A — VPS feasibility assessment (revision 3: second read-only inspection)
 
 Prepared 17 November 2026, revised after the owner's two read-only inspections of the shared VPS.
-**Status: design adapted and locally checked; nothing installed, deployed or run on the
-host; a temporary host probe is prepared and awaiting owner approval.** Revisions 1 and 2 are preserved in git history. Companion documents:
+**17 November status:** the production design was locally checked. **23 November update:**
+the operator staged the revision 3 synthetic G1 harness and reported that executable
+paths failed offline verification on the noexec `/run` mount. No reload or unit start
+occurred. See the revision 4 acceptance runbook for the proposed split and G1 stop. Revisions 1 and 2 are preserved in git history. Companion documents:
 [host acceptance tests](phase-5a-host-acceptance-tests.md),
 [Phase 5B plan](phase-5b-staging-execution-plan.md),
 [deployment preflight](phase-5-deployment-preflight.md).
@@ -184,7 +186,7 @@ negative controls (N5, C1 with `+`); stop and restart semantics (N8, N9); `proce
 OOM, CPU and task limits (M1–M5); pinned Node install; PostgreSQL socket and `pg_hba` approach (P1/P2 from revision 1); resource behaviour over 24–48 h.
 
 **Owner approvals required (nothing implied by this document):** each of the following separately: (1) running the read-only inspection in §9 (and which privileged lines);
-(2) installing the pinned Node 24 tree and the launcher under `/opt/cape-vault`; (3) creating the probe harness under `/run` and running the probe (acceptance document §1 lists every change: 8 unit files, two `daemon-reload`s, UID `nobody`, capped CPU/memory/PID stress inside `cape-probe.slice`, one deliberate cgroup OOM kill); (4) creating real users, directories, units and the slice; (5) PostgreSQL roles/database/socket/`pg_hba` reload;
+(2) installing the pinned Node 24 tree and the launcher under `/opt/cape-vault`; (3) staging synthetic data and units under `/run` and the three revision 4 probe executables under `/opt/cape-probe-exec`, then separately running the probe (acceptance document §1 lists every change: 8 unit files, two `daemon-reload`s, UID `nobody`, capped CPU/memory/PID stress inside `cape-probe.slice`, one deliberate cgroup OOM kill); (4) creating real users, directories, units and the slice; (5) PostgreSQL roles/database/socket/`pg_hba` reload;
 (6) Nginx/DNS/TLS and staging access restriction; (7) resource tier, window and rollback window, and an answer on `kbsk-staging`; (8) synthetic-account seeding procedure (blocker S2, unchanged);
 (9) accepting the residual risks in §2. External email, Bouncer and PDFs remain separately gated and are out of scope.
 

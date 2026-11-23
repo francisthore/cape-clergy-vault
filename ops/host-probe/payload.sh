@@ -1,6 +1,6 @@
 #!/bin/sh
 # shellcheck disable=SC2012,SC2016
-# TEMPORARY HOST PROBE payload (Phase 5A rev 3). Install only as /run/cape-probe/bin/payload.sh.
+# TEMPORARY HOST PROBE payload (Phase 5A rev 4). Install only as /opt/cape-probe-exec/payload.sh.
 # Synthetic output only. Reads nothing outside the probe tree and the kernel's own /proc view of
 # itself. Writes only where a mode says so. The mode is the unit instance name (PROBE_MODE).
 set -u
