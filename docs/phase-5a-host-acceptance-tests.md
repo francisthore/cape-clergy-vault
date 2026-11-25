@@ -215,3 +215,4 @@ precedes any Phase 5B work.
 **Deferred until after the owner-approved install (Phase 5B, unchanged intent):** N6 (broken-launcher wiring with the real `service-entry.mjs`), N10 (restart and separately authorised reboot),
 S4–S6 (real `/var/lib/cape-vault/objects`, neighbour users, `namei`/ACL, disk guard), C3–C6 (real credential sets as listed in the previous revision of this document and Phase 5B: C3 no unit reads another's credentials, C4 no secret in argv/env/log, C5 exact credential sets per unit, C6 operator credential lifecycle, operator credential), M7–M8 (24–48 h real web, process inventory, Node 24 thread count),
 and the repetition of N1–N4, S1–S3 against the real units.
+
