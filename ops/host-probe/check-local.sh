@@ -44,7 +44,8 @@ if grep -nE '(/run/cape-probe|\$P|\$\{P\})/bin/|/run/[^[:space:]"]*/(payload\.sh
 fi
 ref=$(grep -E "^($keys)=" ops/systemd/cape-vault-web.service.example | sort)
 # Guard the graceful-stop fix independently of probe/production parity.
-for u in ops/systemd/cape-vault-{web,scanner,approval,reviewer}.service.example; do
+for kind in web scanner approval reviewer; do
+  u="ops/systemd/cape-vault-$kind.service.example"
   test "$(grep -c '^KillMode=' "$u")" = 1 || fail "$u KillMode count"
   grep -Fxq 'KillMode=control-group' "$u" || fail "$u must signal namespace PID 1"
 done
