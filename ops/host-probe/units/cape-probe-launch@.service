@@ -19,7 +19,8 @@ ExecStart=!/opt/cape-probe-exec/launch 65534 web
 Restart=on-failure
 RestartSec=3
 TimeoutStopSec=40
-KillMode=mixed
+# Signal namespace PID 1 as well as the outer unshare launcher during stop.
+KillMode=control-group
 UMask=0077
 NoNewPrivileges=yes
 CapabilityBoundingSet=CAP_SYS_ADMIN CAP_SETUID CAP_SETGID CAP_SETPCAP

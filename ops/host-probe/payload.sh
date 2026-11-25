@@ -111,11 +111,15 @@ term-slow) # N8: traps TERM, drains for 20 s, exits 0
   sleep 600 &
   wait
   ;;
-term-ignore) # N8 negative control: no handler, so a namespace init ignores a forwarded SIGTERM
+term-ignore) # N8b negative control: PID 1 explicitly ignores TERM until the cgroup timeout.
   report
+  # With KillMode=control-group systemd also signals the sleep child. Do not let
+  # its exit end PID 1 early: this control must survive TERM until SIGKILL.
+  trap '' TERM
   say "ready $(date +%s.%N)"
-  sleep 600 &
-  wait
+  while :; do
+    sleep 5 || :
+  done
   ;;
 mem) # M2: allocates until the cgroup limit; run only with the guard
   report

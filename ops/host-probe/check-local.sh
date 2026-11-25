@@ -43,6 +43,14 @@ if grep -nE '(/run/cape-probe|\$P|\$\{P\})/bin/|/run/[^[:space:]"]*/(payload\.sh
   fail 'stale probe executable under /run'
 fi
 ref=$(grep -E "^($keys)=" ops/systemd/cape-vault-web.service.example | sort)
+# Guard the graceful-stop fix independently of probe/production parity.
+for u in ops/systemd/cape-vault-{web,scanner,approval,reviewer}.service.example; do
+  test "$(grep -c '^KillMode=' "$u")" = 1 || fail "$u KillMode count"
+  grep -Fxq 'KillMode=control-group' "$u" || fail "$u must signal namespace PID 1"
+done
+# N8b must outlive TERM even if its sleep child receives TERM too.
+grep -Fq "trap '' TERM" ops/host-probe/payload.sh || fail 'N8b TERM ignore missing'
+grep -Fq '    sleep 5 || :' ops/host-probe/payload.sh || fail 'N8b persistence loop missing'
 for u in ops/host-probe/units/*.service; do
   name=${u##*/}
   case "$name" in

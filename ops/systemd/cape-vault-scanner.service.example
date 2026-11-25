@@ -24,7 +24,8 @@ ExecStart=!/opt/cape-vault/libexec/cape-vault-ns-launch cape-vault-storage scann
 Restart=on-failure
 RestartSec=30
 TimeoutStopSec=210
-KillMode=mixed
+# Signal namespace PID 1 as well as the outer unshare launcher during stop.
+KillMode=control-group
 UMask=0077
 NoNewPrivileges=yes
 # Launcher-only capabilities (all dropped by setpriv before Node; Node starts with none).
