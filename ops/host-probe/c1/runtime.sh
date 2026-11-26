@@ -10,8 +10,11 @@ test "$(id -u):$(id -g)" = 65534:65534
 test "$(stat -c '%u:%g:%a' "$own")" = 65534:65534:700
 ns=$(readlink /proc/self/ns/mnt)
 printf 'mnt_ns=%s\n' "$ns"
+# Self-binds stack mounts and findmnt lists every layer: use the visible one.
 for path in /run /run/cape-probe/ctl "$own"; do
-  flags=$(findmnt -rn -T "$path" -o TARGET,FSTYPE,VFS-OPTIONS)
+  all=$(findmnt -rn -T "$path" -o TARGET,FSTYPE,VFS-OPTIONS)
+  flags=$(printf '%s\n' "$all" | tail -n 1)
+  test -n "$flags"
   printf 'mount[%s]=%s\n' "$path" "$flags"
   access=ro
   if [ "$path" = "$own" ]; then access=rw; fi

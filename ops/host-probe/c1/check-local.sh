@@ -9,11 +9,14 @@ shellcheck "$here"/*.sh
 for f in "$here"/*.sh; do bash -n "$f"; done
 sh -n "$here/runtime.sh"
 python3 -B "$here/test_assess.py"
+python3 -B "$here/test_reporter.py"
 for n in 1 2; do
   bash "$here/package.sh" "$d/b$n"
   (cd "$d/b$n" && sha256sum --check --strict SHA256SUMS)
 done
 diff -r "$d/b1" "$d/b2"
+# Run the real reporters from the exact packaged bytes through the assessor.
+C1_BUNDLE="$d/b1" python3 -B "$here/test_reporter.py"
 mkdir "$d/verify" "$d/bin"
 for f in runtime.sh stage1.sh; do install -m 0755 "$d/b1/$f" "$d/bin/$f"; done
 for u in "$d/b1"/*.service; do

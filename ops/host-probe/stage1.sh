@@ -20,11 +20,18 @@ printf '== stage1 variant=%s uid=%s\n' "$PROBE_MODE" "$(id -u)"
 grep -E '^(CapBnd|CapEff|CapPrm|CapAmb|NoNewPrivs|Seccomp):' "/proc/$$/status"
 mnt_ns=$(readlink "/proc/$$/ns/mnt")
 printf 'mnt_ns=%s\n' "$mnt_ns"
-# Resolve the covering mount, including when ctl is an ordinary directory.
-# Log only mountpoint, filesystem type and per-mount flags.
+# Resolve the effective covering mount, including when ctl is an ordinary
+# directory. Self-binds stack mounts at one target and findmnt lists every
+# layer, so report only the last (visible) record. Log only mountpoint,
+# filesystem type and per-mount flags. A failed or empty lookup is fatal.
+report_mount() {
+  all_views=$(findmnt -rn -T "$1" -o TARGET,FSTYPE,VFS-OPTIONS)
+  mount_view=$(printf '%s\n' "$all_views" | tail -n 1)
+  [ -n "$mount_view" ] || return 1
+  printf 'mount[%s]=%s\n' "$1" "$mount_view"
+}
 for path in / /run "$P/ctl"; do
-  mount_view=$(findmnt -rn -T "$path" -o TARGET,FSTYPE,VFS-OPTIONS)
-  printf 'mount[%s]=%s\n' "$path" "$mount_view"
+  report_mount "$path"
   # Only the control directory needs to be writable for the plus control.
   if [ "$PROBE_MODE" = plus ] && [ "$path" != "$P/ctl" ]; then continue; fi
   case ",${mount_view##* }," in
@@ -32,11 +39,17 @@ for path in / /run "$P/ctl"; do
     *) result=1 ;;
   esac
 done
+# The unit's own credential directory and its parent may be projected as
+# separate mounts (including for the plus control, on managers that do so).
+own=${CREDENTIALS_DIRECTORY:?missing credential directory}
+for path in "${own%/*}" "$own"; do
+  report_mount "$path"
+done
 check read_secret "$hidden" cat "$P/secrets/probe-secret"
 check ls_secrets "$hidden" ls "$P/secrets"
 check ls_decoy_creds "$hidden" ls /run/credentials/cape-probe-decoy.service
 check read_decoy_cred "$hidden" cat /run/credentials/cape-probe-decoy.service/probe
-check ls_own_creds OK ls "${CREDENTIALS_DIRECTORY:?missing credential directory}"
+check ls_own_creds OK ls "$own"
 
 # An exclusive mkdir cannot truncate or follow a pre-existing marker. Only
 # EROFS demonstrates the intended denial. Keep cleanup errors fatal too.
