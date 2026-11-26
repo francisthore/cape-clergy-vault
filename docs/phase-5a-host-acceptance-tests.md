@@ -36,9 +36,13 @@ Sources, the sourced 0644 helper, synthetic secrets, objects and monitoring stat
 stay in tmpfs. The eight unit files stay in `/run/systemd/system`. The new
 `/opt` directory persists across reboot and has an explicit removal step.
 
-The [G1 operator instructions](phase-5a-g1-operator.md) include the exact upgrade,
-fresh preparation, integrity checks and file-only rollback. Recheck the operator's
-original 13 files before replacing staged units. The local checker verifies the
+The [G1 operator instructions](phase-5a-g1-operator.md) include the exact staged
+upgrade, **fresh preparation**, integrity checks and file-only rollback. The
+25 November rollback removed the former staged source and all unit definitions;
+vm400masc now requires a **new G0 followed by `mode=fresh`**, never the old
+staged replacement path. Do not install the candidate without separately reviewed
+authorisation. For another host with a genuine staged state, recheck its original
+13 files before replacing any installed unit. The local checker verifies the
 derived launcher, service entry points and production sandbox settings, then
 verifies all eight units with temporary executable fixtures.
 
@@ -50,7 +54,7 @@ verifies all eight units with temporary executable fixtures.
 | 2   | Prepare private synthetic data, source and helper under `/run/cape-probe`; create only `/opt/cape-probe-exec/{launch,payload.sh,stage1.sh}` (directory and files root:root 0755). Preserve staged credentials. | G1, revised footprint requires approval | Exact files and empty directories (§9) |
 | 3   | Transfer 13 reviewed sources, the derived launcher and two manifests into a new root-only `src-r4/`. Verify both revisions and retain offline diagnostics there. | G1 | §9 |
 | 4   | Stage exactly seven service files and one slice in `/run/systemd/system`. Verify their installed paths offline. | G1 | Delete eight named files. Reload only for rollback after an authorised reload. |
-| 5   | **`systemctl daemon-reload`** — manager-wide (re-reads all units; restarts nothing). Done once to add, once to remove. A third/fourth only for the conditional N8 fallback. Refused while any unit reports `NeedDaemonReload=yes` (§4 P7) | G1b   | second reload      |
+| 5   | **`systemctl daemon-reload`** — manager-wide (re-reads all units; restarts nothing). Done once to add, once to remove. No N8 fallback drop-ins or extra reloads are pre-approved. Refused while any unit reports `NeedDaemonReload=yes` (§4 P7) | G1b   | second reload      |
 | 6   | Start/stop only `cape-probe-*` units as UID `nobody` (no user is created). Creates a transient cgroup tree `cape.slice/cape-probe.slice` and, per test, a PID + mount namespace                                                           | G2–G4 | stop units         |
 | 7   | Resource use, capped by the probe slice: ≤ 128 MiB RAM for ≈ 20 s, ≤ 25 % of one vCPU for 30 s, ≤ 64 tasks, three small persistent executable files; synthetic data in tmpfs, 0 swap, 0 network                                                                                      | G3    | stop units         |
 | 8   | One deliberate cgroup OOM kill and one pids-limit refusal inside the probe cgroup. Kernel log shows `Memory cgroup out of memory … cape-probe`. **Tell whoever watches host alerts first**                                                | G3    | n/a                |
@@ -107,10 +111,11 @@ Instance names select the payload mode, e.g. `cape-probe-launch@report`; `T0` ti
 
 ## 5. G1 — stage and verify the harness offline
 
-Follow [G1 operator commands, A–E](phase-5a-g1-operator.md). Use the **staged**
-path on this host. Preserve the verified revision 3 tree until rollback, compare
-old installed files to it and verify the independent revision 4 manifest before
-installation. The `noexec` mount stays in effect throughout.
+After a new passing G0 and separately approved G1, follow
+[G1 operator commands, A–E](phase-5a-g1-operator.md) using **`mode=fresh`** on
+this host. The old revision 3 source tree and staged units were removed on
+25 November. Never try to compare or replace absent old files. Verify the
+independent source manifest and current installed paths before any daemon reload. The `noexec` mount stays in effect throughout.
 
 Record full verifier diagnostics and exit status. The `User=nobody` warning reflects
 the shared UID used deliberately in the synthetic sibling tests. P6 and the
@@ -186,10 +191,10 @@ Do not reload, stop units or reset manager state during G1 rollback.
 guard launched by that operator after verifying its identity, and stop only the
 probe instances recorded in the session. Confirm the probe cgroup and all
 descendants have gone or report `populated 0` in the slice's `cgroup.events`.
-An unattributed process or mount requires investigation. If N8d was authorised
-and installed, remove only its recorded `k.conf` and use `rmdir` on its empty
-`/run/systemd/system/cape-probe-launch@term-slow.service.d` directory. Use section F
-for the remaining files. Only if the manager had loaded the probe definitions,
+An unattributed process or mount requires investigation. No N8d drop-in
+is part of the revised plan. If an unexpected drop-in exists, stop and attribute
+it independently rather than removing it as a routine cleanup. Use section F
+for the verified probe-only files. Only if the manager had loaded the probe definitions,
 perform the separately approved rollback reload after the pending-edit check,
 and clear failure state only for recorded probe units. Compare the final snapshot
 and Cape unit/cgroup inventory with G0. Production teardown belongs to Phase 5B.
@@ -200,7 +205,7 @@ and Cape unit/cgroup inventory with G0. Production teardown belongs to Phase 5B.
 | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `!` keeps the sandbox for root (C1) fails                  | Do not use the launcher. Evaluate a root-owned reviewed launcher applying `InaccessiblePaths`/`ReadOnlyPaths` itself (`unshare --mount`, explicit `mount --bind`/`remount,ro`), or a host with systemd ≥ 257 |
 | Launcher cannot create PID/mount namespace or `/proc` (N1) | Likely AppArmor/policy or a container-class VM. Host unsuitable for scanner co-location; do not run web + scanner as one UID without PID isolation. Record the exact error and kernel-log line               |
-| Stop not graceful (N8)                                     | N8d (`KillMode=control-group`); if the 190 s drain still cannot be shown, keep mail/scanner loops off and restrict staging to web                                                                            |
+| Stop not graceful (N8)                                     | Halt, capture N8/N8b evidence, and perform verified probe-only rollback. `KillMode=control-group` is already the unverified candidate, not a fallback. No staging or live workers until independent review of a new fix. |
 | Memory/CPU/PIDs enforcement absent (M1–M4)                 | Keep Tier 0 smaller or stop; never trade neighbour stability for our margin; consider a separate VM                                                                                                          |
 | I/O isolation absent (I1–I2, expected)                     | Accept explicitly as an unmitigated residual risk for ≈ 5 users, or move to a separate VM; remove `IOWeight=` claims from the documentation                                                                  |
 | Only web-only isolation possible (no PID ns)               | Time-boxed web-only synthetic preview only if the owner accepts it and a reviewed `service-entry.mjs` change is approved (it currently requires PID 1). Scanner and mail stay disabled; no real data         |

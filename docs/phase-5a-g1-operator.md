@@ -3,9 +3,13 @@
 Target: `vm400masc.kbsktrading.net`. Use only after approval for the new temporary
 `/opt/cape-probe-exec` footprint. Use the established operator login. Record times,
 file names, checksums of **code**, modes and verifier diagnostics. Keep shell tracing off.
-The operator reported a verified 13-file revision 3 source tree, staged G1 files,
-a verifier failure on the noexec mount, no manager reload and no unit starts.
-Select **staged** for that host. Use **fresh** only after a separate clean G0.
+On 25 November 2026 the operator completed a verified rollback of the revision 4
+probe installation, removed its temporary source, unit files, executables and
+cgroups, then performed the final manager reload. Neighbour services remained
+unchanged. The historical staged procedure is retained for other partial G1
+states, **but vm400masc must use `mode=fresh` only after a new clean G0**.
+Never use the staged path on this host based on the old November 23 inventory.
+This is an unverified shutdown candidate, not approval to install or start probes.
 Run the blocks in order, keeping the indicated shells open. Any error stops the sequence.
 Do not repeat a failed write block over a partial install. Use the inventory and
 file-only rollback below for confirmed probe artifacts.
@@ -19,7 +23,7 @@ established SSH session. Define the names below once. Section F reuses them.
 set -euo pipefail
 set +x
 umask 077
-mode=staged
+mode=fresh # vm400masc AFTER a new passing G0; do not run staged by default
 P=/run/cape-probe
 E=/opt/cape-probe-exec
 D=/run/systemd/system
@@ -49,9 +53,9 @@ idle() {
 }
 ```
 
-Record the mount readings. Confirm the P6 UID is still unused. The checks allow the
-known staged revision 3 files, but refuse a pre-existing executable directory, a
-previous revision 4 attempt, changed ownership or a loaded probe unit.
+Record the mount readings. Confirm the P6 UID is still unused. The checks allow known staged revision 3 files only if `mode=staged` was
+independently justified; on this clean host `mode=fresh` refuses all pre-existing
+probe artifacts, changed ownership and loaded probe units.
 
 ```bash
 test "$(id -u)" = 0
@@ -107,7 +111,10 @@ mkdir -m 0700 -- "$R"
 
 ## B. Workstation package and transfer
 
-From the repository root in Bash, use the reviewed **working tree** for revision 4.
+From the repository root in Bash, use the reviewed **working tree** of the
+shutdown-candidate revision; confirm the expected Git commit and clean status
+before packaging. The original revision 3 commit remains the historical manifest
+reference. Both source and install must match the reviewed revision exactly.
 Revision 3 commit `276475584169c3f49daf2fe7f87091a0e05fd130` supplies a separate
 manifest for rechecking the original stage. Transfer only the named repository files,
 the locally derived launcher and the two manifests. Keep the displayed revision 4
