@@ -10,6 +10,7 @@ for f in "$here"/*.sh; do bash -n "$f"; done
 sh -n "$here/runtime.sh"
 python3 -B "$here/test_assess.py"
 python3 -B "$here/test_reporter.py"
+python3 -B "$here/test_inventory.py"
 for n in 1 2; do
   bash "$here/package.sh" "$d/b$n"
   (cd "$d/b$n" && sha256sum --check --strict SHA256SUMS)

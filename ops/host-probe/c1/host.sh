@@ -147,6 +147,16 @@ collect() {
     python3 -I "$B/assess.py" "$u" "$start_rc" "$hostns" "$bound" "$E/$u.status" "$journal"
 }
 
+# systemctl list-unit-files exits 1 with no output when nothing matches; that
+# empty result is the only accepted non-zero status. list-units must exit 0.
+no_cape_units() {
+  local out rc=0
+  out=$(systemctl list-unit-files --no-legend --plain 'cape*' 2>&1) || rc=$?
+  [[ -z $out && $rc == [01] ]] || die "preflight: cape unit files not clean (systemctl list-unit-files rc=$rc output=[$out])"
+  rc=0
+  out=$(systemctl list-units --all --no-legend --plain 'cape*' 2>&1) || rc=$?
+  [[ -z $out && $rc == 0 ]] || die "preflight: cape live units not clean (systemctl list-units rc=$rc output=[$out])"
+}
 setup() {
   [[ $(hostname -f) == vm400masc.kbsktrading.net ]]
   grep -Fxq 'ID=ubuntu' /etc/os-release
@@ -159,9 +169,7 @@ setup() {
   [[ $(id -u nobody) == 65534 && $(getent group nogroup | cut -d: -f3) == 65534 ]]
   ps -eo uid= | awk '$1==65534 {busy=1} END {exit busy}'
   for path in "$P" "$X" "$cg"; do absent "$path"; done
-  files=$(systemctl list-unit-files --no-legend --plain 'cape*')
-  live=$(systemctl list-units --all --no-legend --plain 'cape*')
-  [[ -z $files && -z $live ]]
+  no_cape_units
   paths=$(systemd-analyze unit-paths)
   while IFS= read -r dir; do
     for path in "$dir"/cape*; do absent "$path"; done
@@ -238,9 +246,7 @@ rollback() {
   fi
   if [[ -f $E/baseline.ok ]]; then
     for path in "$P" "$X" "$cg" "${units[@]/#/$D/}"; do absent "$path"; done
-    files=$(systemctl list-unit-files --no-legend --plain 'cape*')
-    live=$(systemctl list-units --all --no-legend --plain 'cape*')
-    [[ -z $files && -z $live ]]
+    no_cape_units
     for u in "${cases[@]}"; do absent "/run/credentials/$u"; done
     compare_neighbours
   fi
