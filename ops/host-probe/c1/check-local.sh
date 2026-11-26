@@ -10,6 +10,7 @@ for f in "$here"/*.sh; do bash -n "$f"; done
 sh -n "$here/runtime.sh"
 python3 -B "$here/test_assess.py"
 python3 -B "$here/test_reporter.py"
+python3 -B "$here/test_discriminator.py"
 python3 -B "$here/test_inventory.py"
 python3 -B "$here/test_pending.py"
 for n in 1 2; do

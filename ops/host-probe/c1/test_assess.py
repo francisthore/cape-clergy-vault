@@ -71,6 +71,27 @@ class VerdictTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exit status"):
             self.evaluate("bang", failed=True)
 
+    def test_inconclusive_requires_every_other_control_to_pass(self):
+        # INCONCLUSIVE must never absorb a genuine control failure. Each case is a hard error.
+        both = [("ls_decoy_creds: OK", "ls_decoy_creds: FAIL"), ("read_decoy_cred: OK", "read_decoy_cred: FAIL")]
+        cases = {
+            "source read lost": (both + [("read_secret: OK", "read_secret: FAIL")], True),
+            "source listing lost": (both + [("ls_secrets: OK", "ls_secrets: FAIL")], True),
+            "write control lost": (both + [("write_ctl: OK", "write_ctl: FAIL")], True),
+            "only one sibling access hidden": (both[:1], True),
+            "clean exit with sibling hidden": (both, False),
+        }
+        for label, (replacements, failed) in cases.items():
+            with self.subTest(label):
+                with self.assertRaises(ValueError) as caught:
+                    self.evaluate("plus", replacements, failed=failed)
+                self.assertNotIn("INCONCLUSIVE", str(caught.exception))
+
+    def test_bang_exposure_is_always_a_failure(self):
+        for key in ("read_secret", "ls_secrets", "ls_decoy_creds", "read_decoy_cred"):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                self.evaluate("bang", [(key + ": FAIL", key + ": OK")])
+
     def test_unexpected_output_withheld(self):
         with self.assertRaisesRegex(ValueError, "unexpected journal"):
             self.evaluate("plus", extra="private-fixture-value\n")

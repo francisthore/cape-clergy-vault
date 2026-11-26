@@ -85,3 +85,96 @@ Capture the final PM2 status from the same owner session even after a failed run
 | Rollback and neighbours | No probe files, units, cgroups or credential mounts left in the install footprint. Neighbour systemd states/PIDs/restarts, PM2 app observations, listeners, non-probe failures and host mount inventory match baseline. Both workflow and rollback return 0 for a full pass. |
 
 Any missing evidence, mismatched result, unexplained neighbour change or cleanup failure leaves host acceptance open. This workflow supplies no production or later-phase authorisation.
+
+## Case 004 record and C1 closure review · 26 November 2026 · split approved, C1b open
+
+**Review decision (26 November 2026).** The C1a/C1b separation is approved. C1a is verified on Case 004 evidence. Effective sibling-credential denial was observed; attribution to the explicit sibling `InaccessiblePaths=` rule is unproven. `bang-nomask` is **not** implemented or scheduled. No production directive changes. **C1b stays formally open** until the revised criteria below are independently approved.
+
+**Result: sibling credential control INCONCLUSIVE. This is not a filesystem-restriction failure.** Operator results, preserved as reported: setup passed; bang passed; runtime (scanner, approval, reviewer) passed; plus read the synthetic source, wrote ctl and read its own credential; plus could not see the live decoy's credential directory and exited 1, as the assessor is designed to do; rollback passed; PM2 and Nginx were unchanged and the original host mount fingerprint was restored. Manager: systemd 255.4-1ubuntu8.19 (exact package version observed). The decoy fixture passed its positive self-read at setup, so it existed and was readable by UID 65534 before the tests.
+
+| Question | Status | Basis |
+| --- | --- | --- |
+| Does `!` apply the explicit mask to an independently readable source? | **Proven** | Plus read `secrets` (positive control); bang could not. |
+| Does `!` keep `/run/cape-probe/ctl` read-only while `+` can write? | **Proven** | Bang EROFS; plus create/remove succeeded. |
+| Do the scanner, approval and reviewer runtime-directory exceptions work? | **Proven** | Runtime phase. |
+| Does the explicit `-/run/credentials/<sibling>` line deny sibling credentials under `!`? | **Unproven** | The plus control hid the decoy with no mask in force, so a hidden decoy is also what the unit's own credential projection would produce under `!`. |
+| Is the sibling denial under `!` real? | Observed, mechanism unattributed | All four bang accesses failed. |
+
+**Why plus cannot be the positive control.** On v255.4 a `+` command skips the unit's read-only and inaccessible lists, but the credential directory is still handed to namespace setup. The decoy was hidden without any `InaccessiblePaths=`. That is consistent with projection hiding it, but only the upstream source and the observation support this; the Case 004 in-unit mount records for bang and plus were retained and are recorded below (systemd 255.4-1ubuntu8.19). They show separate per-unit credential mounts but do not by themselves show that the credential parent contained only one unit. The local `bang-projected` fixture passes the assessor with no decoy mask, so a bang pass does not attribute the denial to the mask either.
+
+**Independently readable peer fixture.** Useful only outside `/run/credentials`. A synthetic peer under `/run/cape-probe` is readable without a mask and denied with one, which is a valid discriminator for **explicit masking**, and the existing `secrets` source already provides exactly that pair (proved above). It adds no coverage of the credential path: any fixture placed under `/run/credentials` is subject to projection in plus and in bang, so it cannot separate the mechanisms. Do not add one.
+
+**Separation of concerns.** `test_discriminator.py` shows locally that mask-alone hides a peer outside the credential tree, projection-alone hides a credential peer with no mask, and three of four mask/projection combinations deny the credential peer. Local only; it supports the attribution logic, not systemd 255 behaviour.
+
+**Case 004 mount observations (retained, unchanged).** Manager package observed: systemd 255.4-1ubuntu8.19.
+
+| Unit | Retained mount records |
+| --- | --- |
+| Bang | `mount[/run/credentials]=/run/credentials tmpfs ro,nosuid,nodev,noexec`<br>`mount[/run/credentials/cape-probe-bang.service]=/run/credentials/cape-probe-bang.service tmpfs ro,nosuid,nodev,noexec,relatime,nosymfollow` |
+| Plus | `mount[/run/credentials]=/run/credentials tmpfs ro,nosuid,nodev,noexec`<br>`mount[/run/credentials/cape-probe-plus.service]=/run/credentials/cape-probe-plus.service tmpfs ro,nosuid,nodev,noexec,relatime,nosymfollow` |
+
+**Path S — Strict attribution requirements.** Path S establishes mask-specific enforcement. It is one of two alternative routes to closing C1b (see Path P below); it is not mandatory if Path P receives valid independent security sign-off. Neither path is formally approved. Separate approval is needed; no production directive changes:
+
+1. **C1a, mask and write boundary.** Closed on Case 004 evidence for the tested revision.
+2. **C1b, sibling mask attribution.** One additional paired run on the `!` path: the existing bang unit, plus a probe-only `cape-probe-bang-nomask` unit identical to it except for the single `-/run/credentials/cape-probe-decoy.service` line, with the same live decoy and reporter. Both retain the in-unit mount table for `/run/credentials`.
+   - Sibling visible without the line and denied with it: the mask is load-bearing; C1b closed.
+   - Sibling denied in both: projection denies it independently. The mask is defence in depth that this host does not discriminate. Record it, pin the systemd package revision in the deployment prerequisites, and do not claim the mask is proven. Never remove the production line on this basis.
+   - Sibling visible in both: real exposure; keep C1 open and stop.
+3. The Case 004 plus and bang mount records (above) show separate credential mounts for each unit. They do not show the contents of the credential parent, so a Path S run should also retain the in-unit listing of `/run/credentials`.
+
+**Acceptance criteria.** The table above is unchanged: the plus sibling-read requirement still reads as required and the assessor still reports INCONCLUSIVE with C1 open. Proposed for reviewer decision only: replace the plus sibling-read requirement with "recorded, not required", and require the C1b pair. Justification: plus sibling visibility is a property of systemd's credential projection, not of the sandbox under review, so requiring it tests the manager. The replacement criterion tests the production mechanism, with the bang denials, source control and write control unchanged. Do not make this change without that review.
+
+The acceptance document's C2c control compares an ordinary `direct@` unit with the `!` launcher, so it also does not isolate the mask on the `!` path. The C1b pair addresses that gap.
+
+## C1b alternative acceptance path: credential projection · proposed, not in force
+
+Path S and Path P are **alternatives**: either can close C1b, and Path S is not required if Path P receives valid independent security sign-off. **Neither is formally approved or in force.** **C1b remains OPEN.**
+
+**Path S (strict, preserved; mask-specific enforcement).** The paired `!` run with and without the sibling mask line, as specified above. It is the only technically discriminating test of the explicit rule. A later approved run may use it; a "mask is load-bearing" outcome closes C1b as **proven** and supersedes Path P. It is neither implemented nor scheduled now.
+
+**Path P (projection; documented residual-risk acceptance).** Accept the observed effective denial on the basis that systemd's own credential projection hides sibling credentials from a unit, while stating plainly that the explicit rule is **not shown to be the cause**. This path can only ever record C1b as *accepted with residual risk*, never *proven*.
+
+### Proposed evidence requirements for Path P
+
+All must hold and be retained with the approval:
+
+1. **Version.** Manager package exactly `systemd 255.4-1ubuntu8.19` at the Case 004 run and at any later verification, recorded from the host package database by the operator. Any other version triggers reassessment before Path P applies.
+2. **Fixture.** The live decoy completed its positive self-read as UID 65534 (setup gate), with PID and invocation unchanged through bang and plus.
+3. **Bang.** Case 004 bang passed unchanged: all four source/sibling accesses denied, own credential listing succeeded, ctl read-only, capability, no_new_privs and seccomp checks matched.
+4. **Plus.** The plus control read the source and wrote ctl, and could not see the decoy's credential directory. This is recorded as a statement about projection, not as a pass of the sibling control.
+5. **Projection observation.** Retained in-unit evidence that the credential parent is presented as the unit's own view and exposes only the unit's own credential. Case 004 status, partial:
+   - Both units had separate credential mounts (records above).
+   - The live decoy successfully read its own credential.
+   - Bang and plus were denied sibling credential access.
+   - This evidence supports systemd credential projection, but projection is **not conclusively established**.
+   - The mount records do not independently prove that the credential parent contained only one unit.
+   - The explicit sibling mask remains **unproven**.
+
+   Unless the independent reviewer accepts this as sufficient, a separately approved, read-only observation of the credential parent's contents is required before sign-off.
+6. **Rollback.** Case 004 rollback passed, PM2 and Nginx unchanged and the original host mount fingerprint restored.
+7. **Production lines unchanged.** The explicit `-/run/credentials/<sibling>` lines stay in all four production templates. They are defence in depth. No requirement relies on removing or relaxing them.
+
+### Limitations that must be accepted in the sign-off
+
+- Attribution is unproven. If projection behaviour changes, the explicit rule may be the only barrier and has not been shown to work on its own.
+- The evidence is specific to the observed package, kernel and unit settings. It says nothing about other versions or distributions.
+- Projection hides sibling credentials from the unit's view. It does not address credential exposure by other routes (process inspection, logs, shared UID), which are tested separately (N-series, C3-C6).
+- Only synthetic credentials were used. Real credential sets remain Phase 5B.
+
+### Independent sign-off
+
+A reviewer who is neither the operator nor the author of this workflow records: the exact version, the evidence digest, the retained observations from requirements 1-6, acceptance of each limitation above, and the date. Without that record C1b remains open. Operator or author self-approval does not satisfy it.
+
+### Reassessment triggers
+
+Repeat the review (Path S is then preferred) after: any change to the systemd package version or a security update to it; changes to the credential-related or sandbox directives in the production units; changes to how credentials are loaded or named; a distribution or major kernel upgrade; or evidence that sibling credentials became visible.
+
+### Proposed criteria change (the exact edit for review)
+
+| Row | In force today | Proposed (not in force) |
+| --- | --- | --- |
+| Plus, sibling read | Live decoy reads/listings succeed; hidden sibling with passing controls leaves C1 open. | Recorded, not required. A hidden sibling is reported as a projection observation, and the assessor keeps reporting INCONCLUSIVE until C1b is closed. |
+| C1b (new) | Not defined. | Closed only by Path S "proven", or by Path P with all seven requirements and independent sign-off, recorded as *accepted with residual risk*. |
+| Bang, source and sibling denial | All four accesses fail. | Unchanged. |
+
+Security justification: the plus sibling read measures systemd's projection, not the sandbox under review, so requiring it cannot be met on this manager and does not test the production mechanism. Replacing it with Path S or the signed-off Path P keeps every bang denial and the source and write controls, adds explicit version pinning and reassessment triggers, and does not relax any production directive.
