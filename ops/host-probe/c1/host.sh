@@ -80,7 +80,7 @@ pending() {
   list=$(systemctl list-units --all --plain --no-legend --no-pager | awk '{print $1}')
   while IFS= read -r u; do
     [[ -n $u ]] || continue
-    flag=$(systemctl show -p NeedDaemonReload --value "$u")
+    flag=$(systemctl show -p NeedDaemonReload --value -- "$u")
     if [[ $flag != no ]]; then
       if [[ $phase == rollback && $flag == yes ]]; then
         case " ${cases[*]} ${units[*]} " in *" $u "*) continue ;; esac
@@ -220,7 +220,7 @@ rollback() {
       loaded "$u"
       cmp -- "$u" "$D/$u"
       systemctl stop "$u"
-      state=$(systemctl show -p ActiveState --value "$u")
+      state=$(systemctl show -p ActiveState --value -- "$u")
       if [[ $state == failed ]]; then systemctl reset-failed "$u"; else [[ $state == inactive ]]; fi
     done
     # The parent was absent at setup. Never stop a populated or shared parent.
