@@ -43,11 +43,25 @@ if grep -nE '(/run/cape-probe|\$P|\$\{P\})/bin/|/run/[^[:space:]"]*/(payload\.sh
   fail 'stale probe executable under /run'
 fi
 ref=$(grep -E "^($keys)=" ops/systemd/cape-vault-web.service.example | sort)
+check_paths() {
+  unit=$1
+  # An empty assignment would reset earlier entries. Check the whole list.
+  expected_ro='ReadOnlyPaths=/run'
+  if [ -n "$2" ]; then expected_ro=$(printf '%s\nReadOnlyPaths=%s' "$expected_ro" "$2"); fi
+  expected_rw=${3:+ReadWritePaths=$3}
+  test "$(grep -E '^[[:space:]]*ReadOnlyPaths[[:space:]]*=' "$unit")" = "$expected_ro" || fail "$unit read-only paths"
+  test "$(grep -E '^[[:space:]]*ReadWritePaths[[:space:]]*=' "$unit")" = "$expected_rw" || fail "$unit writable paths"
+}
 # Guard the graceful-stop fix independently of probe/production parity.
 for kind in web scanner approval reviewer; do
   u="ops/systemd/cape-vault-$kind.service.example"
   test "$(grep -c '^KillMode=' "$u")" = 1 || fail "$u KillMode count"
   grep -Fxq 'KillMode=control-group' "$u" || fail "$u must signal namespace PID 1"
+  case "$kind" in
+    web) check_paths "$u" '' /var/lib/cape-vault/objects ;;
+    scanner) check_paths "$u" /var/lib/cape-vault/objects "/run/cape-vault/$kind" ;;
+    *) check_paths "$u" '' "/run/cape-vault/$kind" ;;
+  esac
 done
 # N8b must outlive TERM even if its sleep child receives TERM too.
 grep -Fq "trap '' TERM" ops/host-probe/payload.sh || fail 'N8b TERM ignore missing'
@@ -72,6 +86,11 @@ for u in ops/host-probe/units/*.service; do
     *) expected=$ref ;;
   esac
   test "$got" = "$expected" || fail "$name sandbox differs from production"
+  case "$name" in
+    cape-probe-launch@.service) check_paths "$u" '' /run/cape-probe/objects ;;
+    cape-probe-launch-ro@.service) check_paths "$u" /run/cape-probe/objects '' ;;
+    *) check_paths "$u" '' '' ;;
+  esac
 done
 
 echo '4. Offline systemd unit verification with executable fixtures'
@@ -92,4 +111,6 @@ cat "$d/verify"
 if grep -Ev '/cape-probe-[^:]+\.service:[0-9]+: Special user nobody configured, this is not safe!$' "$d/verify"; then
   fail 'unexpected probe unit diagnostic'
 fi
+echo '5. C1 reporter regression fixtures'
+sh ops/host-probe/test-c1.sh
 echo 'ALL LOCAL CHECKS PASSED'

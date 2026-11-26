@@ -9,7 +9,7 @@ cgroups, then performed the final manager reload. Neighbour services remained
 unchanged. The historical staged procedure is retained for other partial G1
 states, **but vm400masc must use `mode=fresh` only after a new clean G0**.
 Never use the staged path on this host based on the old November 23 inventory.
-This is an unverified shutdown candidate, not approval to install or start probes.
+The subsequent G1/G1b and N8/N8b passed. C1 then stopped on a writable control path and the operator rolled back again. The current C1 candidate requires independent review and separate authorisation before any host work. [C1 report](phase-5a-c1-report.md)
 Run the blocks in order, keeping the indicated shells open. Any error stops the sequence.
 Do not repeat a failed write block over a partial install. Use the inventory and
 file-only rollback below for confirmed probe artifacts.
@@ -112,7 +112,7 @@ mkdir -m 0700 -- "$R"
 ## B. Workstation package and transfer
 
 From the repository root in Bash, use the reviewed **working tree** of the
-shutdown-candidate revision; confirm the expected Git commit and clean status
+authorised candidate revision; confirm the expected Git commit and clean status
 before packaging. The original revision 3 commit remains the historical manifest
 reference. Both source and install must match the reviewed revision exactly.
 Revision 3 commit `276475584169c3f49daf2fe7f87091a0e05fd130` supplies a separate

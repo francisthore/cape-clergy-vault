@@ -22,6 +22,7 @@ PrivateMounts=yes
 PrivateTmp=yes
 PrivateDevices=yes
 ProtectSystem=strict
+ReadOnlyPaths=/run
 ProtectHome=yes
 ProtectProc=invisible
 ProcSubset=pid
