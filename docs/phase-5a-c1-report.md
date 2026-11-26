@@ -1,5 +1,7 @@
 # Phase 5A C1 root-cause review · 26 November 2026
 
+> **Historical report.** Written after the first C1 run, before the `/run` read-only candidate was tested. Current C1 status (Case 004: C1a verified, C1b open) is in the [evidence register](phase-5a-evidence-register.md) and [C1 verification](phase-5a-c1-host-verification.md). The decision and "next host evidence" wording below describes that earlier state.
+
 **Decision. Keep C1 open and staging blocked.** The bang reader successfully created a marker in the synthetic control directory. This establishes a write-policy gap for that path and the privileged reader. The harness treated the unit settings as proof of its effective mount flags, and its final cleanup could return success after an unexpected write.
 
 ## Host evidence

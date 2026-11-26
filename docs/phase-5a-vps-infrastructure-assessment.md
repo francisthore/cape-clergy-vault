@@ -4,7 +4,7 @@ Prepared 17 November 2026, revised after the owner's two read-only inspections o
 **17 November status:** the production design was locally checked. **23 November update:**
 the operator staged the revision 3 synthetic G1 harness and reported that executable
 paths failed offline verification on the noexec `/run` mount. No reload or unit start
-occurred. See the revision 4 acceptance runbook for the proposed split and G1 stop. Revisions 1 and 2 are preserved in git history. Companion documents:
+occurred. See the revision 4 acceptance runbook for the proposed split and G1 stop. **26 November status:** the stop-semantics item below (N8/N8b) and the first C1 run are now operator-reported results; see the [evidence register](phase-5a-evidence-register.md). Sections 1–11 are the 17–23 November assessment and are otherwise unchanged. Revisions 1 and 2 are preserved in git history. Companion documents:
 [host acceptance tests](phase-5a-host-acceptance-tests.md),
 [Phase 5B plan](phase-5b-staging-execution-plan.md),
 [deployment preflight](phase-5-deployment-preflight.md).
@@ -41,7 +41,7 @@ effect on the real host has not been demonstrated.
 - **KVM is full virtualisation**, which removes the container-class failure mode for PID/mount namespaces; it is still demonstrated by test N1, not assumed.
 - **Slice nesting.** `cape-vault.slice` (and the probe's `cape-probe.slice`) is, by systemd's dash rule, a child of an implicit `cape.slice` under the root cgroup, not of `system.slice`. The `cpu`, `memory` and `pids` controllers must therefore be enabled through the root and `cape.slice`; probe M1 reads `cape.slice/cgroup.subtree_control` and stops if a controller is missing (a missing controller means silently absent limits). Cgroup paths in the acceptance document use `/sys/fs/cgroup/cape.slice/cape-probe.slice/…`.
 - **About five daily users** supports Tier 0 (web only) and makes Tier 2 unnecessary for staging; nothing here claims capacity.
-- **A stop-semantics risk is now explicit** (acceptance N8c): `--kill-child` is a parent-death signal that the kernel clears when `setpriv` changes credentials, and `KillMode=mixed` signals only the main PID (`unshare`). Whether SIGTERM reaches the Node namespace init is **UNTESTED**; the probe tests it with a control and carries a gated `KillMode=control-group` fallback.
+- **A stop-semantics risk is now explicit** (acceptance N8c): `--kill-child` is a parent-death signal that the kernel clears when `setpriv` changes credentials, and `KillMode=mixed` signals only the main PID (`unshare`). Whether SIGTERM reaches the Node namespace init was **UNTESTED** at this revision. Superseded: operator-reported N8 (20 s) and N8b (40 s) passed on 26 November with `KillMode=control-group` as the primary setting; no fallback is in force.
 
 ## 2. Resolving `PrivatePIDs=yes` on systemd 255 (blocker S1)
 

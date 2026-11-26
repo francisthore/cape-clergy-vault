@@ -1,6 +1,6 @@
 # V1 deployment and recovery runbook
 
-The operator reported that revision 3 G1 preparation stopped at offline verification on the VPS's noexec `/run` mount. The next approval covers the revision 4 G1 file update, including three temporary executables under `/opt/cape-probe-exec`. Keep the G0 evidence and peak-capacity requirement. Later probe gates and deployment each require separate approval. [Phase 5A host acceptance](phase-5a-host-acceptance-tests.md)
+**Current host status (26 November 2026):** Phase 5A host acceptance is incomplete and deployment stays blocked; see the [evidence register](phase-5a-evidence-register.md). Historical: revision 3 G1 stopped at offline verification on the noexec `/run` mount (23 November); revision 4 moved three executables to `/opt/cape-probe-exec`. Keep the G0 evidence and peak-capacity requirement. Later probe gates and deployment each require separate approval. [Phase 5A host acceptance](phase-5a-host-acceptance-tests.md)
 
 ## Release sequence
 

@@ -12,7 +12,7 @@
 | Bouncer and worker regressions | `npm run test:bouncer` passed eight. `npm run test:scanner` passed 14 with the optional installed-ClamAV test skipped. `npm run test:dev` passed six. Local doubles supplied all scan and delivery responses. |
 | SQL/HTTP and browsers | `npm run test:phase42` passed its four database runs (24, 13, 6, 12 including suite parents). Playwright passed 32 tests across 320, 390, 768 and 1,440 pixel Chromium viewports. These are emulated viewports. |
 | Recovery | `npm run test:recovery` passed on two fresh Unix-socket clusters. Copied objects and DB restored together. Wrong key, tampering, missing/orphan objects and migration mismatch were detected. Recovered leases, provider IDs and invitation ciphertext retained their meaning. A withdrawn decision stayed withdrawn, its prior clean confidential document stayed private and the aggregate monitoring SQL ran on the restored database. |
-| Systemd preparation | `npm run test:namespace-guard` and `sh ops/host-probe/check-local.sh` passed. Host namespace, load, shutdown, isolation and reboot results are **unexecuted**. |
+| Systemd preparation | `npm run test:namespace-guard` and `sh ops/host-probe/check-local.sh` passed. Host results as of 26 November (operator-reported, see the [evidence register](phase-5a-evidence-register.md)): G1/G1b, N1–N5 (earlier revision), N8/N8b and C1a observed; C1b, load, I/O, remaining isolation and reboot results are **not complete**. The 23 November local results in this table are unchanged. |
 
 Migration 0040 SHA-256 is `0bb7ff79e2fdcf86cd94f12e342814c37987226b75500626ac88ad13ec1fdbaa`. The locally smoke-tested archive is `cape-vault-v1-uOnNLlQO.tar.gz`, SHA-256 `cb16df1087ab57a11dfee4dffeb3115aec6740d5632558cf8717eb8d568d29ad`. The package and checksum are in the workspace's private `.local/releases/` directory. PostgreSQL 18 supplied the disposable cluster binaries here. Repeat the migration and paired recovery with PostgreSQL 16 on an isolated matching target.
 
@@ -52,7 +52,7 @@ For Bouncer use harmless synthetic PDFs for both classifications including the 4
 | Gate | Required sign-off evidence | Current disposition |
 | --- | --- | --- |
 | Responsible-party approval | Service ownership, processing/transfer safeguards, notice and acknowledgement decision, retention, subject rights, incident lead, hosting/backups | Open |
-| Candidate and target | Exact release digest, PG16 ledger, role audits, Node 24 checksum, effective four-unit configuration and host probe record | Local candidate verified. Host open |
+| Candidate and target | Exact release digest, PG16 ledger, role audits, Node 24 checksum, effective four-unit configuration and host probe record | Local candidate verified. Host open (Phase 5A partial; see register) |
 | Operations | Measured capacity and healthy neighbours, off-host backup and timed restore, on-call alert exercise, support and deputy contacts | Open |
 | Providers and users | Approved bounded test windows with actual results, human accessibility/device review, approved communications | Open |
 | Exposure and rollback | Dated owner decision, actual approver, accepted residual risks, named rollback operator and maintenance window | Open |

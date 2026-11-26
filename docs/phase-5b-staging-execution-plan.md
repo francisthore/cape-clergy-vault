@@ -1,5 +1,7 @@
 # Phase 5B — Synthetic staging execution plan (DO NOT EXECUTE)
 
+> **Status 26 November 2026:** 5B-0 is not satisfied. Phase 5A host acceptance is incomplete ([evidence register](phase-5a-evidence-register.md)). Migration counts in this plan were corrected to the repository (41 migrations through 0040, 30 RLS app tables); the plan is otherwise unchanged and remains a proposal.
+
 Prepared 17 November 2026, revised for the verified host (Ubuntu 24.04.4, systemd 255, 2 vCPU,
 3.8 GiB RAM) alongside the [Phase 5A assessment](phase-5a-vps-infrastructure-assessment.md)
 and [host acceptance tests](phase-5a-host-acceptance-tests.md). **This is a plan, not
@@ -43,9 +45,9 @@ that contains no secrets.
   2. R1/R2: web heap 256 MiB / `MemoryHigh` 448 M; worker heap 96 MiB; `CPUWeight`, `IOWeight`, `OOMScoreAdjust`, `MemorySwapMax=0`, `LimitCORE=0`; tier 0 slice.
   3. I1: exact pinned Node 24 directory set in the launcher's `NODE=` (never `/usr/bin/node`).
   4. `scripts/service-entry.mjs` + `scripts/namespace-guard.mjs` guard (unit tests `bun run test:namespace-guard`).
-  5. Still open: P1 PostgreSQL socket arrangement (`BindReadOnlyPaths=` vs second cluster vs TLS), S2 synthetic-account seeding (or navigation-only), update stale `release-readiness.md` wording about 0039.
+  5. Still open: P1 PostgreSQL socket arrangement (`BindReadOnlyPaths=` vs second cluster vs TLS), S2 synthetic-account seeding (or navigation-only), `release-readiness.md` 0039/0040 wording (updated 26 November).
 - **Validate:** unit tests/lint/type-check pass; `systemd-analyze verify` on rendered units on a workstation with equal-or-newer systemd; secret scan of the diff; owner reviews the diff.
-- **Build (off the VPS; Bun is not installed there; target x86_64 unless P1 says otherwise):** `bun install --frozen-lockfile` (Bun ≥1.4.4) then `bun run build`; assemble the artifact: `.output`, worker/database/scripts import tree (including `scripts/namespace-guard.mjs`), migration SQL/journal, runtime node_modules, licences. Exclude `.git`, `.env*`, captures, test results, keys, backups, storage. Record SHA-256 of the archive and of migration `0039` (`38f19e2f…7819`).
+- **Build (off the VPS; Bun is not installed there; target x86_64 unless P1 says otherwise):** `bun install --frozen-lockfile` (Bun ≥1.4.4) then `bun run build`; assemble the artifact: `.output`, worker/database/scripts import tree (including `scripts/namespace-guard.mjs`), migration SQL/journal, runtime node_modules, licences. Exclude `.git`, `.env*`, captures, test results, keys, backups, storage. Record SHA-256 of the archive and of migrations `0039` (`38f19e2f…7819`) and `0040` (`0bb7ff79…fdbaa`).
 - **Rollback:** revert local uncommitted changes; nothing external touched.
 
 ## 5B-2 Authorisation record
@@ -93,7 +95,7 @@ that contains no secrets.
 
 - **Prereq:** explicit maintenance authorisation; TTY session by an authorised operator; all services stopped; backup of the (empty) database dump retained as a baseline.
 - **Action:** `production-maintenance.ts migrate` (type the exact confirmation), then `grants`, then `check`.
-- **Validate:** full ledger hash match (40 migrations, 0039 hash as recorded), 29 app tables with RLS, role/grant/function/immutable-trigger audits pass; remove the operator mount; confirm no service has inherited it.
+- **Validate:** full ledger hash match (41 migrations through 0040, hashes as recorded), 30 app tables with RLS, role/grant/function/immutable-trigger audits pass; remove the operator mount; confirm no service has inherited it.
 - **Stop:** hash mismatch, partial migration, any audit failure.
 - **Rollback:** the database is synthetic and disposable at this stage — drop/recreate the empty DB via 5B-5 rollback and re-run. Do not hand-edit the ledger or grants.
 

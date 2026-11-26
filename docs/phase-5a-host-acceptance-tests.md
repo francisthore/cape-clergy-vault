@@ -1,11 +1,20 @@
 # Phase 5A — Temporary host acceptance probe (revision 4)
 
-**26 November 2026 — C1 stopped.** The operator reports G1 and G1b passed,
-N8 passed at 20 s and N8b passed at 40 s. The bang reader created the control
-marker. The installation was rolled back and PM2 remained at PID 330461 with
-zero restarts. Host acceptance and staging stay blocked. The current files are
-a local C1 review candidate. The completed G1 and shutdown evidence belongs to
-the previous files. [C1 root-cause report and review gates](phase-5a-c1-report.md)
+**Current status (26 November 2026, operator-reported, local copy only).** Host acceptance
+and staging stay **blocked**. Case 004 on the C1 workflow passed setup, bang, runtime and
+rollback, and left the plus sibling control **inconclusive**. C1a is verified; C1b is open
+pending reviewer decision. The later groups are not run. See the
+[evidence register](phase-5a-evidence-register.md), the
+[review decision sheet](phase-5a-review-decision-sheet.md) and
+[C1 verification](phase-5a-c1-host-verification.md). Nothing below changes an acceptance
+criterion.
+
+**Historical record (preserved, not current status).** The first C1 run on 26 November
+(revision 4, before the explicit `/run` read-only rule) passed G1 and G1b, N8 at 20 s and
+N8b at 40 s, but the bang reader created the control marker. The installation was rolled
+back and PM2 stayed at PID 330461 with zero restarts. That run is the reason for the
+[C1 root-cause report](phase-5a-c1-report.md) and the `/run` change. Its G1 and shutdown
+evidence belongs to the earlier unit files.
 
 On 23 November 2026 the operator reported that the 13 revision 3 sources passed SHA-256
 verification and the synthetic G1 harness was staged on `vm400masc.kbsktrading.net`.

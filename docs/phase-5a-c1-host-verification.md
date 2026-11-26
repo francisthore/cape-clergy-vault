@@ -1,6 +1,6 @@
 # C1 host verification · systemd 255 · review candidate
 
-**Hold for independent review of the workflow and the exact bundle digest.** The preliminary review covered commit `60dba2c`. The original G0/G1/G1b evidence and the N8/N8b results at 20/40 seconds stand. This procedure checks the corrected mount policy with synthetic fixtures. Each fresh installation needs its own collision, integrity and neighbour checks.
+**Status (26 November 2026): Case 004 executed (operator-reported); C1a verified, C1b open. See the [evidence register](phase-5a-evidence-register.md).** The text below up to "Case 004 record" is the pre-run procedure for the reviewed bundle. The preliminary review covered commit `60dba2c`. The original G0/G1/G1b evidence and the N8/N8b results at 20/40 seconds stand. This procedure checks the corrected mount policy with synthetic fixtures. Each fresh installation needs its own collision, integrity and neighbour checks.
 
 ## Design findings
 

@@ -6,6 +6,8 @@ Confidential transfers require a documented decision recorded under migration 00
 
 ## Phase 4.3.1 readiness record
 
+> **Current repository counts (checked 26 November 2026):** 41 forward migrations through `0040_v1_confidential_scanning`; 30 application tables with RLS (34 created tables including the four Better Auth tables). The "40 migrations / 0039 latest / 29 tables" figures below are the 17 November Phase 4.3.1 snapshot and are retained as history. Persistent-database state of 0039/0040 has not been re-inspected. Host acceptance status: [evidence register](phase-5a-evidence-register.md).
+
 
 Assessment: 17 November 2026, Africa/Johannesburg. Repository remediation only; no VPS
 inspection/deployment, real delivery or external document processing was authorized.
