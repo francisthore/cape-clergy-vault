@@ -1,15 +1,14 @@
 // Prepared operator entry only. No service imports this module. Never invoked at startup.
 import { createInterface } from "node:readline/promises";
-import { migrate } from "drizzle-orm/postgres-js/migrator";
+import {
+  MigrationFailure,
+  runProductionMigrations,
+} from "../../database/production-migrator.server.ts";
 import {
   assertPilotContract,
   connectProductionDatabase,
 } from "../../database/production.server.ts";
-import {
-  migrationFolder,
-  productionGrants,
-  reviewedMigrationPlan,
-} from "../../database/migration-plan.server.ts";
+import { productionGrants, reviewedMigrationPlan } from "../../database/migration-plan.server.ts";
 import {
   auditMigrationLedger,
   auditRoles,
@@ -49,10 +48,7 @@ try {
       terminal.close();
     }
     if (action === "migrate")
-      await migrate(db.db, {
-        migrationsFolder: migrationFolder,
-        migrationsSchema: "cape_migrations",
-      });
+      await runProductionMigrations(db.client, (tag) => console.log(`Committed migration ${tag}`));
     else if (policyAction) {
       if (plan.pending.length) throw Error("Current release schema required");
       if (action === "approve-confidential") await assertPilotContract(db.client);
@@ -85,9 +81,44 @@ try {
     await auditImmutableTriggers(db.client, checks);
   }
   for (const check of checks) console.log(check);
-} catch {
+} catch (error) {
+  const cause = error instanceof MigrationFailure ? error.cause : error;
+  const code =
+    cause &&
+    typeof cause === "object" &&
+    "code" in cause &&
+    typeof cause.code === "string" &&
+    /^[A-Z0-9]{5}$/.test(cause.code)
+      ? cause.code
+      : undefined;
+  const category =
+    code === "55P04"
+      ? "enum_value_requires_commit"
+      : code === "55P03"
+        ? "lock_timeout"
+        : code === "57014"
+          ? "statement_timeout_or_cancelled"
+          : code === "23505"
+            ? "unique_violation"
+            : code === "42501"
+              ? "insufficient_privilege"
+              : code?.startsWith("42")
+                ? "schema_or_sql_error"
+                : code?.startsWith("23")
+                  ? "integrity_constraint"
+                  : code?.startsWith("08")
+                    ? "connection_failure"
+                    : code
+                      ? "database_error"
+                      : "verification_or_environment_error";
   console.error(
-    "Production maintenance failed; inspect protected operator evidence without logging credentials.",
+    JSON.stringify({
+      event: "production_maintenance_failed",
+      action,
+      ...(error instanceof MigrationFailure ? { migration: error.tag } : {}),
+      category,
+      ...(code ? { sqlstate: code } : {}),
+    }),
   );
   process.exitCode = 1;
 } finally {

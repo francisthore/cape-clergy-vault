@@ -162,6 +162,9 @@ export async function connectProductionDatabase(role: ProductionRole) {
     connect_timeout: 5,
     idle_timeout: 10,
     max_lifetime: 1800,
+    // Keep PostgreSQL notices out of operator logs; the maintenance command
+    // emits only reviewed migration tags and safe SQLSTATE categories.
+    ...(role === "operator" ? { onnotice: () => {} } : {}),
     connection: {
       application_name: `cape-vault-${role}`,
       TimeZone: "UTC",

@@ -31,6 +31,11 @@ for name in trace['inputs']:
     if path.is_absolute() or '..' in path.parts or path.parts[0] not in ('scripts', 'database', 'src'):
         raise ValueError(f'Unexpected runtime input: {path}')
     copy(path)
+for required in ('scripts/db/production-maintenance.ts',
+                 'database/production-migrator.server.ts',
+                 'database/migration-plan.server.ts'):
+    if not (root / required).is_file():
+        raise ValueError(f'Missing operator migration input: {required}')
 for path in ['.output', 'database/migrations', 'database/runtime-grants.sql',
              'database/scanner-grants.sql', 'database/notifications-grants.sql',
              'scripts/service-entry.mjs', 'scripts/namespace-guard.mjs',
@@ -64,7 +69,7 @@ while packages:
 (root/'package.json').write_text('{"private":true,"type":"module"}\n')
 PY
 # Test packaged production imports from the standalone tree. None opens a connection on import.
-(cd "$root" && node --input-type=module -e "await Promise.all(['./database/production.server.ts','./src/lib/scanning/worker.server.ts','./src/lib/reviews/notifications.server.ts','./src/lib/approvals/notifications.server.ts','./database/migration-plan.server.ts'].map(p=>import(p)))")
+(cd "$root" && node --input-type=module -e "await Promise.all(['./database/production.server.ts','./src/lib/scanning/worker.server.ts','./src/lib/reviews/notifications.server.ts','./src/lib/approvals/notifications.server.ts','./database/migration-plan.server.ts','./database/production-migrator.server.ts'].map(p=>import(p)))")
 (cd "$root" && find . -type f -print0 | sort -z | xargs -0 sha256sum > "$work/MANIFEST.sha256")
 cp "$work/MANIFEST.sha256" "$root/"
 artifact=$(mktemp .local/releases/cape-vault-v1-XXXXXXXX.tar.gz)
