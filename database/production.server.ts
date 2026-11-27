@@ -6,6 +6,7 @@ import { dirname, isAbsolute } from "node:path";
 import { z } from "zod";
 import * as schema from "./schema/index.ts";
 import { assertRuntimePrivileges } from "./safety.ts";
+import { readProductionCredential } from "../scripts/production-credential.mjs";
 import {
   auditRoles,
   auditRls,
@@ -144,7 +145,15 @@ export async function connectProductionDatabase(role: ProductionRole) {
     (role === "operator" && unit !== "cape-vault-operator.service")
   )
     throw Error("Credential scope rejected");
-  const password = (await protectedFile(credential, true)).replace(/\n$/, "");
+  const service =
+    role === "runtime"
+      ? "web"
+      : role === "notifications"
+        ? unit === "cape-vault-approval.service"
+          ? "approval"
+          : "reviewer"
+        : role;
+  const password = await readProductionCredential(credential, service, "database-password");
   if (password.length < 24 || /[\r\n\0]/.test(password))
     throw Error("Invalid production credential");
   const ca =

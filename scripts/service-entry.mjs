@@ -1,6 +1,7 @@
 // Production systemd entry. No dotenv loading, owner credentials or request-triggered work.
-import { readFile, lstat, readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { assertProcView, assertSandboxStatus } from "./namespace-guard.mjs";
+import { readProductionCredential } from "./production-credential.mjs";
 const kind = process.argv[2],
   kinds = ["web", "scanner", "approval", "reviewer"];
 if (
@@ -27,15 +28,7 @@ for (const key of [
 ])
   if (process.env[key]) throw Error("Production secrets must use scoped credentials");
 const env = { ...process.env, CAPE_DATABASE_PASSWORD_FILE: directory + "/database-password" };
-async function credential(name) {
-  const path = directory + "/" + name,
-    stat = await lstat(path);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 65536 || (stat.mode & 0o077) !== 0)
-    throw Error("Unsafe production credential");
-  const value = (await readFile(path, "utf8")).replace(/\n$/, "");
-  if (!value || /[\r\n\0]/.test(value)) throw Error("Invalid production credential");
-  return value;
-}
+const credential = (name) => readProductionCredential(directory + "/" + name, kind, name);
 if (["web", "reviewer"].includes(kind)) env.BETTER_AUTH_SECRET = await credential("auth-secret");
 if (kind === "scanner") env.BOUNCER_API_KEY = await credential("bouncer-key");
 else if (env.EMAIL_PROVIDER === "resend") env.RESEND_API_KEY = await credential("resend-key");

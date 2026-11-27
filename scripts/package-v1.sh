@@ -39,6 +39,7 @@ for required in ('scripts/db/production-maintenance.ts',
 for path in ['.output', 'database/migrations', 'database/runtime-grants.sql',
              'database/scanner-grants.sql', 'database/notifications-grants.sql',
              'scripts/service-entry.mjs', 'scripts/namespace-guard.mjs',
+             'scripts/production-credential.mjs',
              'scripts/worker-loop.mjs', 'scripts/worker-supervisor.mjs', 'ops/v1-monitor.sql']:
     copy(Path(path))
 # Only reviewed non-secret templates enter the application release.
